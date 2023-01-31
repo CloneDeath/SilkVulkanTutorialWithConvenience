@@ -54,7 +54,7 @@ public unsafe class HelloTriangleApplication_03 : HelloTriangleApplication_02
         }
     }
 
-    protected bool IsDeviceSuitable(PhysicalDevice candidateDevice)
+    protected virtual bool IsDeviceSuitable(PhysicalDevice candidateDevice)
     {
         var indices = FindQueueFamilies_03(candidateDevice);
 

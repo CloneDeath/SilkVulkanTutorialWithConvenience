@@ -1,15 +1,11 @@
 ﻿using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using Silk.NET.Core;
 using Silk.NET.Core.Native;
 using Silk.NET.Vulkan;
-using Silk.NET.Vulkan.Extensions.EXT;
 using Silk.NET.Vulkan.Extensions.KHR;
 
 var app = new HelloTriangleApplication_06();
 app.Run();
-
-
 
 public struct SwapChainSupportDetails
 {
@@ -20,41 +16,16 @@ public struct SwapChainSupportDetails
 
 public unsafe class HelloTriangleApplication_06 : HelloTriangleApplication_05
 {
-
-
-
-
     protected readonly string[] deviceExtensions = new[]
     {
         KhrSwapchain.ExtensionName
     };
 
-
-
-
-
-
-
-
-
-
-
-
-
-    
-
-
     protected KhrSwapchain? khrSwapChain;
     protected SwapchainKHR swapChain;
     protected Image[]? swapChainImages;
-    // ReSharper disable once NotAccessedField.Local
     protected Format swapChainImageFormat;
-    // ReSharper disable once NotAccessedField.Local
     protected Extent2D swapChainExtent;
-
-    
-
-    
 
     protected override void InitVulkan()
     {
@@ -65,8 +36,6 @@ public unsafe class HelloTriangleApplication_06 : HelloTriangleApplication_05
         CreateLogicalDevice();
         CreateSwapChain();
     }
-
-    
 
     protected override void CleanUp()
     {
@@ -87,7 +56,7 @@ public unsafe class HelloTriangleApplication_06 : HelloTriangleApplication_05
         window?.Dispose();
     }
     
-    protected void CreateLogicalDevice()
+    protected override void CreateLogicalDevice()
     {
         var indices = FindQueueFamilies_05(physicalDevice);
 
@@ -152,7 +121,7 @@ public unsafe class HelloTriangleApplication_06 : HelloTriangleApplication_05
 
     }
 
-    protected void CreateSwapChain()
+    protected virtual void CreateSwapChain()
     {
         var swapChainSupport = QuerySwapChainSupport(physicalDevice);
 
@@ -317,7 +286,7 @@ public unsafe class HelloTriangleApplication_06 : HelloTriangleApplication_05
         return details;
     }
 
-    protected bool IsDeviceSuitable(PhysicalDevice candidateDevice)
+    protected override bool IsDeviceSuitable(PhysicalDevice candidateDevice)
     {
         var indices = FindQueueFamilies_05(candidateDevice);
 
@@ -349,12 +318,4 @@ public unsafe class HelloTriangleApplication_06 : HelloTriangleApplication_05
         return deviceExtensions.All(availableExtensionNames.Contains);
 
     }
-
-    
-
-    
-
-    
-
-    
 }
