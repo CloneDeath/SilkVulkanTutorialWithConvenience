@@ -18,7 +18,7 @@ struct QueueFamilyIndices
     }
 }
 
-unsafe class HelloTriangleApplication_04
+public unsafe class HelloTriangleApplication_04
 {
     const int WIDTH = 800;
     const int HEIGHT = 600;

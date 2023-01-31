@@ -7,7 +7,7 @@ using Silk.NET.Windowing;
 var app = new HelloTriangleApplication_01();
 app.Run();
 
-unsafe class HelloTriangleApplication_01
+public unsafe class HelloTriangleApplication_01
 {
     const int WIDTH = 800;
     const int HEIGHT = 600;

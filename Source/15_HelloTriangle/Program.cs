@@ -30,7 +30,7 @@ struct SwapChainSupportDetails
     public PresentModeKHR[] PresentModes;
 }
 
-unsafe class HelloTriangleApplication_15
+public unsafe class HelloTriangleApplication_15
 {
     const int WIDTH = 800;
     const int HEIGHT = 600;

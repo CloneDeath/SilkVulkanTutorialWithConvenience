@@ -87,7 +87,7 @@ struct UniformBufferObject
     public Matrix4X4<float> proj;
 }
 
-unsafe class HelloTriangleApplication_25
+public unsafe class HelloTriangleApplication_25
 {
     const int WIDTH = 800;
     const int HEIGHT = 600;

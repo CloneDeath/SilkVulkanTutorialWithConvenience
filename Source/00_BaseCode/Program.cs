@@ -4,7 +4,7 @@ using Silk.NET.Windowing;
 var app = new HelloTriangleApplication_00();
 app.Run();
 
-class HelloTriangleApplication_00
+public class HelloTriangleApplication_00
 {
     const int WIDTH = 800;
     const int HEIGHT = 600;

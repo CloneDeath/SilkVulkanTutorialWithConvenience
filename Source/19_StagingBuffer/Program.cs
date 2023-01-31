@@ -72,7 +72,7 @@ struct Vertex
     }
 }
 
-unsafe class HelloTriangleApplication_19
+public unsafe class HelloTriangleApplication_19
 {
     const int WIDTH = 800;
     const int HEIGHT = 600;
