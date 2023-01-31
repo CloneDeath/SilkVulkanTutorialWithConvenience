@@ -29,24 +29,21 @@ public struct SwapChainSupportDetails
 
 public unsafe class HelloTriangleApplication_12 : HelloTriangleApplication_11
 {
-    bool EnableValidationLayers = true;
 
-    protected readonly string[] validationLayers = new []
-    {
-        "VK_LAYER_KHRONOS_validation"
-    };
+
+
 
     protected readonly string[] deviceExtensions = new[]
     {
         KhrSwapchain.ExtensionName
     };
 
-    protected Vk? vk;
 
-    protected Instance instance;
 
-    protected ExtDebugUtils? debugUtils;
-    protected DebugUtilsMessengerEXT debugMessenger;
+
+
+
+
     protected KhrSurface? khrSurface;
     protected SurfaceKHR surface;
 
@@ -175,33 +172,9 @@ public unsafe class HelloTriangleApplication_12 : HelloTriangleApplication_11
         }
     }
 
-    protected void PopulateDebugMessengerCreateInfo(ref DebugUtilsMessengerCreateInfoEXT createInfo)
-    {
-        createInfo.SType = StructureType.DebugUtilsMessengerCreateInfoExt;
-        createInfo.MessageSeverity = DebugUtilsMessageSeverityFlagsEXT.VerboseBitExt |
-                                     DebugUtilsMessageSeverityFlagsEXT.WarningBitExt |
-                                     DebugUtilsMessageSeverityFlagsEXT.ErrorBitExt;
-        createInfo.MessageType = DebugUtilsMessageTypeFlagsEXT.GeneralBitExt |
-                                 DebugUtilsMessageTypeFlagsEXT.PerformanceBitExt |
-                                 DebugUtilsMessageTypeFlagsEXT.ValidationBitExt;
-        createInfo.PfnUserCallback = (DebugUtilsMessengerCallbackFunctionEXT)DebugCallback;
-    }
+    
 
-    protected void SetupDebugMessenger()
-    {
-        if (!EnableValidationLayers) return;
-
-        //TryGetInstanceExtension equivilant to method CreateDebugUtilsMessengerEXT from original tutorial.
-        if (!vk!.TryGetInstanceExtension(instance, out debugUtils)) return;
-
-        DebugUtilsMessengerCreateInfoEXT createInfo = new();
-        PopulateDebugMessengerCreateInfo(ref createInfo);
-
-        if (debugUtils!.CreateDebugUtilsMessenger(instance, in createInfo, null, out debugMessenger) != Result.Success)
-        {
-            throw new Exception("failed to set up debug messenger!");
-        }
-    }
+    
 
     protected void CreateSurface()
     {
@@ -799,38 +772,9 @@ public unsafe class HelloTriangleApplication_12 : HelloTriangleApplication_11
         return indices;
     }
 
-    protected string[] GetRequiredExtensions()
-    {
-        var glfwExtensions = window!.VkSurface!.GetRequiredExtensions(out var glfwExtensionCount);
-        var extensions = SilkMarshal.PtrToStringArray((nint)glfwExtensions, (int)glfwExtensionCount);
+    
 
-        if (EnableValidationLayers)
-        {
-            return extensions.Append(ExtDebugUtils.ExtensionName).ToArray();
-        }
+    
 
-        return extensions;
-    }
-
-    protected bool CheckValidationLayerSupport()
-    {
-        uint layerCount = 0;
-        vk!.EnumerateInstanceLayerProperties(ref layerCount, null);
-        var availableLayers = new LayerProperties[layerCount];
-        fixed (LayerProperties* availableLayersPtr = availableLayers)
-        {
-            vk!.EnumerateInstanceLayerProperties(ref layerCount, availableLayersPtr);
-        }
-
-        var availableLayerNames = availableLayers.Select(layer => Marshal.PtrToStringAnsi((IntPtr)layer.LayerName)).ToHashSet();
-
-        return validationLayers.All(availableLayerNames.Contains);
-    }
-
-    protected uint DebugCallback(DebugUtilsMessageSeverityFlagsEXT messageSeverity, DebugUtilsMessageTypeFlagsEXT messageTypes, DebugUtilsMessengerCallbackDataEXT* pCallbackData, void* pUserData)
-    {
-        Console.WriteLine($"validation layer:" + Marshal.PtrToStringAnsi((nint)pCallbackData->PMessage));
-
-        return Vk.False;
-    }
+    
 }

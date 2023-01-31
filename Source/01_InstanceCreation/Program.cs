@@ -16,8 +16,6 @@ public unsafe class HelloTriangleApplication_01 : HelloTriangleApplication_00
         CreateInstance();
     }
 
-    
-
     protected override void CleanUp()
     {
         vk!.DestroyInstance(instance, null);

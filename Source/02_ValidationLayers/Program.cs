@@ -9,16 +9,12 @@ app.Run();
 
 public unsafe class HelloTriangleApplication_02 : HelloTriangleApplication_01
 {
-    bool EnableValidationLayers = true;
+    protected bool EnableValidationLayers = true;
 
     protected readonly string[] validationLayers = new []
     {
         "VK_LAYER_KHRONOS_validation"
     };
-
-    protected Vk? vk;
-
-    protected Instance instance;
 
     protected ExtDebugUtils? debugUtils;
     protected DebugUtilsMessengerEXT debugMessenger;
@@ -33,7 +29,7 @@ public unsafe class HelloTriangleApplication_02 : HelloTriangleApplication_01
     {
         if (EnableValidationLayers)
         {
-            //DestroyDebugUtilsMessenger equivilant to method DestroyDebugUtilsMessengerEXT from original tutorial.
+            //DestroyDebugUtilsMessenger equivalent to method DestroyDebugUtilsMessengerEXT from original tutorial.
             debugUtils!.DestroyDebugUtilsMessenger(instance, debugMessenger, null);
         }
 
