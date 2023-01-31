@@ -1009,7 +1009,7 @@ unsafe class HelloTriangleApplication_26
 
     private void CreateTextureImage()
     {
-        using var img = SixLabors.ImageSharp.Image.Load<SixLabors.ImageSharp.PixelFormats.Rgba32>("textures/texture.jpg");
+        using var img = SixLabors.ImageSharp.Image.Load<SixLabors.ImageSharp.PixelFormats.Rgba32>("Textures/texture.jpg");
 
         ulong imageSize = (ulong)(img.Width * img.Height * img.PixelType.BitsPerPixel / 8);
 

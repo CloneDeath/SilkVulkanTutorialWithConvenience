@@ -6,11 +6,19 @@
 	
 	<Target Name="BuildVulkanShader" AfterTargets="Build">
 		<Message Text="VulkanBinPath: $(VulkanBinPath)" Importance="high" />
-		<Message Text="ShaderOutputPath: $(OutputPath)\$(ShaderOutputPath)" Importance="high" />
-		<Message Text="VertexShader: @(VertexShader)" Importance="high"/>
-		<Message Text="FragmentShader: @(FragmentShader)" Importance="high"/>
+		<Message Text="ShaderOutputPath: $(TargetDir)$(ShaderOutputPath)" Importance="high" />
+		<Message Text="VertexShader: %(VertexShader.FullPath)" Importance="high"/>
+		<Message Text="FragmentShader: %(FragmentShader.FullPath)" Importance="high"/>
 		<MakeDir Directories="$(TargetDir)$(ShaderOutputPath)" Condition="!Exists('$(TargetDir)$(ShaderOutputPath)')"  />
-		<Exec Command="$(VulkanBinPath)\glslc.exe &quot;%(VertexShader.FullPath)&quot; -o &quot;$(TargetDir)$(ShaderOutputPath)\vert.spv&quot;" Condition="'@(VertexShader)'!=''" />
-		<Exec Command="$(VulkanBinPath)\glslc.exe &quot;%(FragmentShader.FullPath)&quot; -o &quot;$(TargetDir)$(ShaderOutputPath)\frag.spv&quot;" Condition="'@(FragmentShader)'!=''"/>
+		
+		<Exec Condition="'@(VertexShader)'!='' AND $([MSBuild]::IsOSPlatform('Windows'))"
+			  Command="$(VulkanBinPath)\glslc.exe &quot;%(VertexShader.FullPath)&quot; -o &quot;$(TargetDir)$(ShaderOutputPath)\vert.spv&quot;"/>
+		<Exec Condition="'@(FragmentShader)'!='' AND $([MSBuild]::IsOSPlatform('Windows'))"
+			  Command="$(VulkanBinPath)\glslc.exe &quot;%(FragmentShader.FullPath)&quot; -o &quot;$(TargetDir)$(ShaderOutputPath)\frag.spv&quot;"/>
+
+		<Exec Condition="'@(VertexShader)'!='' AND $([MSBuild]::IsOSPlatform('Linux'))"
+			  Command="glslc &quot;%(VertexShader.FullPath)&quot; -o &quot;$(TargetDir)$(ShaderOutputPath)/vert.spv&quot;"/>
+		<Exec Condition="'@(FragmentShader)'!='' AND $([MSBuild]::IsOSPlatform('Linux'))"
+			  Command="glslc &quot;%(FragmentShader.FullPath)&quot; -o &quot;$(TargetDir)$(ShaderOutputPath)/frag.spv&quot;"/>
 	</Target>
 </Project>

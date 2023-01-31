@@ -93,8 +93,8 @@ unsafe class HelloTriangleApplication_28
     const int WIDTH = 800;
     const int HEIGHT = 600;
 
-    const string MODEL_PATH = @"Assets\viking_room.obj";
-    const string TEXTURE_PATH = @"Assets\viking_room.png";
+    const string MODEL_PATH = @"Assets/viking_room.obj";
+    const string TEXTURE_PATH = @"Assets/viking_room.png";
 
     const int MAX_FRAMES_IN_FLIGHT = 2;
 
