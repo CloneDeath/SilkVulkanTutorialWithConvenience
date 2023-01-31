@@ -13,7 +13,7 @@ using Buffer = Silk.NET.Vulkan.Buffer;
 var app = new HelloTriangleApplication_18();
 app.Run();
 
-struct QueueFamilyIndices
+public struct QueueFamilyIndices
 {
     public uint? GraphicsFamily { get; set; }
     public uint? PresentFamily { get; set; }
@@ -24,14 +24,14 @@ struct QueueFamilyIndices
     }
 }
 
-struct SwapChainSupportDetails
+public struct SwapChainSupportDetails
 {
     public SurfaceCapabilitiesKHR Capabilities;
     public SurfaceFormatKHR[] Formats;
     public PresentModeKHR[] PresentModes;
 }
 
-struct Vertex
+public struct Vertex
 {
     public Vector2D<float> pos;
     public Vector3D<float> color;
@@ -81,60 +81,60 @@ public unsafe class HelloTriangleApplication_18
 
     bool EnableValidationLayers = true;
 
-    private readonly string[] validationLayers = new []
+    protected readonly string[] validationLayers = new []
     {
         "VK_LAYER_KHRONOS_validation"
     };
 
-    private readonly string[] deviceExtensions = new[]
+    protected readonly string[] deviceExtensions = new[]
     {
         KhrSwapchain.ExtensionName
     };
 
-    private IWindow? window;
-    private Vk? vk;
+    protected IWindow? window;
+    protected Vk? vk;
 
-    private Instance instance;
+    protected Instance instance;
 
-    private ExtDebugUtils? debugUtils;
-    private DebugUtilsMessengerEXT debugMessenger;
-    private KhrSurface? khrSurface;
-    private SurfaceKHR surface;
+    protected ExtDebugUtils? debugUtils;
+    protected DebugUtilsMessengerEXT debugMessenger;
+    protected KhrSurface? khrSurface;
+    protected SurfaceKHR surface;
 
-    private PhysicalDevice physicalDevice;
-    private Device device;
+    protected PhysicalDevice physicalDevice;
+    protected Device device;
 
-    private Queue graphicsQueue;
-    private Queue presentQueue;
+    protected Queue graphicsQueue;
+    protected Queue presentQueue;
 
-    private KhrSwapchain? khrSwapChain;
-    private SwapchainKHR swapChain;
-    private Image[]? swapChainImages;
-    private Format swapChainImageFormat;
-    private Extent2D swapChainExtent;
-    private ImageView[]? swapChainImageViews;
-    private Framebuffer[]? swapChainFramebuffers;
+    protected KhrSwapchain? khrSwapChain;
+    protected SwapchainKHR swapChain;
+    protected Image[]? swapChainImages;
+    protected Format swapChainImageFormat;
+    protected Extent2D swapChainExtent;
+    protected ImageView[]? swapChainImageViews;
+    protected Framebuffer[]? swapChainFramebuffers;
 
-    private RenderPass renderPass;
-    private PipelineLayout pipelineLayout;
-    private Pipeline graphicsPipeline;
+    protected RenderPass renderPass;
+    protected PipelineLayout pipelineLayout;
+    protected Pipeline graphicsPipeline;
 
-    private CommandPool commandPool;
+    protected CommandPool commandPool;
 
-    private Buffer vertexBuffer;
-    private DeviceMemory vertexBufferMemory;
+    protected Buffer vertexBuffer;
+    protected DeviceMemory vertexBufferMemory;
 
-    private CommandBuffer[]? commandBuffers;
+    protected CommandBuffer[]? commandBuffers;
 
-    private Semaphore[]? imageAvailableSemaphores;
-    private Semaphore[]? renderFinishedSemaphores;
-    private Fence[]? inFlightFences;
-    private Fence[]? imagesInFlight;
-    private int currentFrame;
+    protected Semaphore[]? imageAvailableSemaphores;
+    protected Semaphore[]? renderFinishedSemaphores;
+    protected Fence[]? inFlightFences;
+    protected Fence[]? imagesInFlight;
+    protected int currentFrame;
 
-    private bool frameBufferResized;
+    protected bool frameBufferResized;
 
-    private Vertex[] vertices = new Vertex[]
+    protected Vertex[] vertices = new Vertex[]
     {
         new Vertex { pos = new Vector2D<float>(0.0f,-0.5f), color = new Vector3D<float>(1.0f, 0.0f, 0.0f) },
         new Vertex { pos = new Vector2D<float>(0.5f,0.5f), color = new Vector3D<float>(0.0f, 1.0f, 0.0f) },
@@ -149,7 +149,7 @@ public unsafe class HelloTriangleApplication_18
         CleanUp();
     }
 
-    private void InitWindow()
+    protected void InitWindow()
     {
         //Create a window.
         var options = WindowOptions.DefaultVulkan with
@@ -169,12 +169,12 @@ public unsafe class HelloTriangleApplication_18
         window.Resize += FramebufferResizeCallback;
     }
 
-    private void FramebufferResizeCallback(Vector2D<int> obj)
+    protected void FramebufferResizeCallback(Vector2D<int> obj)
     {
         frameBufferResized = true;
     }
 
-    private void InitVulkan()
+    protected void InitVulkan()
     {
         CreateInstance();
         SetupDebugMessenger();
@@ -192,14 +192,14 @@ public unsafe class HelloTriangleApplication_18
         CreateSyncObjects();
     }
 
-    private void MainLoop()
+    protected void MainLoop()
     {
         window!.Render += DrawFrame;
         window!.Run();
         vk!.DeviceWaitIdle(device);
     }
 
-    private void CleanUpSwapChain()
+    protected void CleanUpSwapChain()
     {
         foreach (var framebuffer in swapChainFramebuffers!)
         {
@@ -223,7 +223,7 @@ public unsafe class HelloTriangleApplication_18
         khrSwapChain!.DestroySwapchain(device, swapChain, null);
     }
 
-    private void CleanUp()
+    protected void CleanUp()
     {
         CleanUpSwapChain();
 
@@ -254,7 +254,7 @@ public unsafe class HelloTriangleApplication_18
         window?.Dispose();
     }
 
-    private void RecreateSwapChain()
+    protected void RecreateSwapChain()
     {
         Vector2D<int> framebufferSize = window!.FramebufferSize;
 
@@ -278,7 +278,7 @@ public unsafe class HelloTriangleApplication_18
         imagesInFlight = new Fence[swapChainImages!.Length];
     }
 
-    private void CreateInstance()
+    protected void CreateInstance()
     {
         vk = Vk.GetApi();
 
@@ -337,7 +337,7 @@ public unsafe class HelloTriangleApplication_18
         }
     }
 
-    private void PopulateDebugMessengerCreateInfo(ref DebugUtilsMessengerCreateInfoEXT createInfo)
+    protected void PopulateDebugMessengerCreateInfo(ref DebugUtilsMessengerCreateInfoEXT createInfo)
     {
         createInfo.SType = StructureType.DebugUtilsMessengerCreateInfoExt;
         createInfo.MessageSeverity = DebugUtilsMessageSeverityFlagsEXT.VerboseBitExt |
@@ -349,7 +349,7 @@ public unsafe class HelloTriangleApplication_18
         createInfo.PfnUserCallback = (DebugUtilsMessengerCallbackFunctionEXT)DebugCallback;
     }
 
-    private void SetupDebugMessenger()
+    protected void SetupDebugMessenger()
     {
         if (!EnableValidationLayers) return;
 
@@ -365,7 +365,7 @@ public unsafe class HelloTriangleApplication_18
         }
     }
 
-    private void CreateSurface()
+    protected void CreateSurface()
     {
         if (!vk!.TryGetInstanceExtension<KhrSurface>(instance, out khrSurface))
         {
@@ -375,7 +375,7 @@ public unsafe class HelloTriangleApplication_18
         surface = window!.VkSurface!.Create<AllocationCallbacks>(instance.ToHandle(), null).ToSurface();
     }
 
-    private void PickPhysicalDevice()
+    protected void PickPhysicalDevice()
     {
         uint devicedCount = 0;
         vk!.EnumeratePhysicalDevices(instance, ref devicedCount, null);
@@ -406,7 +406,7 @@ public unsafe class HelloTriangleApplication_18
         }
     }
 
-    private void CreateLogicalDevice()
+    protected void CreateLogicalDevice()
     {
         var indices = FindQueueFamilies(physicalDevice);
 
@@ -471,7 +471,7 @@ public unsafe class HelloTriangleApplication_18
 
     }
 
-    private void CreateSwapChain()
+    protected void CreateSwapChain()
     {
         var swapChainSupport = QuerySwapChainSupport(physicalDevice);
 
@@ -547,7 +547,7 @@ public unsafe class HelloTriangleApplication_18
         swapChainExtent = extent;
     }
 
-    private void CreateImageViews()
+    protected void CreateImageViews()
     {
         swapChainImageViews = new ImageView[swapChainImages!.Length];
 
@@ -584,7 +584,7 @@ public unsafe class HelloTriangleApplication_18
         }
     }
 
-    private void CreateRenderPass()
+    protected void CreateRenderPass()
     {
         AttachmentDescription colorAttachment = new()
         {
@@ -637,7 +637,7 @@ public unsafe class HelloTriangleApplication_18
         }
     }
 
-    private void CreateGraphicsPipeline()
+    protected void CreateGraphicsPipeline()
     {
         var vertShaderCode = File.ReadAllBytes("shaders/vert.spv");
         var fragShaderCode = File.ReadAllBytes("shaders/frag.spv");
@@ -795,7 +795,7 @@ public unsafe class HelloTriangleApplication_18
         SilkMarshal.Free((nint)fragShaderStageInfo.PName);
     }
 
-    private void CreateFramebuffers()
+    protected void CreateFramebuffers()
     {
         swapChainFramebuffers = new Framebuffer[swapChainImageViews!.Length];
 
@@ -821,7 +821,7 @@ public unsafe class HelloTriangleApplication_18
         }
     }
 
-    private void CreateCommandPool()
+    protected void CreateCommandPool()
     {
         var queueFamiliyIndicies = FindQueueFamilies(physicalDevice);
 
@@ -837,7 +837,7 @@ public unsafe class HelloTriangleApplication_18
         }
     }
 
-    private void CreateVertexBuffer()
+    protected void CreateVertexBuffer()
     {
         BufferCreateInfo bufferInfo = new()
         {
@@ -881,7 +881,7 @@ public unsafe class HelloTriangleApplication_18
         vk!.UnmapMemory(device, vertexBufferMemory);
     }
 
-    private uint FindMemoryType(uint typeFilter, MemoryPropertyFlags properties)
+    protected uint FindMemoryType(uint typeFilter, MemoryPropertyFlags properties)
     {
         PhysicalDeviceMemoryProperties memProperties;
         vk!.GetPhysicalDeviceMemoryProperties(physicalDevice, out memProperties);
@@ -897,7 +897,7 @@ public unsafe class HelloTriangleApplication_18
         throw new Exception("failed to find suitable memory type!");
     }
 
-    private void CreateCommandBuffers()
+    protected void CreateCommandBuffers()
     {
         commandBuffers = new CommandBuffer[swapChainFramebuffers!.Length];
 
@@ -975,7 +975,7 @@ public unsafe class HelloTriangleApplication_18
         }
     }
 
-    private void CreateSyncObjects()
+    protected void CreateSyncObjects()
     {
         imageAvailableSemaphores = new Semaphore[MAX_FRAMES_IN_FLIGHT];
         renderFinishedSemaphores = new Semaphore[MAX_FRAMES_IN_FLIGHT];
@@ -1004,7 +1004,7 @@ public unsafe class HelloTriangleApplication_18
         }
     }
 
-    private void DrawFrame(double delta)
+    protected void DrawFrame(double delta)
     {
         vk!.WaitForFences(device, 1, inFlightFences![currentFrame], true, ulong.MaxValue);
 
@@ -1091,7 +1091,7 @@ public unsafe class HelloTriangleApplication_18
 
     }
 
-    private ShaderModule CreateShaderModule(byte[] code)
+    protected ShaderModule CreateShaderModule(byte[] code)
     {
         ShaderModuleCreateInfo createInfo = new()
         {
@@ -1115,7 +1115,7 @@ public unsafe class HelloTriangleApplication_18
 
     }
 
-    private SurfaceFormatKHR ChooseSwapSurfaceFormat(IReadOnlyList<SurfaceFormatKHR> availableFormats)
+    protected SurfaceFormatKHR ChooseSwapSurfaceFormat(IReadOnlyList<SurfaceFormatKHR> availableFormats)
     {
         foreach (var availableFormat in availableFormats)
         {
@@ -1128,7 +1128,7 @@ public unsafe class HelloTriangleApplication_18
         return availableFormats[0];
     }
 
-    private PresentModeKHR ChoosePresentMode(IReadOnlyList<PresentModeKHR> availablePresentModes)
+    protected PresentModeKHR ChoosePresentMode(IReadOnlyList<PresentModeKHR> availablePresentModes)
     {
         foreach (var availablePresentMode in availablePresentModes)
         {
@@ -1141,7 +1141,7 @@ public unsafe class HelloTriangleApplication_18
         return PresentModeKHR.FifoKhr;
     }
 
-    private Extent2D ChooseSwapExtent(SurfaceCapabilitiesKHR capabilities)
+    protected Extent2D ChooseSwapExtent(SurfaceCapabilitiesKHR capabilities)
     {
         if (capabilities.CurrentExtent.Width != uint.MaxValue)
         {
@@ -1163,7 +1163,7 @@ public unsafe class HelloTriangleApplication_18
         }
     }
 
-    private SwapChainSupportDetails QuerySwapChainSupport(PhysicalDevice physDevice)
+    protected SwapChainSupportDetails QuerySwapChainSupport(PhysicalDevice physDevice)
     {
         var details = new SwapChainSupportDetails();
 
@@ -1205,7 +1205,7 @@ public unsafe class HelloTriangleApplication_18
         return details;
     }
 
-    private bool IsDeviceSuitable(PhysicalDevice candidateDevice)
+    protected bool IsDeviceSuitable(PhysicalDevice candidateDevice)
     {
         var indices = FindQueueFamilies(candidateDevice);
 
@@ -1221,7 +1221,7 @@ public unsafe class HelloTriangleApplication_18
         return indices.IsComplete() && extensionsSupported && swapChainAdequate;
     }
 
-    private bool CheckDeviceExtensionsSupport(PhysicalDevice physDevice)
+    protected bool CheckDeviceExtensionsSupport(PhysicalDevice physDevice)
     {
         uint extentionsCount = 0;
         vk!.EnumerateDeviceExtensionProperties(physDevice, (byte*)null, ref extentionsCount, null);
@@ -1238,7 +1238,7 @@ public unsafe class HelloTriangleApplication_18
 
     }
 
-    private QueueFamilyIndices FindQueueFamilies(PhysicalDevice physDevice)
+    protected QueueFamilyIndices FindQueueFamilies(PhysicalDevice physDevice)
     {
         var indices = new QueueFamilyIndices();
 
@@ -1278,7 +1278,7 @@ public unsafe class HelloTriangleApplication_18
         return indices;
     }
 
-    private string[] GetRequiredExtensions()
+    protected string[] GetRequiredExtensions()
     {
         var glfwExtensions = window!.VkSurface!.GetRequiredExtensions(out var glfwExtensionCount);
         var extensions = SilkMarshal.PtrToStringArray((nint)glfwExtensions, (int)glfwExtensionCount);
@@ -1291,7 +1291,7 @@ public unsafe class HelloTriangleApplication_18
         return extensions;
     }
 
-    private bool CheckValidationLayerSupport()
+    protected bool CheckValidationLayerSupport()
     {
         uint layerCount = 0;
         vk!.EnumerateInstanceLayerProperties(ref layerCount, null);
@@ -1306,7 +1306,7 @@ public unsafe class HelloTriangleApplication_18
         return validationLayers.All(availableLayerNames.Contains);
     }
 
-    private uint DebugCallback(DebugUtilsMessageSeverityFlagsEXT messageSeverity, DebugUtilsMessageTypeFlagsEXT messageTypes, DebugUtilsMessengerCallbackDataEXT* pCallbackData, void* pUserData)
+    protected uint DebugCallback(DebugUtilsMessageSeverityFlagsEXT messageSeverity, DebugUtilsMessageTypeFlagsEXT messageTypes, DebugUtilsMessengerCallbackDataEXT* pCallbackData, void* pUserData)
     {
         System.Diagnostics.Debug.WriteLine($"validation layer:" + Marshal.PtrToStringAnsi((nint)pCallbackData->PMessage));
 

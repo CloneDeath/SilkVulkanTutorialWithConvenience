@@ -12,10 +12,10 @@ public unsafe class HelloTriangleApplication_01
     const int WIDTH = 800;
     const int HEIGHT = 600;
 
-    private IWindow? window;
-    private Vk? vk;
+    protected IWindow? window;
+    protected Vk? vk;
 
-    private Instance instance;
+    protected Instance instance;
 
     public void Run()
     {
@@ -25,7 +25,7 @@ public unsafe class HelloTriangleApplication_01
         CleanUp();
     }
 
-    private void InitWindow()
+    protected void InitWindow()
     {
         //Create a window.
         var options = WindowOptions.DefaultVulkan with
@@ -43,17 +43,17 @@ public unsafe class HelloTriangleApplication_01
         }
     }
 
-    private void InitVulkan()
+    protected void InitVulkan()
     {
         CreateInstance();
     }
 
-    private void MainLoop()
+    protected void MainLoop()
     {
         window!.Run();
     }
 
-    private void CleanUp()
+    protected void CleanUp()
     {
         vk!.DestroyInstance(instance, null);
         vk!.Dispose();
@@ -61,7 +61,7 @@ public unsafe class HelloTriangleApplication_01
         window?.Dispose();
     }
 
-    private void CreateInstance()
+    protected void CreateInstance()
     {
         vk = Vk.GetApi();
 

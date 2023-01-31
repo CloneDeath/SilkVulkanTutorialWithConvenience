@@ -9,7 +9,7 @@ using Silk.NET.Windowing;
 var app = new HelloTriangleApplication_03();
 app.Run();
 
-struct QueueFamilyIndices
+public struct QueueFamilyIndices
 {
     public uint? GraphicsFamily { get; set; }
     public bool IsComplete()
@@ -25,20 +25,20 @@ public unsafe class HelloTriangleApplication_03
 
     bool EnableValidationLayers = true;
 
-    private readonly string[] validationLayers = new []
+    protected readonly string[] validationLayers = new []
     {
         "VK_LAYER_KHRONOS_validation"
     };
 
-    private IWindow? window;
-    private Vk? vk;
+    protected IWindow? window;
+    protected Vk? vk;
 
-    private Instance instance;
+    protected Instance instance;
 
-    private ExtDebugUtils? debugUtils;
-    private DebugUtilsMessengerEXT debugMessenger;
+    protected ExtDebugUtils? debugUtils;
+    protected DebugUtilsMessengerEXT debugMessenger;
 
-    private PhysicalDevice physicalDevice;
+    protected PhysicalDevice physicalDevice;
 
     public void Run()
     {
@@ -48,7 +48,7 @@ public unsafe class HelloTriangleApplication_03
         CleanUp();
     }
 
-    private void InitWindow()
+    protected void InitWindow()
     {
         //Create a window.
         var options = WindowOptions.DefaultVulkan with
@@ -66,19 +66,19 @@ public unsafe class HelloTriangleApplication_03
         }
     }
 
-    private void InitVulkan()
+    protected void InitVulkan()
     {
         CreateInstance();
         SetupDebugMessenger();
         PickPhysicalDevice();
     }
 
-    private void MainLoop()
+    protected void MainLoop()
     {
         window!.Run();
     }
 
-    private void CleanUp()
+    protected void CleanUp()
     {
         if (EnableValidationLayers)
         {
@@ -92,7 +92,7 @@ public unsafe class HelloTriangleApplication_03
         window?.Dispose();
     }
 
-    private void CreateInstance()
+    protected void CreateInstance()
     {
         vk = Vk.GetApi();
 
@@ -151,7 +151,7 @@ public unsafe class HelloTriangleApplication_03
         }
     }
 
-    private void PopulateDebugMessengerCreateInfo(ref DebugUtilsMessengerCreateInfoEXT createInfo)
+    protected void PopulateDebugMessengerCreateInfo(ref DebugUtilsMessengerCreateInfoEXT createInfo)
     {
         createInfo.SType = StructureType.DebugUtilsMessengerCreateInfoExt;
         createInfo.MessageSeverity = DebugUtilsMessageSeverityFlagsEXT.VerboseBitExt |
@@ -163,7 +163,7 @@ public unsafe class HelloTriangleApplication_03
         createInfo.PfnUserCallback = (DebugUtilsMessengerCallbackFunctionEXT)DebugCallback;
     }
 
-    private void SetupDebugMessenger()
+    protected void SetupDebugMessenger()
     {
         if (!EnableValidationLayers) return;
 
@@ -179,7 +179,7 @@ public unsafe class HelloTriangleApplication_03
         }
     }
 
-    private void PickPhysicalDevice()
+    protected void PickPhysicalDevice()
     {
         uint devicedCount = 0;
         vk!.EnumeratePhysicalDevices(instance, ref devicedCount, null);
@@ -210,14 +210,14 @@ public unsafe class HelloTriangleApplication_03
         }
     }
 
-    private bool IsDeviceSuitable(PhysicalDevice candidateDevice)
+    protected bool IsDeviceSuitable(PhysicalDevice candidateDevice)
     {
         var indices = FindQueueFamilies(candidateDevice);
 
         return indices.IsComplete();
     }
 
-    private QueueFamilyIndices FindQueueFamilies(PhysicalDevice device)
+    protected QueueFamilyIndices FindQueueFamilies(PhysicalDevice device)
     {
         var indices = new QueueFamilyIndices();
 
@@ -250,7 +250,7 @@ public unsafe class HelloTriangleApplication_03
         return indices;
     }
 
-    private string[] GetRequiredExtensions()
+    protected string[] GetRequiredExtensions()
     {
         var glfwExtensions = window!.VkSurface!.GetRequiredExtensions(out var glfwExtensionCount);
         var extensions = SilkMarshal.PtrToStringArray((nint)glfwExtensions, (int)glfwExtensionCount);
@@ -263,7 +263,7 @@ public unsafe class HelloTriangleApplication_03
         return extensions;
     }
 
-    private bool CheckValidationLayerSupport()
+    protected bool CheckValidationLayerSupport()
     {
         uint layerCount = 0;
         vk!.EnumerateInstanceLayerProperties(ref layerCount, null);
@@ -278,7 +278,7 @@ public unsafe class HelloTriangleApplication_03
         return validationLayers.All(availableLayerNames.Contains);
     }
 
-    private uint DebugCallback(DebugUtilsMessageSeverityFlagsEXT messageSeverity, DebugUtilsMessageTypeFlagsEXT messageTypes, DebugUtilsMessengerCallbackDataEXT* pCallbackData, void* pUserData)
+    protected uint DebugCallback(DebugUtilsMessageSeverityFlagsEXT messageSeverity, DebugUtilsMessageTypeFlagsEXT messageTypes, DebugUtilsMessengerCallbackDataEXT* pCallbackData, void* pUserData)
     {
         Console.WriteLine($"validation layer:" + Marshal.PtrToStringAnsi((nint)pCallbackData->PMessage));
 
