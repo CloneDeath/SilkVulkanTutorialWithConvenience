@@ -3,7 +3,7 @@
 var app = new HelloTriangleApplication_03();
 app.Run();
 
-public struct QueueFamilyIndices
+public struct QueueFamilyIndices_03
 {
     public uint? GraphicsFamily { get; set; }
     public bool IsComplete()
@@ -23,14 +23,6 @@ public unsafe class HelloTriangleApplication_03 : HelloTriangleApplication_02
         PickPhysicalDevice();
     }
     
-    
-
-    
-
-    
-
-    
-
     protected void PickPhysicalDevice()
     {
         uint devicedCount = 0;
@@ -64,14 +56,14 @@ public unsafe class HelloTriangleApplication_03 : HelloTriangleApplication_02
 
     protected bool IsDeviceSuitable(PhysicalDevice candidateDevice)
     {
-        var indices = FindQueueFamilies(candidateDevice);
+        var indices = FindQueueFamilies_03(candidateDevice);
 
         return indices.IsComplete();
     }
 
-    protected QueueFamilyIndices FindQueueFamilies(PhysicalDevice device)
+    protected QueueFamilyIndices_03 FindQueueFamilies_03(PhysicalDevice device)
     {
-        var indices = new QueueFamilyIndices();
+        var indices = new QueueFamilyIndices_03();
 
         uint queueFamilityCount = 0;
         vk!.GetPhysicalDeviceQueueFamilyProperties(device, ref queueFamilityCount, null);
@@ -101,10 +93,4 @@ public unsafe class HelloTriangleApplication_03 : HelloTriangleApplication_02
 
         return indices;
     }
-
-    
-
-    
-
-    
 }

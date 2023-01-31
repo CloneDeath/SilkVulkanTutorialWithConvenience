@@ -55,7 +55,7 @@ public unsafe class HelloTriangleApplication_02 : HelloTriangleApplication_01
             ApplicationVersion = new Version32(1, 0, 0),
             PEngineName = (byte*)Marshal.StringToHGlobalAnsi("No Engine"),
             EngineVersion = new Version32(1, 0, 0),
-            ApiVersion = Vk.Version11
+            ApiVersion = Vk.Version12
         };
 
         InstanceCreateInfo createInfo = new()
@@ -114,7 +114,7 @@ public unsafe class HelloTriangleApplication_02 : HelloTriangleApplication_01
     {
         if (!EnableValidationLayers) return;
 
-        //TryGetInstanceExtension equivilant to method CreateDebugUtilsMessengerEXT from original tutorial.
+        //TryGetInstanceExtension equivalent to method CreateDebugUtilsMessengerEXT from original tutorial.
         if (!vk!.TryGetInstanceExtension(instance, out debugUtils)) return;
 
         DebugUtilsMessengerCreateInfoEXT createInfo = new();

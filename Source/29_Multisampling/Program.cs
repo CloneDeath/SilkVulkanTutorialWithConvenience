@@ -14,16 +14,7 @@ using Silk.NET.Assimp;
 var app = new HelloTriangleApplication_29();
 app.Run();
 
-public struct QueueFamilyIndices
-{
-    public uint? GraphicsFamily { get; set; }
-    public uint? PresentFamily { get; set; }
 
-    public bool IsComplete()
-    {
-        return GraphicsFamily.HasValue && PresentFamily.HasValue;
-    }
-}
 
 public struct SwapChainSupportDetails
 {
@@ -110,15 +101,12 @@ public unsafe class HelloTriangleApplication_29 : HelloTriangleApplication_28
 
 
 
-    protected KhrSurface? khrSurface;
-    protected SurfaceKHR surface;
 
-    protected PhysicalDevice physicalDevice;
+
+
+
     protected SampleCountFlags msaaSamples = SampleCountFlags.Count1Bit;
-    protected Device device;
-
-    protected Queue graphicsQueue;
-    protected Queue presentQueue;
+    
 
     protected KhrSwapchain? khrSwapChain;
     protected SwapchainKHR swapChain;
@@ -285,7 +273,7 @@ public unsafe class HelloTriangleApplication_29 : HelloTriangleApplication_28
 
         if (EnableValidationLayers)
         {
-            //DestroyDebugUtilsMessenger equivilant to method DestroyDebugUtilsMessengerEXT from original tutorial.
+            //DestroyDebugUtilsMessenger equivalent to method DestroyDebugUtilsMessengerEXT from original tutorial.
             debugUtils!.DestroyDebugUtilsMessenger(instance, debugMessenger, null);
         }
 
@@ -325,74 +313,6 @@ public unsafe class HelloTriangleApplication_29 : HelloTriangleApplication_28
         imagesInFlight = new Fence[swapChainImages!.Length];
     }
 
-    protected void CreateInstance()
-    {
-        vk = Vk.GetApi();
-
-        if (EnableValidationLayers && !CheckValidationLayerSupport())
-        {
-            throw new Exception("validation layers requested, but not available!");
-        }
-
-        ApplicationInfo appInfo = new()
-        {
-            SType = StructureType.ApplicationInfo,
-            PApplicationName = (byte*)Marshal.StringToHGlobalAnsi("Hello Triangle"),
-            ApplicationVersion = new Version32(1, 0, 0),
-            PEngineName = (byte*)Marshal.StringToHGlobalAnsi("No Engine"),
-            EngineVersion = new Version32(1, 0, 0),
-            ApiVersion = Vk.Version12
-        };
-
-        InstanceCreateInfo createInfo = new()
-        {
-            SType = StructureType.InstanceCreateInfo,
-            PApplicationInfo = &appInfo
-        };
-
-        var extensions = GetRequiredExtensions();
-        createInfo.EnabledExtensionCount = (uint)extensions.Length;
-        createInfo.PpEnabledExtensionNames = (byte**)SilkMarshal.StringArrayToPtr(extensions);
-        
-        if (EnableValidationLayers)
-        {
-            createInfo.EnabledLayerCount = (uint)validationLayers.Length;
-            createInfo.PpEnabledLayerNames = (byte**)SilkMarshal.StringArrayToPtr(validationLayers);
-
-            DebugUtilsMessengerCreateInfoEXT debugCreateInfo = new ();
-            PopulateDebugMessengerCreateInfo(ref debugCreateInfo);
-            createInfo.PNext = &debugCreateInfo;
-        }
-        else 
-        {
-            createInfo.EnabledLayerCount = 0;
-            createInfo.PNext = null;
-        }
-
-        if (vk.CreateInstance(createInfo, null, out instance) != Result.Success)
-        {
-            throw new Exception("failed to create instance!");
-        }
-
-        Marshal.FreeHGlobal((IntPtr)appInfo.PApplicationName);
-        Marshal.FreeHGlobal((IntPtr)appInfo.PEngineName);
-        SilkMarshal.Free((nint)createInfo.PpEnabledExtensionNames);
-
-        if (EnableValidationLayers)
-        {
-            SilkMarshal.Free((nint)createInfo.PpEnabledLayerNames);
-        }
-    }
-    
-    protected void CreateSurface()
-    {
-        if (!vk!.TryGetInstanceExtension<KhrSurface>(instance, out khrSurface))
-        {
-            throw new NotSupportedException("KHR_surface extension not found.");
-        }
-
-        surface = window!.VkSurface!.Create<AllocationCallbacks>(instance.ToHandle(), null).ToSurface();
-    }
 
     protected void PickPhysicalDevice()
     {
@@ -2051,54 +1971,11 @@ public unsafe class HelloTriangleApplication_29 : HelloTriangleApplication_28
 
     }
 
-    protected QueueFamilyIndices FindQueueFamilies(PhysicalDevice physDevice)
-    {
-        var qfIndices = new QueueFamilyIndices();
-
-        uint queueFamilityCount = 0;
-        vk!.GetPhysicalDeviceQueueFamilyProperties(physDevice, ref queueFamilityCount, null);
-
-        var queueFamilies = new QueueFamilyProperties[queueFamilityCount];
-        fixed (QueueFamilyProperties* queueFamiliesPtr = queueFamilies)
-        {
-            vk!.GetPhysicalDeviceQueueFamilyProperties(physDevice, ref queueFamilityCount, queueFamiliesPtr);
-        }
-        
-        
-        uint i = 0;
-        foreach (var queueFamily in queueFamilies)
-        {
-            if (queueFamily.QueueFlags.HasFlag(QueueFlags.GraphicsBit))
-            {
-                qfIndices.GraphicsFamily = i;
-            }
-
-            khrSurface!.GetPhysicalDeviceSurfaceSupport(physDevice, i, surface, out var presentSupport);
-
-            if (presentSupport)
-            {
-                qfIndices.PresentFamily = i;
-            }
-
-            if (qfIndices.IsComplete())
-            {
-                break;
-            }
-
-            i++;
-        }
-
-        return qfIndices;
-    }
+    
 
     
 
     
 
-    protected uint DebugCallback(DebugUtilsMessageSeverityFlagsEXT messageSeverity, DebugUtilsMessageTypeFlagsEXT messageTypes, DebugUtilsMessengerCallbackDataEXT* pCallbackData, void* pUserData)
-    {
-        System.Diagnostics.Debug.WriteLine($"validation layer:" + Marshal.PtrToStringAnsi((nint)pCallbackData->PMessage));
-
-        return Vk.False;
-    }
+    
 }

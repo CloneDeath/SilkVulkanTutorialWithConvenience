@@ -1,43 +1,15 @@
-﻿using System.Runtime.InteropServices;
-using Silk.NET.Core;
-using Silk.NET.Core.Native;
+﻿using Silk.NET.Core.Native;
 using Silk.NET.Vulkan;
-using Silk.NET.Vulkan.Extensions.EXT;
 
 var app = new HelloTriangleApplication_04();
 app.Run();
 
-public struct QueueFamilyIndices
-{
-    public uint? GraphicsFamily { get; set; }
-    public bool IsComplete()
-    {
-        return GraphicsFamily.HasValue;
-    }
-}
-
 public unsafe class HelloTriangleApplication_04 : HelloTriangleApplication_03
 {
-
-
-
-
-
-
-
-
-
-
-
-    protected PhysicalDevice physicalDevice;
     protected Device device;
 
     // ReSharper disable once NotAccessedField.Local
     protected Queue graphicsQueue;
-
-    
-
-    
 
     protected override void InitVulkan()
     {
@@ -53,7 +25,7 @@ public unsafe class HelloTriangleApplication_04 : HelloTriangleApplication_03
 
         if (EnableValidationLayers)
         {
-            //DestroyDebugUtilsMessenger equivilant to method DestroyDebugUtilsMessengerEXT from original tutorial.
+            //DestroyDebugUtilsMessenger equivalent to method DestroyDebugUtilsMessengerEXT from original tutorial.
             debugUtils!.DestroyDebugUtilsMessenger(instance, debugMessenger, null);
         }
 
@@ -63,46 +35,9 @@ public unsafe class HelloTriangleApplication_04 : HelloTriangleApplication_03
         window?.Dispose();
     }
 
-    
-
-    
-
-    
-
-    protected void PickPhysicalDevice()
+    protected virtual void CreateLogicalDevice()
     {
-        uint devicedCount = 0;
-        vk!.EnumeratePhysicalDevices(instance, ref devicedCount, null);
-
-        if (devicedCount == 0)
-        {
-            throw new Exception("failed to find GPUs with Vulkan support!");
-        }
-
-        var devices = new PhysicalDevice[devicedCount];
-        fixed (PhysicalDevice* devicesPtr = devices)
-        {
-            vk!.EnumeratePhysicalDevices(instance, ref devicedCount, devicesPtr);
-        }
-
-        foreach (var candidateDevice in devices)
-        {
-            if (IsDeviceSuitable(candidateDevice))
-            {
-                physicalDevice = candidateDevice;
-                break;
-            }
-        }
-
-        if (physicalDevice.Handle == 0)
-        {
-            throw new Exception("failed to find a suitable GPU!");
-        }
-    }
-
-    protected void CreateLogicalDevice()
-    {
-        var indices = FindQueueFamilies(physicalDevice);
+        var indices = FindQueueFamilies_03(physicalDevice);
 
         DeviceQueueCreateInfo queueCreateInfo = new()
         {
@@ -149,50 +84,4 @@ public unsafe class HelloTriangleApplication_04 : HelloTriangleApplication_03
             SilkMarshal.Free((nint)createInfo.PpEnabledLayerNames);
         }
     }
-
-    protected bool IsDeviceSuitable(PhysicalDevice candidateDevice)
-    {
-        var indices = FindQueueFamilies(candidateDevice);
-
-        return indices.IsComplete();
-    }
-
-    protected QueueFamilyIndices FindQueueFamilies(PhysicalDevice candidateDevice)
-    {
-        var indices = new QueueFamilyIndices();
-
-        uint queueFamilityCount = 0;
-        vk!.GetPhysicalDeviceQueueFamilyProperties(candidateDevice, ref queueFamilityCount, null);
-
-        var queueFamilies = new QueueFamilyProperties[queueFamilityCount];
-        fixed (QueueFamilyProperties* queueFamiliesPtr = queueFamilies)
-        {
-            vk!.GetPhysicalDeviceQueueFamilyProperties(candidateDevice, ref queueFamilityCount, queueFamiliesPtr);
-        }
-
-
-        uint i = 0;
-        foreach (var queueFamily in queueFamilies)
-        {
-            if (queueFamily.QueueFlags.HasFlag(QueueFlags.GraphicsBit))
-            {
-                indices.GraphicsFamily = i;
-            }
-
-            if (indices.IsComplete())
-            {
-                break;
-            }
-
-            i++;
-        }
-
-        return indices;
-    }
-
-    
-
-    
-
-    
 }
