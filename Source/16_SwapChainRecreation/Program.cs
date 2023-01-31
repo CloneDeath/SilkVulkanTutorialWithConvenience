@@ -30,11 +30,8 @@ public struct SwapChainSupportDetails
     public PresentModeKHR[] PresentModes;
 }
 
-public unsafe class HelloTriangleApplication_16
+public unsafe class HelloTriangleApplication_16 : HelloTriangleApplication_15
 {
-    const int WIDTH = 800;
-    const int HEIGHT = 600;
-
     const int MAX_FRAMES_IN_FLIGHT = 2;
 
     bool EnableValidationLayers = true;
@@ -49,7 +46,6 @@ public unsafe class HelloTriangleApplication_16
         KhrSwapchain.ExtensionName
     };
 
-    protected IWindow? window;
     protected Vk? vk;
 
     protected Instance instance;
@@ -87,16 +83,8 @@ public unsafe class HelloTriangleApplication_16
     protected int currentFrame;
 
     protected bool frameBufferResized;
-
-    public void Run()
-    {
-        InitWindow();
-        InitVulkan();
-        MainLoop();
-        CleanUp();
-    }
-
-    protected void InitWindow()
+    
+    protected override void InitWindow()
     {
         //Create a window.
         var options = WindowOptions.DefaultVulkan with
@@ -121,7 +109,7 @@ public unsafe class HelloTriangleApplication_16
         frameBufferResized = true;
     }
 
-    protected void InitVulkan()
+    protected override void InitVulkan()
     {
         CreateInstance();
         SetupDebugMessenger();
@@ -136,13 +124,6 @@ public unsafe class HelloTriangleApplication_16
         CreateCommandPool();
         CreateCommandBuffers();
         CreateSyncObjects();
-    }
-
-    protected void MainLoop()
-    {
-        window!.Render += DrawFrame;
-        window!.Run();
-        vk!.DeviceWaitIdle(device);
     }
 
     protected void CleanUpSwapChain()
@@ -169,7 +150,7 @@ public unsafe class HelloTriangleApplication_16
         khrSwapChain!.DestroySwapchain(device, swapChain, null);
     }
 
-    protected void CleanUp()
+    protected override void CleanUp()
     {
         CleanUpSwapChain();
 

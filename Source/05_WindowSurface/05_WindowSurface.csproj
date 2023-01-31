@@ -13,4 +13,8 @@
 	  <PackageReference Include="Silk.NET.Vulkan.Extensions.EXT" Version="2.16.0" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\00_BaseCode\00_BaseCode.csproj" />
+  </ItemGroup>
+
 </Project>

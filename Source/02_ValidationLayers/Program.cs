@@ -1,19 +1,14 @@
 ﻿using System.Runtime.InteropServices;
 using Silk.NET.Core;
 using Silk.NET.Core.Native;
-using Silk.NET.Maths;
 using Silk.NET.Vulkan;
 using Silk.NET.Vulkan.Extensions.EXT;
-using Silk.NET.Windowing;
 
 var app = new HelloTriangleApplication_02();
 app.Run();
 
-public unsafe class HelloTriangleApplication_02
+public unsafe class HelloTriangleApplication_02 : HelloTriangleApplication_00
 {
-    const int WIDTH = 800;
-    const int HEIGHT = 600;
-
     bool EnableValidationLayers = true;
 
     protected readonly string[] validationLayers = new []
@@ -21,52 +16,20 @@ public unsafe class HelloTriangleApplication_02
         "VK_LAYER_KHRONOS_validation"
     };
 
-    protected IWindow? window;
     protected Vk? vk;
 
     protected Instance instance;
 
     protected ExtDebugUtils? debugUtils;
     protected DebugUtilsMessengerEXT debugMessenger;
-
-    public void Run()
-    {
-        InitWindow();
-        InitVulkan();
-        MainLoop();
-        CleanUp();
-    }
-
-    protected void InitWindow()
-    {
-        //Create a window.
-        var options = WindowOptions.DefaultVulkan with
-        {
-            Size = new Vector2D<int>(WIDTH, HEIGHT),
-            Title = "Vulkan",
-        };
-
-        window = Window.Create(options);
-        window.Initialize();
-
-        if (window.VkSurface is null)
-        {
-            throw new Exception("Windowing platform doesn't support Vulkan.");
-        }
-    }
-
-    protected void InitVulkan()
+    
+    protected override void InitVulkan()
     {
         CreateInstance();
         SetupDebugMessenger();
     }
 
-    protected void MainLoop()
-    {
-        window!.Run();
-    }
-
-    protected void CleanUp()
+    protected override void CleanUp()
     {
         if (EnableValidationLayers)
         {

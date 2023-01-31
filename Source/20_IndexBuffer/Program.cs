@@ -72,11 +72,8 @@ public struct Vertex
     }
 }
 
-public unsafe class HelloTriangleApplication_20
+public unsafe class HelloTriangleApplication_20 : HelloTriangleApplication_16
 {
-    const int WIDTH = 800;
-    const int HEIGHT = 600;
-
     const int MAX_FRAMES_IN_FLIGHT = 2;
 
     bool EnableValidationLayers = true;
@@ -91,7 +88,6 @@ public unsafe class HelloTriangleApplication_20
         KhrSwapchain.ExtensionName
     };
 
-    protected IWindow? window;
     protected Vk? vk;
 
     protected Instance instance;
@@ -149,40 +145,16 @@ public unsafe class HelloTriangleApplication_20
         0, 1, 2, 2, 3, 0
     };
 
-    public void Run()
-    {
-        InitWindow();
-        InitVulkan();
-        MainLoop();
-        CleanUp();
-    }
+    
 
-    protected void InitWindow()
-    {
-        //Create a window.
-        var options = WindowOptions.DefaultVulkan with
-        {
-            Size = new Vector2D<int>(WIDTH, HEIGHT),
-            Title = "Vulkan",
-        };
-
-        window = Window.Create(options);
-        window.Initialize();
-
-        if (window.VkSurface is null)
-        {
-            throw new Exception("Windowing platform doesn't support Vulkan.");
-        }
-
-        window.Resize += FramebufferResizeCallback;
-    }
+    
 
     protected void FramebufferResizeCallback(Vector2D<int> obj)
     {
         frameBufferResized = true;
     }
 
-    protected void InitVulkan()
+    protected override void InitVulkan()
     {
         CreateInstance();
         SetupDebugMessenger();
@@ -201,12 +173,7 @@ public unsafe class HelloTriangleApplication_20
         CreateSyncObjects();
     }
 
-    protected void MainLoop()
-    {
-        window!.Render += DrawFrame;
-        window!.Run();
-        vk!.DeviceWaitIdle(device);
-    }
+    
 
     protected void CleanUpSwapChain()
     {
@@ -232,7 +199,7 @@ public unsafe class HelloTriangleApplication_20
         khrSwapChain!.DestroySwapchain(device, swapChain, null);
     }
 
-    protected void CleanUp()
+    protected override void CleanUp()
     {
         CleanUpSwapChain();
 

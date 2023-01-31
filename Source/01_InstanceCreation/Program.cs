@@ -1,59 +1,24 @@
 ﻿using System.Runtime.InteropServices;
 using Silk.NET.Core;
-using Silk.NET.Maths;
 using Silk.NET.Vulkan;
-using Silk.NET.Windowing;
 
 var app = new HelloTriangleApplication_01();
 app.Run();
 
-public unsafe class HelloTriangleApplication_01
+public unsafe class HelloTriangleApplication_01 : HelloTriangleApplication_00
 {
-    const int WIDTH = 800;
-    const int HEIGHT = 600;
-
-    protected IWindow? window;
     protected Vk? vk;
 
     protected Instance instance;
 
-    public void Run()
-    {
-        InitWindow();
-        InitVulkan();
-        MainLoop();
-        CleanUp();
-    }
-
-    protected void InitWindow()
-    {
-        //Create a window.
-        var options = WindowOptions.DefaultVulkan with
-        {
-            Size = new Vector2D<int>(WIDTH, HEIGHT),
-            Title = "Vulkan",
-        };
-
-        window = Window.Create(options);
-        window.Initialize();
-
-        if (window.VkSurface is null)
-        {
-            throw new Exception("Windowing platform doesn't support Vulkan.");
-        }
-    }
-
-    protected void InitVulkan()
+    protected override void InitVulkan()
     {
         CreateInstance();
     }
 
-    protected void MainLoop()
-    {
-        window!.Run();
-    }
+    
 
-    protected void CleanUp()
+    protected override void CleanUp()
     {
         vk!.DestroyInstance(instance, null);
         vk!.Dispose();

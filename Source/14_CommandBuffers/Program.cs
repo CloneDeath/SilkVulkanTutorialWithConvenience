@@ -2,12 +2,9 @@
 using System.Runtime.InteropServices;
 using Silk.NET.Core;
 using Silk.NET.Core.Native;
-using Silk.NET.Maths;
 using Silk.NET.Vulkan;
 using Silk.NET.Vulkan.Extensions.EXT;
 using Silk.NET.Vulkan.Extensions.KHR;
-using Silk.NET.Windowing;
-
 
 var app = new HelloTriangleApplication_14();
 app.Run();
@@ -30,11 +27,8 @@ public struct SwapChainSupportDetails
     public PresentModeKHR[] PresentModes;
 }
 
-public unsafe class HelloTriangleApplication_14
+public unsafe class HelloTriangleApplication_14 : HelloTriangleApplication_00
 {
-    const int WIDTH = 800;
-    const int HEIGHT = 600;
-
     bool EnableValidationLayers = true;
 
     protected readonly string[] validationLayers = new []
@@ -47,7 +41,6 @@ public unsafe class HelloTriangleApplication_14
         KhrSwapchain.ExtensionName
     };
 
-    protected IWindow? window;
     protected Vk? vk;
 
     protected Instance instance;
@@ -80,33 +73,11 @@ public unsafe class HelloTriangleApplication_14
     protected CommandPool commandPool;
     protected CommandBuffer[]? commandBuffers;
 
-    public void Run()
-    {
-        InitWindow();
-        InitVulkan();
-        MainLoop();
-        CleanUp();
-    }
+    
 
-    protected void InitWindow()
-    {
-        //Create a window.
-        var options = WindowOptions.DefaultVulkan with
-        {
-            Size = new Vector2D<int>(WIDTH, HEIGHT),
-            Title = "Vulkan",
-        };
+    
 
-        window = Window.Create(options);
-        window.Initialize();
-
-        if (window.VkSurface is null)
-        {
-            throw new Exception("Windowing platform doesn't support Vulkan.");
-        }
-    }
-
-    protected void InitVulkan()
+    protected override void InitVulkan()
     {
         CreateInstance();
         SetupDebugMessenger();
@@ -122,12 +93,9 @@ public unsafe class HelloTriangleApplication_14
         CreateCommandBuffers();
     }
 
-    protected void MainLoop()
-    {
-        window!.Run();
-    }
+    
 
-    protected void CleanUp()
+    protected override void CleanUp()
     {
         vk!.DestroyCommandPool(device, commandPool, null);
 

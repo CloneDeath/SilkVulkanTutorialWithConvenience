@@ -88,11 +88,8 @@ public struct UniformBufferObject
     public Matrix4X4<float> proj;
 }
 
-public unsafe class HelloTriangleApplication_27
+public unsafe class HelloTriangleApplication_27 : HelloTriangleApplication_16
 {
-    const int WIDTH = 800;
-    const int HEIGHT = 600;
-
     const string MODEL_PATH = @"Assets/viking_room.obj";
     const string TEXTURE_PATH = @"Assets/viking_room.png";
 
@@ -110,7 +107,6 @@ public unsafe class HelloTriangleApplication_27
         KhrSwapchain.ExtensionName
     };
 
-    protected IWindow? window;
     protected Vk? vk;
 
     protected Instance instance;
@@ -175,40 +171,16 @@ public unsafe class HelloTriangleApplication_27
 
     protected uint[]? indices;
 
-    public void Run()
-    {
-        InitWindow();
-        InitVulkan();
-        MainLoop();
-        CleanUp();
-    }
+    
 
-    protected void InitWindow()
-    {
-        //Create a window.
-        var options = WindowOptions.DefaultVulkan with
-        {
-            Size = new Vector2D<int>(WIDTH, HEIGHT),
-            Title = "Vulkan",
-        };
-
-        window = Window.Create(options);
-        window.Initialize();
-
-        if (window.VkSurface is null)
-        {
-            throw new Exception("Windowing platform doesn't support Vulkan.");
-        }
-
-        window.Resize += FramebufferResizeCallback;
-    }
+    
 
     protected void FramebufferResizeCallback(Vector2D<int> obj)
     {
         frameBufferResized = true;
     }
 
-    protected void InitVulkan()
+    protected override void InitVulkan()
     {
         CreateInstance();
         SetupDebugMessenger();
@@ -236,12 +208,7 @@ public unsafe class HelloTriangleApplication_27
         CreateSyncObjects();
     }
 
-    protected void MainLoop()
-    {
-        window!.Render += DrawFrame;
-        window!.Run();
-        vk!.DeviceWaitIdle(device);
-    }
+    
 
     protected void CleanUpSwapChain()
     {
@@ -279,7 +246,7 @@ public unsafe class HelloTriangleApplication_27
         vk!.DestroyDescriptorPool(device, descriptorPool, null);
     }
 
-    protected void CleanUp()
+    protected override void CleanUp()
     {
         CleanUpSwapChain();
 

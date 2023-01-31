@@ -6,8 +6,8 @@ app.Run();
 
 public class HelloTriangleApplication_00
 {
-    const int WIDTH = 800;
-    const int HEIGHT = 600;
+    protected const int WIDTH = 800;
+    protected const int HEIGHT = 600;
 
     protected IWindow? window;
 
@@ -19,7 +19,7 @@ public class HelloTriangleApplication_00
         CleanUp();
     }
 
-    protected void InitWindow()
+    protected virtual void InitWindow()
     {
         //Create a window.
         var options = WindowOptions.DefaultVulkan with
@@ -37,17 +37,17 @@ public class HelloTriangleApplication_00
         }
     }
 
-    protected void InitVulkan()
+    protected virtual void InitVulkan()
     {
         
     }
 
-    protected void MainLoop()
+    protected virtual void MainLoop()
     {
         window!.Run();
     }
 
-    protected void CleanUp()
+    protected virtual void CleanUp()
     {
         window?.Dispose();
     }

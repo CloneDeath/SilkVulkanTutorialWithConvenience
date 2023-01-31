@@ -2,7 +2,6 @@
 using System.Runtime.InteropServices;
 using Silk.NET.Core;
 using Silk.NET.Core.Native;
-using Silk.NET.Maths;
 using Silk.NET.Vulkan;
 using Silk.NET.Vulkan.Extensions.EXT;
 using Silk.NET.Vulkan.Extensions.KHR;
@@ -30,11 +29,8 @@ public struct SwapChainSupportDetails
     public PresentModeKHR[] PresentModes;
 }
 
-public unsafe class HelloTriangleApplication_15
+public unsafe class HelloTriangleApplication_15 : HelloTriangleApplication_00
 {
-    const int WIDTH = 800;
-    const int HEIGHT = 600;
-
     const int MAX_FRAMES_IN_FLIGHT = 2;
 
     bool EnableValidationLayers = true;
@@ -49,7 +45,6 @@ public unsafe class HelloTriangleApplication_15
         KhrSwapchain.ExtensionName
     };
 
-    protected IWindow? window;
     protected Vk? vk;
 
     protected Instance instance;
@@ -86,33 +81,11 @@ public unsafe class HelloTriangleApplication_15
     protected Fence[]? imagesInFlight;
     protected int currentFrame;
 
-    public void Run()
-    {
-        InitWindow();
-        InitVulkan();
-        MainLoop();
-        CleanUp();
-    }
+    
 
-    protected void InitWindow()
-    {
-        //Create a window.
-        var options = WindowOptions.DefaultVulkan with
-        {
-            Size = new Vector2D<int>(WIDTH, HEIGHT),
-            Title = "Vulkan",
-        };
+    
 
-        window = Window.Create(options);
-        window.Initialize();
-
-        if (window.VkSurface is null)
-        {
-            throw new Exception("Windowing platform doesn't support Vulkan.");
-        }
-    }
-
-    protected void InitVulkan()
+    protected override void InitVulkan()
     {
         CreateInstance();
         SetupDebugMessenger();
@@ -129,14 +102,14 @@ public unsafe class HelloTriangleApplication_15
         CreateSyncObjects();
     }
 
-    protected void MainLoop()
+    protected override void MainLoop()
     {
         window!.Render += DrawFrame;
         window!.Run();
         vk!.DeviceWaitIdle(device);
     }
 
-    protected void CleanUp()
+    protected override void CleanUp()
     {
         for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
         {

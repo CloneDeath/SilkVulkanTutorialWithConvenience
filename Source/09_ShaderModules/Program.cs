@@ -2,11 +2,9 @@
 using System.Runtime.InteropServices;
 using Silk.NET.Core;
 using Silk.NET.Core.Native;
-using Silk.NET.Maths;
 using Silk.NET.Vulkan;
 using Silk.NET.Vulkan.Extensions.EXT;
 using Silk.NET.Vulkan.Extensions.KHR;
-using Silk.NET.Windowing;
 
 var app = new HelloTriangleApplication_09();
 app.Run();
@@ -29,10 +27,10 @@ public struct SwapChainSupportDetails
     public PresentModeKHR[] PresentModes;
 }
 
-public unsafe class HelloTriangleApplication_09
+public unsafe class HelloTriangleApplication_09 : HelloTriangleApplication_00
 {
-    const int WIDTH = 800;
-    const int HEIGHT = 600;
+
+
 
     bool EnableValidationLayers = true;
 
@@ -46,7 +44,6 @@ public unsafe class HelloTriangleApplication_09
         KhrSwapchain.ExtensionName
     };
 
-    protected IWindow? window;
     protected Vk? vk;
 
     protected Instance instance;
@@ -72,33 +69,11 @@ public unsafe class HelloTriangleApplication_09
     protected Extent2D swapChainExtent;
     protected ImageView[]? swapChainImageViews;
 
-    public void Run()
-    {
-        InitWindow();
-        InitVulkan();
-        MainLoop();
-        CleanUp();
-    }
+    
 
-    protected void InitWindow()
-    {
-        //Create a window.
-        var options = WindowOptions.DefaultVulkan with
-        {
-            Size = new Vector2D<int>(WIDTH, HEIGHT),
-            Title = "Vulkan",
-        };
+    
 
-        window = Window.Create(options);
-        window.Initialize();
-
-        if (window.VkSurface is null)
-        {
-            throw new Exception("Windowing platform doesn't support Vulkan.");
-        }
-    }
-
-    protected void InitVulkan()
+    protected override void InitVulkan()
     {
         CreateInstance();
         SetupDebugMessenger();
@@ -110,12 +85,9 @@ public unsafe class HelloTriangleApplication_09
         CreateGraphicsPipeline();
     }
 
-    protected void MainLoop()
-    {
-        window!.Run();
-    }
+    
 
-    protected void CleanUp()
+    protected override void CleanUp()
     {
         foreach (var imageView in swapChainImageViews!)
         {
