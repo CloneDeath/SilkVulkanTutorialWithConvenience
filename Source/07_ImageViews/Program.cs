@@ -1,51 +1,11 @@
-﻿using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
-using Silk.NET.Core;
-using Silk.NET.Core.Native;
-using Silk.NET.Vulkan;
-using Silk.NET.Vulkan.Extensions.EXT;
-using Silk.NET.Vulkan.Extensions.KHR;
+﻿using Silk.NET.Vulkan;
 
 var app = new HelloTriangleApplication_07();
 app.Run();
 
-
-
-
-
 public unsafe class HelloTriangleApplication_07 : HelloTriangleApplication_06
 {
-
-
-
-
-    
-
-
-
-
-
-
-
-
-
-
-
-
-
-    
-
-
-
-
-
-
-
     protected ImageView[]? swapChainImageViews;
-
-    
-
-    
 
     protected override void InitVulkan()
     {
@@ -57,8 +17,6 @@ public unsafe class HelloTriangleApplication_07 : HelloTriangleApplication_06
         CreateSwapChain();
         CreateImageViews();
     }
-
-    
 
     protected override void CleanUp()
     {
@@ -84,11 +42,7 @@ public unsafe class HelloTriangleApplication_07 : HelloTriangleApplication_06
         window?.Dispose();
     }
 
-    
-
-    
-
-    protected void CreateImageViews()
+    protected virtual void CreateImageViews()
     {
         swapChainImageViews = new ImageView[swapChainImages!.Length];
 
@@ -124,14 +78,4 @@ public unsafe class HelloTriangleApplication_07 : HelloTriangleApplication_06
             }
         }
     }
-
-    
-
-    
-
-    
-
-    
-
-    
 }

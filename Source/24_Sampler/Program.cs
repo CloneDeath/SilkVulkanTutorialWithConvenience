@@ -82,12 +82,12 @@ public unsafe class HelloTriangleApplication_24 : HelloTriangleApplication_23
 
 
 
-    protected ImageView[]? swapChainImageViews;
+
     protected Framebuffer[]? swapChainFramebuffers;
 
     protected RenderPass renderPass;
     protected DescriptorSetLayout descriptorSetLayout;
-    protected PipelineLayout pipelineLayout;
+
     protected Pipeline graphicsPipeline;
 
     protected CommandPool commandPool;
@@ -339,9 +339,8 @@ public unsafe class HelloTriangleApplication_24 : HelloTriangleApplication_23
         SilkMarshal.Free((nint)createInfo.PpEnabledExtensionNames);
 
     }
-    
 
-    protected void CreateImageViews()
+    protected override void CreateImageViews()
     {
         swapChainImageViews = new ImageView[swapChainImages!.Length];
 
@@ -1329,29 +1328,7 @@ public unsafe class HelloTriangleApplication_24 : HelloTriangleApplication_23
 
     }
 
-    protected ShaderModule CreateShaderModule(byte[] code)
-    {
-        ShaderModuleCreateInfo createInfo = new()
-        {
-            SType = StructureType.ShaderModuleCreateInfo,
-            CodeSize = (nuint)code.Length,
-        };
-
-        ShaderModule shaderModule;
-
-        fixed (byte* codePtr = code)
-        {
-            createInfo.PCode = (uint*)codePtr;
-
-            if (vk!.CreateShaderModule(device, createInfo, null, out shaderModule) != Result.Success)
-            {
-                throw new Exception();
-            }
-        }
-
-        return shaderModule;
-
-    }
+    
     
     
 

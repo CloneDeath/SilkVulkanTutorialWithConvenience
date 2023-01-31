@@ -81,12 +81,12 @@ public unsafe class HelloTriangleApplication_22 : HelloTriangleApplication_21
 
 
 
-    protected ImageView[]? swapChainImageViews;
+
     protected Framebuffer[]? swapChainFramebuffers;
 
     protected RenderPass renderPass;
     protected DescriptorSetLayout descriptorSetLayout;
-    protected PipelineLayout pipelineLayout;
+
     protected Pipeline graphicsPipeline;
 
     protected CommandPool commandPool;
@@ -260,42 +260,7 @@ public unsafe class HelloTriangleApplication_22 : HelloTriangleApplication_21
 
     
 
-    protected void CreateImageViews()
-    {
-        swapChainImageViews = new ImageView[swapChainImages!.Length];
-
-        for (int i = 0; i < swapChainImages.Length; i++)
-        {
-            ImageViewCreateInfo createInfo = new()
-            {
-                SType = StructureType.ImageViewCreateInfo,
-                Image = swapChainImages[i],
-                ViewType = ImageViewType.Type2D,
-                Format = swapChainImageFormat,
-                Components =
-                {
-                    R = ComponentSwizzle.Identity,
-                    G = ComponentSwizzle.Identity,
-                    B = ComponentSwizzle.Identity,
-                    A = ComponentSwizzle.Identity,
-                },
-                SubresourceRange =
-                {
-                    AspectMask = ImageAspectFlags.ColorBit,
-                    BaseMipLevel = 0,
-                    LevelCount = 1,
-                    BaseArrayLayer = 0,
-                    LayerCount = 1,
-                }
-
-            };
-
-            if(vk!.CreateImageView(device, createInfo, null, out swapChainImageViews[i]) != Result.Success)
-            {
-                throw new Exception("failed to create image views!");
-            }
-        }
-    }
+    
 
     protected void CreateRenderPass()
     {
@@ -1033,29 +998,7 @@ public unsafe class HelloTriangleApplication_22 : HelloTriangleApplication_21
 
     }
 
-    protected ShaderModule CreateShaderModule(byte[] code)
-    {
-        ShaderModuleCreateInfo createInfo = new()
-        {
-            SType = StructureType.ShaderModuleCreateInfo,
-            CodeSize = (nuint)code.Length,
-        };
-
-        ShaderModule shaderModule;
-
-        fixed (byte* codePtr = code)
-        {
-            createInfo.PCode = (uint*)codePtr;
-
-            if (vk!.CreateShaderModule(device, createInfo, null, out shaderModule) != Result.Success)
-            {
-                throw new Exception();
-            }
-        }
-
-        return shaderModule;
-
-    }
+    
 
     
 

@@ -90,12 +90,12 @@ public unsafe class HelloTriangleApplication_25 : HelloTriangleApplication_24
 
 
 
-    protected ImageView[]? swapChainImageViews;
+
     protected Framebuffer[]? swapChainFramebuffers;
 
     protected RenderPass renderPass;
     protected DescriptorSetLayout descriptorSetLayout;
-    protected PipelineLayout pipelineLayout;
+
     protected Pipeline graphicsPipeline;
 
     protected CommandPool commandPool;
@@ -283,16 +283,7 @@ public unsafe class HelloTriangleApplication_25 : HelloTriangleApplication_24
 
     
 
-    protected void CreateImageViews()
-    {
-        swapChainImageViews = new ImageView[swapChainImages!.Length];
-
-        for (int i = 0; i < swapChainImages.Length; i++)
-        {
-
-            swapChainImageViews[i] = CreateImageView(swapChainImages[i], swapChainImageFormat);
-        }
-    }
+    
 
     protected void CreateRenderPass()
     {
@@ -1315,29 +1306,7 @@ public unsafe class HelloTriangleApplication_25 : HelloTriangleApplication_24
 
     }
 
-    protected ShaderModule CreateShaderModule(byte[] code)
-    {
-        ShaderModuleCreateInfo createInfo = new()
-        {
-            SType = StructureType.ShaderModuleCreateInfo,
-            CodeSize = (nuint)code.Length,
-        };
-
-        ShaderModule shaderModule;
-
-        fixed (byte* codePtr = code)
-        {
-            createInfo.PCode = (uint*)codePtr;
-
-            if (vk!.CreateShaderModule(device, createInfo, null, out shaderModule) != Result.Success)
-            {
-                throw new Exception();
-            }
-        }
-
-        return shaderModule;
-
-    }
+    
 
     
 
