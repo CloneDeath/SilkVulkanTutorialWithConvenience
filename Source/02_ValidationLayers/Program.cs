@@ -6,10 +6,10 @@ using Silk.NET.Vulkan;
 using Silk.NET.Vulkan.Extensions.EXT;
 using Silk.NET.Windowing;
 
-var app = new HelloTriangleApplication();
+var app = new HelloTriangleApplication_02();
 app.Run();
 
-unsafe class HelloTriangleApplication
+unsafe class HelloTriangleApplication_02
 {
     const int WIDTH = 800;
     const int HEIGHT = 600;

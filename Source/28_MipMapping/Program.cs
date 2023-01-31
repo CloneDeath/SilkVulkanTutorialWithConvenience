@@ -11,7 +11,7 @@ using Semaphore = Silk.NET.Vulkan.Semaphore;
 using Buffer = Silk.NET.Vulkan.Buffer;
 using Silk.NET.Assimp;
 
-var app = new HelloTriangleApplication();
+var app = new HelloTriangleApplication_28();
 app.Run();
 
 struct QueueFamilyIndices
@@ -88,7 +88,7 @@ struct UniformBufferObject
     public Matrix4X4<float> proj;
 }
 
-unsafe class HelloTriangleApplication
+unsafe class HelloTriangleApplication_28
 {
     const int WIDTH = 800;
     const int HEIGHT = 600;

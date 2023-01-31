@@ -1,11 +1,10 @@
 ﻿using Silk.NET.Maths;
 using Silk.NET.Windowing;
 
-
-var app = new HelloTriangleApplication();
+var app = new HelloTriangleApplication_00();
 app.Run();
 
-class HelloTriangleApplication
+class HelloTriangleApplication_00
 {
     const int WIDTH = 800;
     const int HEIGHT = 600;

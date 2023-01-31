@@ -9,7 +9,7 @@ using Silk.NET.Vulkan.Extensions.KHR;
 using Silk.NET.Windowing;
 using Semaphore = Silk.NET.Vulkan.Semaphore;
 
-var app = new HelloTriangleApplication();
+var app = new HelloTriangleApplication_17();
 app.Run();
 
 struct QueueFamilyIndices
@@ -71,7 +71,7 @@ struct Vertex
     }
 }
 
-unsafe class HelloTriangleApplication
+unsafe class HelloTriangleApplication_17
 {
     const int WIDTH = 800;
     const int HEIGHT = 600;

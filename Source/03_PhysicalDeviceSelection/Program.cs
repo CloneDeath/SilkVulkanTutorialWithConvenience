@@ -6,7 +6,7 @@ using Silk.NET.Vulkan;
 using Silk.NET.Vulkan.Extensions.EXT;
 using Silk.NET.Windowing;
 
-var app = new HelloTriangleApplication();
+var app = new HelloTriangleApplication_03();
 app.Run();
 
 struct QueueFamilyIndices
@@ -18,7 +18,7 @@ struct QueueFamilyIndices
     }
 }
 
-unsafe class HelloTriangleApplication
+unsafe class HelloTriangleApplication_03
 {
     const int WIDTH = 800;
     const int HEIGHT = 600;

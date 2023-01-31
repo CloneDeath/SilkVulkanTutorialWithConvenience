@@ -4,10 +4,10 @@ using Silk.NET.Maths;
 using Silk.NET.Vulkan;
 using Silk.NET.Windowing;
 
-var app = new HelloTriangleApplication();
+var app = new HelloTriangleApplication_01();
 app.Run();
 
-unsafe class HelloTriangleApplication
+unsafe class HelloTriangleApplication_01
 {
     const int WIDTH = 800;
     const int HEIGHT = 600;

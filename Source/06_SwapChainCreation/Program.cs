@@ -8,7 +8,7 @@ using Silk.NET.Vulkan.Extensions.EXT;
 using Silk.NET.Vulkan.Extensions.KHR;
 using Silk.NET.Windowing;
 
-var app = new HelloTriangleApplication();
+var app = new HelloTriangleApplication_06();
 app.Run();
 
 struct QueueFamilyIndices
@@ -29,7 +29,7 @@ struct SwapChainSupportDetails
     public PresentModeKHR[] PresentModes;
 }
 
-unsafe class HelloTriangleApplication
+unsafe class HelloTriangleApplication_06
 {
     const int WIDTH = 800;
     const int HEIGHT = 600;
