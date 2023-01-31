@@ -1,13 +1,11 @@
-﻿using System.Drawing;
-using Silk.NET.Input;
-using Silk.NET.Maths;
+﻿using Silk.NET.Maths;
 using Silk.NET.Windowing;
 
 
 var app = new HelloTriangleApplication();
 app.Run();
 
-unsafe class HelloTriangleApplication
+class HelloTriangleApplication
 {
     const int WIDTH = 800;
     const int HEIGHT = 600;

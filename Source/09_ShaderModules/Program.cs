@@ -1,15 +1,12 @@
-﻿using System.Drawing;
-using System.Runtime.CompilerServices;
+﻿using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Silk.NET.Core;
 using Silk.NET.Core.Native;
-using Silk.NET.Input;
 using Silk.NET.Maths;
 using Silk.NET.Vulkan;
 using Silk.NET.Vulkan.Extensions.EXT;
 using Silk.NET.Vulkan.Extensions.KHR;
 using Silk.NET.Windowing;
-
 
 var app = new HelloTriangleApplication();
 app.Run();
@@ -62,13 +59,16 @@ unsafe class HelloTriangleApplication
     private PhysicalDevice physicalDevice;
     private Device device;
 
+    // ReSharper disable once NotAccessedField.Local
     private Queue graphicsQueue;
+    // ReSharper disable once NotAccessedField.Local
     private Queue presentQueue;
 
     private KhrSwapchain? khrSwapChain;
     private SwapchainKHR swapChain;
     private Image[]? swapChainImages;
     private Format swapChainImageFormat;
+    // ReSharper disable once NotAccessedField.Local
     private Extent2D swapChainExtent;
     private ImageView[]? swapChainImageViews;
 
@@ -166,7 +166,7 @@ unsafe class HelloTriangleApplication
 
         var extensions = GetRequiredExtensions();
         createInfo.EnabledExtensionCount = (uint)extensions.Length;
-        createInfo.PpEnabledExtensionNames = (byte**)SilkMarshal.StringArrayToPtr(extensions); ;
+        createInfo.PpEnabledExtensionNames = (byte**)SilkMarshal.StringArrayToPtr(extensions);
         
         if (EnableValidationLayers)
         {
@@ -201,12 +201,12 @@ unsafe class HelloTriangleApplication
     private void PopulateDebugMessengerCreateInfo(ref DebugUtilsMessengerCreateInfoEXT createInfo)
     {
         createInfo.SType = StructureType.DebugUtilsMessengerCreateInfoExt;
-        createInfo.MessageSeverity = DebugUtilsMessageSeverityFlagsEXT.DebugUtilsMessageSeverityVerboseBitExt |
-                                     DebugUtilsMessageSeverityFlagsEXT.DebugUtilsMessageSeverityWarningBitExt |
-                                     DebugUtilsMessageSeverityFlagsEXT.DebugUtilsMessageSeverityErrorBitExt;
-        createInfo.MessageType = DebugUtilsMessageTypeFlagsEXT.DebugUtilsMessageTypeGeneralBitExt |
-                                 DebugUtilsMessageTypeFlagsEXT.DebugUtilsMessageTypePerformanceBitExt |
-                                 DebugUtilsMessageTypeFlagsEXT.DebugUtilsMessageTypeValidationBitExt;
+        createInfo.MessageSeverity = DebugUtilsMessageSeverityFlagsEXT.VerboseBitExt |
+                                     DebugUtilsMessageSeverityFlagsEXT.WarningBitExt |
+                                     DebugUtilsMessageSeverityFlagsEXT.ErrorBitExt;
+        createInfo.MessageType = DebugUtilsMessageTypeFlagsEXT.GeneralBitExt |
+                                 DebugUtilsMessageTypeFlagsEXT.PerformanceBitExt |
+                                 DebugUtilsMessageTypeFlagsEXT.ValidationBitExt;
         createInfo.PfnUserCallback = (DebugUtilsMessengerCallbackFunctionEXT)DebugCallback;
     }
 
@@ -252,11 +252,11 @@ unsafe class HelloTriangleApplication
             vk!.EnumeratePhysicalDevices(instance, ref devicedCount, devicesPtr);
         }
 
-        foreach (var device in devices)
+        foreach (var candidateDevice in devices)
         {
-            if (IsDeviceSuitable(device))
+            if (IsDeviceSuitable(candidateDevice))
             {
-                physicalDevice = device;
+                physicalDevice = candidateDevice;
                 break;
             }
         }
@@ -356,7 +356,7 @@ unsafe class HelloTriangleApplication
             ImageColorSpace = surfaceFormat.ColorSpace,
             ImageExtent = extent,
             ImageArrayLayers = 1,
-            ImageUsage = ImageUsageFlags.ImageUsageColorAttachmentBit,
+            ImageUsage = ImageUsageFlags.ColorAttachmentBit,
         };
 
         var indices = FindQueueFamilies(physicalDevice);
@@ -379,7 +379,7 @@ unsafe class HelloTriangleApplication
         creatInfo = creatInfo with
         {
             PreTransform = swapChainSupport.Capabilities.CurrentTransform,
-            CompositeAlpha = CompositeAlphaFlagsKHR.CompositeAlphaOpaqueBitKhr,
+            CompositeAlpha = CompositeAlphaFlagsKHR.OpaqueBitKhr,
             PresentMode = presentMode,
             Clipped = true,
 
@@ -417,7 +417,7 @@ unsafe class HelloTriangleApplication
             {
                 SType = StructureType.ImageViewCreateInfo,
                 Image = swapChainImages[i],
-                ViewType = ImageViewType.ImageViewType2D,
+                ViewType = ImageViewType.Type2D,
                 Format = swapChainImageFormat,
                 Components =
                 {
@@ -428,7 +428,7 @@ unsafe class HelloTriangleApplication
                 },
                 SubresourceRange =
                 {
-                    AspectMask = ImageAspectFlags.ImageAspectColorBit,
+                    AspectMask = ImageAspectFlags.ColorBit,
                     BaseMipLevel = 0,
                     LevelCount = 1,
                     BaseArrayLayer = 0,
@@ -455,7 +455,7 @@ unsafe class HelloTriangleApplication
         PipelineShaderStageCreateInfo vertShaderStageInfo = new()
         {
             SType = StructureType.PipelineShaderStageCreateInfo,
-            Stage = ShaderStageFlags.ShaderStageVertexBit,
+            Stage = ShaderStageFlags.VertexBit,
             Module = vertShaderModule,
             PName = (byte*)SilkMarshal.StringToPtr("main")
         };
@@ -463,11 +463,12 @@ unsafe class HelloTriangleApplication
         PipelineShaderStageCreateInfo fragShaderStageInfo = new()
         {
             SType = StructureType.PipelineShaderStageCreateInfo,
-            Stage = ShaderStageFlags.ShaderStageFragmentBit,
+            Stage = ShaderStageFlags.FragmentBit,
             Module = fragShaderModule,
             PName = (byte*)SilkMarshal.StringToPtr("main")
         };
 
+        // ReSharper disable once UnusedVariable
         var shaderStages = stackalloc []
         {
             vertShaderStageInfo,
@@ -509,7 +510,7 @@ unsafe class HelloTriangleApplication
     {
         foreach (var availableFormat in availableFormats)
         {
-            if(availableFormat.Format == Format.B8G8R8A8Srgb && availableFormat.ColorSpace == ColorSpaceKHR.ColorSpaceSrgbNonlinearKhr)
+            if(availableFormat.Format == Format.B8G8R8A8Srgb && availableFormat.ColorSpace == ColorSpaceKHR.SpaceSrgbNonlinearKhr)
             {
                 return availableFormat;
             }
@@ -522,13 +523,13 @@ unsafe class HelloTriangleApplication
     {
         foreach (var availablePresentMode in availablePresentModes)
         {
-            if(availablePresentMode == PresentModeKHR.PresentModeMailboxKhr)
+            if(availablePresentMode == PresentModeKHR.MailboxKhr)
             {
                 return availablePresentMode;
             }
         }
 
-        return PresentModeKHR.PresentModeFifoKhr;
+        return PresentModeKHR.FifoKhr;
     }
 
     private Extent2D ChooseSwapExtent(SurfaceCapabilitiesKHR capabilities)
@@ -553,21 +554,21 @@ unsafe class HelloTriangleApplication
         }
     }
 
-    private SwapChainSupportDetails QuerySwapChainSupport(PhysicalDevice physicalDevice)
+    private SwapChainSupportDetails QuerySwapChainSupport(PhysicalDevice physDevice)
     {
         var details = new SwapChainSupportDetails();
 
-        khrSurface!.GetPhysicalDeviceSurfaceCapabilities(physicalDevice, surface, out details.Capabilities);
+        khrSurface!.GetPhysicalDeviceSurfaceCapabilities(physDevice, surface, out details.Capabilities);
 
         uint formatCount = 0;
-        khrSurface.GetPhysicalDeviceSurfaceFormats(physicalDevice, surface, ref formatCount, null);
+        khrSurface.GetPhysicalDeviceSurfaceFormats(physDevice, surface, ref formatCount, null);
 
         if (formatCount != 0)
         {
             details.Formats = new SurfaceFormatKHR[formatCount];
             fixed (SurfaceFormatKHR* formatsPtr = details.Formats)
             {
-                khrSurface.GetPhysicalDeviceSurfaceFormats(physicalDevice, surface, ref formatCount, formatsPtr);
+                khrSurface.GetPhysicalDeviceSurfaceFormats(physDevice, surface, ref formatCount, formatsPtr);
             }
         }
         else
@@ -576,14 +577,14 @@ unsafe class HelloTriangleApplication
         }
 
         uint presentModeCount = 0;
-        khrSurface.GetPhysicalDeviceSurfacePresentModes(physicalDevice, surface, ref presentModeCount, null);
+        khrSurface.GetPhysicalDeviceSurfacePresentModes(physDevice, surface, ref presentModeCount, null);
 
         if (presentModeCount != 0)
         {
             details.PresentModes = new PresentModeKHR[presentModeCount];
             fixed (PresentModeKHR* formatsPtr = details.PresentModes)
             {
-                khrSurface.GetPhysicalDeviceSurfacePresentModes(physicalDevice, surface, ref presentModeCount, formatsPtr);
+                khrSurface.GetPhysicalDeviceSurfacePresentModes(physDevice, surface, ref presentModeCount, formatsPtr);
             }
 
         }
@@ -595,31 +596,31 @@ unsafe class HelloTriangleApplication
         return details;
     }
 
-    private bool IsDeviceSuitable(PhysicalDevice device)
+    private bool IsDeviceSuitable(PhysicalDevice candidateDevice)
     {
-        var indices = FindQueueFamilies(device);
+        var indices = FindQueueFamilies(candidateDevice);
 
-        bool extensionsSupported = CheckDeviceExtensionsSupport(device);
+        bool extensionsSupported = CheckDeviceExtensionsSupport(candidateDevice);
 
         bool swapChainAdequate = false;
         if (extensionsSupported)
         {
-            var swapChainSupport = QuerySwapChainSupport(device);
+            var swapChainSupport = QuerySwapChainSupport(candidateDevice);
             swapChainAdequate =  swapChainSupport.Formats.Any() && swapChainSupport.PresentModes.Any();
         }
 
         return indices.IsComplete() && extensionsSupported && swapChainAdequate;
     }
 
-    private bool CheckDeviceExtensionsSupport(PhysicalDevice device)
+    private bool CheckDeviceExtensionsSupport(PhysicalDevice physDevice)
     {
         uint extentionsCount = 0;
-        vk!.EnumerateDeviceExtensionProperties(device, (byte*)null, ref extentionsCount, null);
+        vk!.EnumerateDeviceExtensionProperties(physDevice, (byte*)null, ref extentionsCount, null);
 
         var availableExtensions = new ExtensionProperties[extentionsCount];
         fixed (ExtensionProperties* availableExtensionsPtr = availableExtensions)
         {
-            vk!.EnumerateDeviceExtensionProperties(device, (byte*)null, ref extentionsCount, availableExtensionsPtr);
+            vk!.EnumerateDeviceExtensionProperties(physDevice, (byte*)null, ref extentionsCount, availableExtensionsPtr);
         }
 
         var availableExtensionNames = availableExtensions.Select(extension => Marshal.PtrToStringAnsi((IntPtr)extension.ExtensionName)).ToHashSet();
@@ -628,29 +629,29 @@ unsafe class HelloTriangleApplication
 
     }
 
-    private QueueFamilyIndices FindQueueFamilies(PhysicalDevice device)
+    private QueueFamilyIndices FindQueueFamilies(PhysicalDevice physDevice)
     {
         var indices = new QueueFamilyIndices();
 
         uint queueFamilityCount = 0;
-        vk!.GetPhysicalDeviceQueueFamilyProperties(device, ref queueFamilityCount, null);
+        vk!.GetPhysicalDeviceQueueFamilyProperties(physDevice, ref queueFamilityCount, null);
 
         var queueFamilies = new QueueFamilyProperties[queueFamilityCount];
         fixed (QueueFamilyProperties* queueFamiliesPtr = queueFamilies)
         {
-            vk!.GetPhysicalDeviceQueueFamilyProperties(device, ref queueFamilityCount, queueFamiliesPtr);
+            vk!.GetPhysicalDeviceQueueFamilyProperties(physDevice, ref queueFamilityCount, queueFamiliesPtr);
         }
 
 
         uint i = 0;
         foreach (var queueFamily in queueFamilies)
         {
-            if (queueFamily.QueueFlags.HasFlag(QueueFlags.QueueGraphicsBit))
+            if (queueFamily.QueueFlags.HasFlag(QueueFlags.GraphicsBit))
             {
                 indices.GraphicsFamily = i;
             }
 
-            khrSurface!.GetPhysicalDeviceSurfaceSupport(device, i, surface, out var presentSupport);
+            khrSurface!.GetPhysicalDeviceSurfaceSupport(physDevice, i, surface, out var presentSupport);
 
             if (presentSupport)
             {

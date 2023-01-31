@@ -1,9 +1,7 @@
-﻿using System.Drawing;
-using System.Runtime.CompilerServices;
+﻿using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Silk.NET.Core;
 using Silk.NET.Core.Native;
-using Silk.NET.Input;
 using Silk.NET.Maths;
 using Silk.NET.Vulkan;
 using Silk.NET.Vulkan.Extensions.EXT;
@@ -145,9 +143,9 @@ unsafe class HelloTriangleApplication
     private Semaphore[]? renderFinishedSemaphores;
     private Fence[]? inFlightFences;
     private Fence[]? imagesInFlight;
-    private int currentFrame = 0;
+    private int currentFrame;
 
-    private bool frameBufferResized = false;
+    private bool frameBufferResized;
 
     private Vertex[] vertices = new Vertex[]
     {
@@ -341,7 +339,7 @@ unsafe class HelloTriangleApplication
 
         var extensions = GetRequiredExtensions();
         createInfo.EnabledExtensionCount = (uint)extensions.Length;
-        createInfo.PpEnabledExtensionNames = (byte**)SilkMarshal.StringArrayToPtr(extensions); ;
+        createInfo.PpEnabledExtensionNames = (byte**)SilkMarshal.StringArrayToPtr(extensions);
         
         if (EnableValidationLayers)
         {
@@ -376,12 +374,12 @@ unsafe class HelloTriangleApplication
     private void PopulateDebugMessengerCreateInfo(ref DebugUtilsMessengerCreateInfoEXT createInfo)
     {
         createInfo.SType = StructureType.DebugUtilsMessengerCreateInfoExt;
-        createInfo.MessageSeverity = DebugUtilsMessageSeverityFlagsEXT.DebugUtilsMessageSeverityVerboseBitExt |
-                                     DebugUtilsMessageSeverityFlagsEXT.DebugUtilsMessageSeverityWarningBitExt |
-                                     DebugUtilsMessageSeverityFlagsEXT.DebugUtilsMessageSeverityErrorBitExt;
-        createInfo.MessageType = DebugUtilsMessageTypeFlagsEXT.DebugUtilsMessageTypeGeneralBitExt |
-                                 DebugUtilsMessageTypeFlagsEXT.DebugUtilsMessageTypePerformanceBitExt |
-                                 DebugUtilsMessageTypeFlagsEXT.DebugUtilsMessageTypeValidationBitExt;
+        createInfo.MessageSeverity = DebugUtilsMessageSeverityFlagsEXT.VerboseBitExt |
+                                     DebugUtilsMessageSeverityFlagsEXT.WarningBitExt |
+                                     DebugUtilsMessageSeverityFlagsEXT.ErrorBitExt;
+        createInfo.MessageType = DebugUtilsMessageTypeFlagsEXT.GeneralBitExt |
+                                 DebugUtilsMessageTypeFlagsEXT.PerformanceBitExt |
+                                 DebugUtilsMessageTypeFlagsEXT.ValidationBitExt;
         createInfo.PfnUserCallback = (DebugUtilsMessengerCallbackFunctionEXT)DebugCallback;
     }
 
@@ -427,11 +425,11 @@ unsafe class HelloTriangleApplication
             vk!.EnumeratePhysicalDevices(instance, ref devicedCount, devicesPtr);
         }
 
-        foreach (var device in devices)
+        foreach (var candidateDevice in devices)
         {
-            if (IsDeviceSuitable(device))
+            if (IsDeviceSuitable(candidateDevice))
             {
-                physicalDevice = device;
+                physicalDevice = candidateDevice;
                 break;
             }
         }
@@ -444,9 +442,9 @@ unsafe class HelloTriangleApplication
 
     private void CreateLogicalDevice()
     {
-        var indices = FindQueueFamilies(physicalDevice);
+        var qfIndices = FindQueueFamilies(physicalDevice);
 
-        var uniqueQueueFamilies = new[] { indices.GraphicsFamily!.Value, indices.PresentFamily!.Value };
+        var uniqueQueueFamilies = new[] { qfIndices.GraphicsFamily!.Value, qfIndices.PresentFamily!.Value };
         uniqueQueueFamilies = uniqueQueueFamilies.Distinct().ToArray();
 
         using var mem = GlobalMemory.Allocate(uniqueQueueFamilies.Length * sizeof(DeviceQueueCreateInfo));
@@ -495,8 +493,8 @@ unsafe class HelloTriangleApplication
             throw new Exception("failed to create logical device!");
         }
 
-        vk!.GetDeviceQueue(device, indices.GraphicsFamily!.Value, 0, out graphicsQueue);
-        vk!.GetDeviceQueue(device, indices.PresentFamily!.Value, 0, out presentQueue);
+        vk!.GetDeviceQueue(device, qfIndices.GraphicsFamily!.Value, 0, out graphicsQueue);
+        vk!.GetDeviceQueue(device, qfIndices.PresentFamily!.Value, 0, out presentQueue);
 
         if (EnableValidationLayers)
         {
@@ -531,13 +529,13 @@ unsafe class HelloTriangleApplication
             ImageColorSpace = surfaceFormat.ColorSpace,
             ImageExtent = extent,
             ImageArrayLayers = 1,
-            ImageUsage = ImageUsageFlags.ImageUsageColorAttachmentBit,
+            ImageUsage = ImageUsageFlags.ColorAttachmentBit,
         };
 
-        var indices = FindQueueFamilies(physicalDevice);
-        var queueFamilyIndices = stackalloc[] { indices.GraphicsFamily!.Value, indices.PresentFamily!.Value };
+        var qfIndices = FindQueueFamilies(physicalDevice);
+        var queueFamilyIndices = stackalloc[] { qfIndices.GraphicsFamily!.Value, qfIndices.PresentFamily!.Value };
 
-        if (indices.GraphicsFamily != indices.PresentFamily)
+        if (qfIndices.GraphicsFamily != qfIndices.PresentFamily)
         {
             creatInfo = creatInfo with
             {
@@ -554,7 +552,7 @@ unsafe class HelloTriangleApplication
         creatInfo = creatInfo with
         {
             PreTransform = swapChainSupport.Capabilities.CurrentTransform,
-            CompositeAlpha = CompositeAlphaFlagsKHR.CompositeAlphaOpaqueBitKhr,
+            CompositeAlpha = CompositeAlphaFlagsKHR.OpaqueBitKhr,
             PresentMode = presentMode,
             Clipped = true,
         };
@@ -593,7 +591,7 @@ unsafe class HelloTriangleApplication
             {
                 SType = StructureType.ImageViewCreateInfo,
                 Image = swapChainImages[i],
-                ViewType = ImageViewType.ImageViewType2D,
+                ViewType = ImageViewType.Type2D,
                 Format = swapChainImageFormat,
                 Components =
                 {
@@ -604,7 +602,7 @@ unsafe class HelloTriangleApplication
                 },
                 SubresourceRange =
                 {
-                    AspectMask = ImageAspectFlags.ImageAspectColorBit,
+                    AspectMask = ImageAspectFlags.ColorBit,
                     BaseMipLevel = 0,
                     LevelCount = 1,
                     BaseArrayLayer = 0,
@@ -625,7 +623,7 @@ unsafe class HelloTriangleApplication
         AttachmentDescription colorAttachment = new()
         {
             Format = swapChainImageFormat,
-            Samples = SampleCountFlags.SampleCount1Bit,
+            Samples = SampleCountFlags.Count1Bit,
             LoadOp = AttachmentLoadOp.Clear,
             StoreOp = AttachmentStoreOp.Store,
             StencilLoadOp = AttachmentLoadOp.DontCare,
@@ -650,10 +648,10 @@ unsafe class HelloTriangleApplication
         {
             SrcSubpass = Vk.SubpassExternal,
             DstSubpass = 0,
-            SrcStageMask = PipelineStageFlags.PipelineStageColorAttachmentOutputBit,
+            SrcStageMask = PipelineStageFlags.ColorAttachmentOutputBit,
             SrcAccessMask = 0,
-            DstStageMask = PipelineStageFlags.PipelineStageColorAttachmentOutputBit,
-            DstAccessMask = AccessFlags.AccessColorAttachmentWriteBit
+            DstStageMask = PipelineStageFlags.ColorAttachmentOutputBit,
+            DstAccessMask = AccessFlags.ColorAttachmentWriteBit
         };
 
         RenderPassCreateInfo renderPassInfo = new() 
@@ -681,7 +679,7 @@ unsafe class HelloTriangleApplication
             DescriptorCount = 1,
             DescriptorType = DescriptorType.UniformBuffer,
             PImmutableSamplers = null,
-            StageFlags = ShaderStageFlags.ShaderStageVertexBit,
+            StageFlags = ShaderStageFlags.VertexBit,
         };
 
         DescriptorSetLayoutCreateInfo layoutInfo = new()
@@ -711,7 +709,7 @@ unsafe class HelloTriangleApplication
         PipelineShaderStageCreateInfo vertShaderStageInfo = new()
         {
             SType = StructureType.PipelineShaderStageCreateInfo,
-            Stage = ShaderStageFlags.ShaderStageVertexBit,
+            Stage = ShaderStageFlags.VertexBit,
             Module = vertShaderModule,
             PName = (byte*)SilkMarshal.StringToPtr("main")
         };
@@ -719,7 +717,7 @@ unsafe class HelloTriangleApplication
         PipelineShaderStageCreateInfo fragShaderStageInfo = new()
         {
             SType = StructureType.PipelineShaderStageCreateInfo,
-            Stage = ShaderStageFlags.ShaderStageFragmentBit,
+            Stage = ShaderStageFlags.FragmentBit,
             Module = fragShaderModule,
             PName = (byte*)SilkMarshal.StringToPtr("main")
         };
@@ -785,7 +783,7 @@ unsafe class HelloTriangleApplication
                 RasterizerDiscardEnable = false,
                 PolygonMode = PolygonMode.Fill,
                 LineWidth = 1,
-                CullMode = CullModeFlags.CullModeBackBit,
+                CullMode = CullModeFlags.BackBit,
                 FrontFace = FrontFace.Clockwise,
                 DepthBiasEnable = false,
             };
@@ -794,12 +792,12 @@ unsafe class HelloTriangleApplication
             {
                 SType = StructureType.PipelineMultisampleStateCreateInfo,
                 SampleShadingEnable = false,
-                RasterizationSamples = SampleCountFlags.SampleCount1Bit,
+                RasterizationSamples = SampleCountFlags.Count1Bit,
             };
 
             PipelineColorBlendAttachmentState colorBlendAttachment = new()
             {
-                ColorWriteMask = ColorComponentFlags.ColorComponentRBit | ColorComponentFlags.ColorComponentGBit | ColorComponentFlags.ColorComponentBBit | ColorComponentFlags.ColorComponentABit,
+                ColorWriteMask = ColorComponentFlags.RBit | ColorComponentFlags.GBit | ColorComponentFlags.BBit | ColorComponentFlags.ABit,
                 BlendEnable = false,
             };
 
@@ -908,14 +906,14 @@ unsafe class HelloTriangleApplication
 
         Buffer stagingBuffer = default;
         DeviceMemory stagingBufferMemory = default;
-        CreateBuffer(bufferSize, BufferUsageFlags.BufferUsageTransferSrcBit, MemoryPropertyFlags.MemoryPropertyHostVisibleBit | MemoryPropertyFlags.MemoryPropertyHostCoherentBit, ref stagingBuffer, ref stagingBufferMemory);
+        CreateBuffer(bufferSize, BufferUsageFlags.TransferSrcBit, MemoryPropertyFlags.HostVisibleBit | MemoryPropertyFlags.HostCoherentBit, ref stagingBuffer, ref stagingBufferMemory);
         
         void* data;
         vk!.MapMemory(device, stagingBufferMemory, 0, bufferSize, 0, &data);
             vertices.AsSpan().CopyTo(new Span<Vertex>(data, vertices.Length));
         vk!.UnmapMemory(device, stagingBufferMemory);
 
-        CreateBuffer(bufferSize, BufferUsageFlags.BufferUsageTransferDstBit | BufferUsageFlags.BufferUsageVertexBufferBit, MemoryPropertyFlags.MemoryPropertyDeviceLocalBit, ref vertexBuffer, ref vertexBufferMemory);
+        CreateBuffer(bufferSize, BufferUsageFlags.TransferDstBit | BufferUsageFlags.VertexBufferBit, MemoryPropertyFlags.DeviceLocalBit, ref vertexBuffer, ref vertexBufferMemory);
 
         CopyBuffer(stagingBuffer, vertexBuffer, bufferSize);
 
@@ -929,14 +927,14 @@ unsafe class HelloTriangleApplication
 
         Buffer stagingBuffer = default;
         DeviceMemory stagingBufferMemory = default;
-        CreateBuffer(bufferSize, BufferUsageFlags.BufferUsageTransferSrcBit, MemoryPropertyFlags.MemoryPropertyHostVisibleBit | MemoryPropertyFlags.MemoryPropertyHostCoherentBit, ref stagingBuffer, ref stagingBufferMemory);
+        CreateBuffer(bufferSize, BufferUsageFlags.TransferSrcBit, MemoryPropertyFlags.HostVisibleBit | MemoryPropertyFlags.HostCoherentBit, ref stagingBuffer, ref stagingBufferMemory);
 
         void* data;
         vk!.MapMemory(device, stagingBufferMemory, 0, bufferSize, 0, &data);
             indices.AsSpan().CopyTo(new Span<ushort>(data, indices.Length));
         vk!.UnmapMemory(device, stagingBufferMemory);
 
-        CreateBuffer(bufferSize, BufferUsageFlags.BufferUsageTransferDstBit | BufferUsageFlags.BufferUsageIndexBufferBit, MemoryPropertyFlags.MemoryPropertyDeviceLocalBit, ref indexBuffer, ref indexBufferMemory);
+        CreateBuffer(bufferSize, BufferUsageFlags.TransferDstBit | BufferUsageFlags.IndexBufferBit, MemoryPropertyFlags.DeviceLocalBit, ref indexBuffer, ref indexBufferMemory);
 
         CopyBuffer(stagingBuffer, indexBuffer, bufferSize);
 
@@ -953,7 +951,7 @@ unsafe class HelloTriangleApplication
 
         for (int i = 0; i < swapChainImages.Length; i++)
         {
-            CreateBuffer(bufferSize, BufferUsageFlags.BufferUsageUniformBufferBit, MemoryPropertyFlags.MemoryPropertyHostVisibleBit | MemoryPropertyFlags.MemoryPropertyHostCoherentBit, ref uniformBuffers[i], ref uniformBuffersMemory[i]);   
+            CreateBuffer(bufferSize, BufferUsageFlags.UniformBufferBit, MemoryPropertyFlags.HostVisibleBit | MemoryPropertyFlags.HostCoherentBit, ref uniformBuffers[i], ref uniformBuffersMemory[i]);   
         }
 
     }
@@ -976,7 +974,7 @@ unsafe class HelloTriangleApplication
             }
         }
 
-        MemoryRequirements memRequirements = new();
+        MemoryRequirements memRequirements;
         vk!.GetBufferMemoryRequirements(device, buffer, out memRequirements);
 
         MemoryAllocateInfo allocateInfo = new()
@@ -1007,13 +1005,13 @@ unsafe class HelloTriangleApplication
             CommandBufferCount = 1,
         };
 
-        CommandBuffer commandBuffer = default;
+        CommandBuffer commandBuffer;
         vk!.AllocateCommandBuffers(device, allocateInfo, out commandBuffer);
 
         CommandBufferBeginInfo beginInfo = new()
         {
             SType = StructureType.CommandBufferBeginInfo,
-            Flags = CommandBufferUsageFlags.CommandBufferUsageOneTimeSubmitBit,
+            Flags = CommandBufferUsageFlags.OneTimeSubmitBit,
         };
 
         vk!.BeginCommandBuffer(commandBuffer, beginInfo);
@@ -1113,7 +1111,7 @@ unsafe class HelloTriangleApplication
 
                 vk!.CmdBindPipeline(commandBuffers[i], PipelineBindPoint.Graphics, graphicsPipeline);
 
-                var vertexBuffers = new Buffer[] { vertexBuffer };
+                var vertexBuffers = new[] { vertexBuffer };
                 var offsets = new ulong[] { 0 };
 
                 fixed (ulong* offsetsPtr = offsets)
@@ -1151,7 +1149,7 @@ unsafe class HelloTriangleApplication
         FenceCreateInfo fenceInfo = new()
         {
             SType = StructureType.FenceCreateInfo,
-            Flags = FenceCreateFlags.FenceCreateSignaledBit,
+            Flags = FenceCreateFlags.SignaledBit,
         };
 
         for (var i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
@@ -1172,9 +1170,9 @@ unsafe class HelloTriangleApplication
 
         UniformBufferObject ubo = new()
         {
-            model = Matrix4X4<float>.Identity * Matrix4X4.CreateFromAxisAngle<float>(new Vector3D<float>(0,0,1), time * Radians(90.0f)),
+            model = Matrix4X4<float>.Identity * Matrix4X4.CreateFromAxisAngle(new Vector3D<float>(0,0,1), time * Radians(90.0f)),
             view = Matrix4X4.CreateLookAt(new Vector3D<float>(2, 2, 2), new Vector3D<float>(0, 0, 0), new Vector3D<float>(0, 0, 1)),
-            proj = Matrix4X4.CreatePerspectiveFieldOfView(Radians(45.0f), swapChainExtent.Width / swapChainExtent.Height, 0.1f, 10.0f),
+            proj = Matrix4X4.CreatePerspectiveFieldOfView(Radians(45.0f), swapChainExtent.Width * 1f / swapChainExtent.Height, 0.1f, 10.0f),
         };
         ubo.proj.M22 *= -1;
 
@@ -1219,7 +1217,7 @@ unsafe class HelloTriangleApplication
         };
 
         var waitSemaphores = stackalloc [] {imageAvailableSemaphores[currentFrame]};
-        var waitStages = stackalloc [] { PipelineStageFlags.PipelineStageColorAttachmentOutputBit };
+        var waitStages = stackalloc [] { PipelineStageFlags.ColorAttachmentOutputBit };
 
         var buffer = commandBuffers![imageIndex];
 
@@ -1305,7 +1303,7 @@ unsafe class HelloTriangleApplication
     {
         foreach (var availableFormat in availableFormats)
         {
-            if(availableFormat.Format == Format.B8G8R8A8Srgb && availableFormat.ColorSpace == ColorSpaceKHR.ColorSpaceSrgbNonlinearKhr)
+            if(availableFormat.Format == Format.B8G8R8A8Srgb && availableFormat.ColorSpace == ColorSpaceKHR.SpaceSrgbNonlinearKhr)
             {
                 return availableFormat;
             }
@@ -1318,13 +1316,13 @@ unsafe class HelloTriangleApplication
     {
         foreach (var availablePresentMode in availablePresentModes)
         {
-            if(availablePresentMode == PresentModeKHR.PresentModeMailboxKhr)
+            if(availablePresentMode == PresentModeKHR.MailboxKhr)
             {
                 return availablePresentMode;
             }
         }
 
-        return PresentModeKHR.PresentModeFifoKhr;
+        return PresentModeKHR.FifoKhr;
     }
 
     private Extent2D ChooseSwapExtent(SurfaceCapabilitiesKHR capabilities)
@@ -1349,21 +1347,21 @@ unsafe class HelloTriangleApplication
         }
     }
 
-    private SwapChainSupportDetails QuerySwapChainSupport(PhysicalDevice physicalDevice)
+    private SwapChainSupportDetails QuerySwapChainSupport(PhysicalDevice physDevice)
     {
         var details = new SwapChainSupportDetails();
 
-        khrSurface!.GetPhysicalDeviceSurfaceCapabilities(physicalDevice, surface, out details.Capabilities);
+        khrSurface!.GetPhysicalDeviceSurfaceCapabilities(physDevice, surface, out details.Capabilities);
 
         uint formatCount = 0;
-        khrSurface.GetPhysicalDeviceSurfaceFormats(physicalDevice, surface, ref formatCount, null);
+        khrSurface.GetPhysicalDeviceSurfaceFormats(physDevice, surface, ref formatCount, null);
 
         if (formatCount != 0)
         {
             details.Formats = new SurfaceFormatKHR[formatCount];
             fixed (SurfaceFormatKHR* formatsPtr = details.Formats)
             {
-                khrSurface.GetPhysicalDeviceSurfaceFormats(physicalDevice, surface, ref formatCount, formatsPtr);
+                khrSurface.GetPhysicalDeviceSurfaceFormats(physDevice, surface, ref formatCount, formatsPtr);
             }
         }
         else
@@ -1372,14 +1370,14 @@ unsafe class HelloTriangleApplication
         }
 
         uint presentModeCount = 0;
-        khrSurface.GetPhysicalDeviceSurfacePresentModes(physicalDevice, surface, ref presentModeCount, null);
+        khrSurface.GetPhysicalDeviceSurfacePresentModes(physDevice, surface, ref presentModeCount, null);
 
         if (presentModeCount != 0)
         {
             details.PresentModes = new PresentModeKHR[presentModeCount];
             fixed (PresentModeKHR* formatsPtr = details.PresentModes)
             {
-                khrSurface.GetPhysicalDeviceSurfacePresentModes(physicalDevice, surface, ref presentModeCount, formatsPtr);
+                khrSurface.GetPhysicalDeviceSurfacePresentModes(physDevice, surface, ref presentModeCount, formatsPtr);
             }
             
         }
@@ -1391,31 +1389,31 @@ unsafe class HelloTriangleApplication
         return details;
     }
 
-    private bool IsDeviceSuitable(PhysicalDevice device)
+    private bool IsDeviceSuitable(PhysicalDevice candidateDevice)
     {
-        var indices = FindQueueFamilies(device);
+        var qfIndices = FindQueueFamilies(candidateDevice);
 
-        bool extensionsSupported = CheckDeviceExtensionsSupport(device);
+        bool extensionsSupported = CheckDeviceExtensionsSupport(candidateDevice);
 
         bool swapChainAdequate = false;
         if (extensionsSupported)
         {
-            var swapChainSupport = QuerySwapChainSupport(device);
+            var swapChainSupport = QuerySwapChainSupport(candidateDevice);
             swapChainAdequate =  swapChainSupport.Formats.Any() && swapChainSupport.PresentModes.Any();
         }
 
-        return indices.IsComplete() && extensionsSupported && swapChainAdequate;
+        return qfIndices.IsComplete() && extensionsSupported && swapChainAdequate;
     }
 
-    private bool CheckDeviceExtensionsSupport(PhysicalDevice device)
+    private bool CheckDeviceExtensionsSupport(PhysicalDevice physDevice)
     {
         uint extentionsCount = 0;
-        vk!.EnumerateDeviceExtensionProperties(device, (byte*)null, ref extentionsCount, null);
+        vk!.EnumerateDeviceExtensionProperties(physDevice, (byte*)null, ref extentionsCount, null);
 
         var availableExtensions = new ExtensionProperties[extentionsCount];
         fixed(ExtensionProperties* availableExtensionsPtr = availableExtensions)
         {
-            vk!.EnumerateDeviceExtensionProperties(device, (byte*)null, ref extentionsCount, availableExtensionsPtr);
+            vk!.EnumerateDeviceExtensionProperties(physDevice, (byte*)null, ref extentionsCount, availableExtensionsPtr);
         }
 
         var availableExtensionNames = availableExtensions.Select(extension => Marshal.PtrToStringAnsi((IntPtr)extension.ExtensionName)).ToHashSet();
@@ -1424,36 +1422,36 @@ unsafe class HelloTriangleApplication
 
     }
 
-    private QueueFamilyIndices FindQueueFamilies(PhysicalDevice device)
+    private QueueFamilyIndices FindQueueFamilies(PhysicalDevice physDevice)
     {
-        var indices = new QueueFamilyIndices();
+        var qfIndices = new QueueFamilyIndices();
 
         uint queueFamilityCount = 0;
-        vk!.GetPhysicalDeviceQueueFamilyProperties(device, ref queueFamilityCount, null);
+        vk!.GetPhysicalDeviceQueueFamilyProperties(physDevice, ref queueFamilityCount, null);
 
         var queueFamilies = new QueueFamilyProperties[queueFamilityCount];
         fixed (QueueFamilyProperties* queueFamiliesPtr = queueFamilies)
         {
-            vk!.GetPhysicalDeviceQueueFamilyProperties(device, ref queueFamilityCount, queueFamiliesPtr);
+            vk!.GetPhysicalDeviceQueueFamilyProperties(physDevice, ref queueFamilityCount, queueFamiliesPtr);
         }
         
         
         uint i = 0;
         foreach (var queueFamily in queueFamilies)
         {
-            if (queueFamily.QueueFlags.HasFlag(QueueFlags.QueueGraphicsBit))
+            if (queueFamily.QueueFlags.HasFlag(QueueFlags.GraphicsBit))
             {
-                indices.GraphicsFamily = i;
+                qfIndices.GraphicsFamily = i;
             }
 
-            khrSurface!.GetPhysicalDeviceSurfaceSupport(device, i, surface, out var presentSupport);
+            khrSurface!.GetPhysicalDeviceSurfaceSupport(physDevice, i, surface, out var presentSupport);
 
             if (presentSupport)
             {
-                indices.PresentFamily = i;
+                qfIndices.PresentFamily = i;
             }
 
-            if (indices.IsComplete())
+            if (qfIndices.IsComplete())
             {
                 break;
             }
@@ -1461,7 +1459,7 @@ unsafe class HelloTriangleApplication
             i++;
         }
 
-        return indices;
+        return qfIndices;
     }
 
     private string[] GetRequiredExtensions()
