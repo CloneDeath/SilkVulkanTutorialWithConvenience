@@ -15,6 +15,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\00_BaseCode\00_BaseCode.csproj" />
+    <ProjectReference Include="..\05_WindowSurface\05_WindowSurface.csproj" />
   </ItemGroup>
 
 </Project>

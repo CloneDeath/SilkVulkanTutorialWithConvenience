@@ -27,11 +27,8 @@ public struct SwapChainSupportDetails
     public PresentModeKHR[] PresentModes;
 }
 
-public unsafe class HelloTriangleApplication_10 : HelloTriangleApplication_00
+public unsafe class HelloTriangleApplication_10 : HelloTriangleApplication_09
 {
-
-
-
     bool EnableValidationLayers = true;
 
     protected readonly string[] validationLayers = new []

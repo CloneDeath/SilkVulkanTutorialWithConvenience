@@ -15,6 +15,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\00_BaseCode\00_BaseCode.csproj" />
+    <ProjectReference Include="..\02_ValidationLayers\02_ValidationLayers.csproj" />
   </ItemGroup>
 
 </Project>

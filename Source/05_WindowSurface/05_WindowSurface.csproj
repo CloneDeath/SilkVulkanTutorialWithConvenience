@@ -15,6 +15,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\00_BaseCode\00_BaseCode.csproj" />
+    <ProjectReference Include="..\04_LogicalDevice\04_LogicalDevice.csproj" />
   </ItemGroup>
 
 </Project>

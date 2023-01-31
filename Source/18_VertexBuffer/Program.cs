@@ -72,7 +72,7 @@ public struct Vertex
     }
 }
 
-public unsafe class HelloTriangleApplication_18 : HelloTriangleApplication_16
+public unsafe class HelloTriangleApplication_18 : HelloTriangleApplication_17
 {
     const int MAX_FRAMES_IN_FLIGHT = 2;
 

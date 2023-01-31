@@ -15,6 +15,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\00_BaseCode\00_BaseCode.csproj" />
+    <ProjectReference Include="..\07_ImageViews\07_ImageViews.csproj" />
   </ItemGroup>
 
 </Project>

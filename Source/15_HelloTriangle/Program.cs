@@ -29,7 +29,7 @@ public struct SwapChainSupportDetails
     public PresentModeKHR[] PresentModes;
 }
 
-public unsafe class HelloTriangleApplication_15 : HelloTriangleApplication_00
+public unsafe class HelloTriangleApplication_15 : HelloTriangleApplication_14
 {
     const int MAX_FRAMES_IN_FLIGHT = 2;
 

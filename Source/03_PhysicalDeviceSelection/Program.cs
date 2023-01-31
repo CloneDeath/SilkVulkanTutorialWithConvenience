@@ -16,7 +16,7 @@ public struct QueueFamilyIndices
     }
 }
 
-public unsafe class HelloTriangleApplication_03 : HelloTriangleApplication_00
+public unsafe class HelloTriangleApplication_03 : HelloTriangleApplication_02
 {
     bool EnableValidationLayers = true;
 

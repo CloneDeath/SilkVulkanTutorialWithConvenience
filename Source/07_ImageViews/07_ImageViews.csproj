@@ -15,6 +15,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\00_BaseCode\00_BaseCode.csproj" />
+    <ProjectReference Include="..\06_SwapChainCreation\06_SwapChainCreation.csproj" />
   </ItemGroup>
 
 </Project>

@@ -20,11 +20,8 @@ public struct QueueFamilyIndices
     }
 }
 
-public unsafe class HelloTriangleApplication_05 : HelloTriangleApplication_00
+public unsafe class HelloTriangleApplication_05 : HelloTriangleApplication_04
 {
-
-
-
     bool EnableValidationLayers = true;
 
     protected readonly string[] validationLayers = new []

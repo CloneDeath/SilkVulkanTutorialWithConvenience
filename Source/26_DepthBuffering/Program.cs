@@ -87,7 +87,7 @@ public struct UniformBufferObject
     public Matrix4X4<float> proj;
 }
 
-public unsafe class HelloTriangleApplication_26 : HelloTriangleApplication_16
+public unsafe class HelloTriangleApplication_26 : HelloTriangleApplication_25
 {
     const int MAX_FRAMES_IN_FLIGHT = 2;
 

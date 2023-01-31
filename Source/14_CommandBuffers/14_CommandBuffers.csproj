@@ -20,6 +20,7 @@
 
 	<ItemGroup>
 	  <ProjectReference Include="..\00_BaseCode\00_BaseCode.csproj" />
+	  <ProjectReference Include="..\13_FrameBuffers\13_FrameBuffers.csproj" />
 	</ItemGroup>
 	
 </Project>

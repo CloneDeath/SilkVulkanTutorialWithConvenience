@@ -21,5 +21,6 @@
 	<ItemGroup>
 	  <ProjectReference Include="..\00_BaseCode\00_BaseCode.csproj" />
 	  <ProjectReference Include="..\16_SwapChainRecreation\16_SwapChainRecreation.csproj" />
+	  <ProjectReference Include="..\17_VertexInput\17_VertexInput.csproj" />
 	</ItemGroup>
 </Project>

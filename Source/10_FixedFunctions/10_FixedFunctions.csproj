@@ -20,6 +20,7 @@
 
 	<ItemGroup>
 	  <ProjectReference Include="..\00_BaseCode\00_BaseCode.csproj" />
+	  <ProjectReference Include="..\09_ShaderModules\09_ShaderModules.csproj" />
 	</ItemGroup>
 	
 </Project>

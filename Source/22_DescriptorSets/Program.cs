@@ -6,7 +6,6 @@ using Silk.NET.Maths;
 using Silk.NET.Vulkan;
 using Silk.NET.Vulkan.Extensions.EXT;
 using Silk.NET.Vulkan.Extensions.KHR;
-using Silk.NET.Windowing;
 using Semaphore = Silk.NET.Vulkan.Semaphore;
 using Buffer = Silk.NET.Vulkan.Buffer;
 
@@ -79,7 +78,7 @@ public struct UniformBufferObject
     public Matrix4X4<float> proj;
 }
 
-public unsafe class HelloTriangleApplication_22 : HelloTriangleApplication_16
+public unsafe class HelloTriangleApplication_22 : HelloTriangleApplication_21
 {
     const int MAX_FRAMES_IN_FLIGHT = 2;
 

@@ -15,6 +15,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\00_BaseCode\00_BaseCode.csproj" />
+    <ProjectReference Include="..\08_GraphicsPipeline\08_GraphicsPipeline.csproj" />
   </ItemGroup>
 
 </Project>

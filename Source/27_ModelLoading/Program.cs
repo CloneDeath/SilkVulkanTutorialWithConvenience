@@ -88,7 +88,7 @@ public struct UniformBufferObject
     public Matrix4X4<float> proj;
 }
 
-public unsafe class HelloTriangleApplication_27 : HelloTriangleApplication_16
+public unsafe class HelloTriangleApplication_27 : HelloTriangleApplication_26
 {
     const string MODEL_PATH = @"Assets/viking_room.obj";
     const string TEXTURE_PATH = @"Assets/viking_room.png";

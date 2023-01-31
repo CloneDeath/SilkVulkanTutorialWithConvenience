@@ -6,7 +6,6 @@ using Silk.NET.Maths;
 using Silk.NET.Vulkan;
 using Silk.NET.Vulkan.Extensions.EXT;
 using Silk.NET.Vulkan.Extensions.KHR;
-using Silk.NET.Windowing;
 using Semaphore = Silk.NET.Vulkan.Semaphore;
 using Buffer = Silk.NET.Vulkan.Buffer;
 
@@ -72,7 +71,7 @@ public struct Vertex
     }
 }
 
-public unsafe class HelloTriangleApplication_20 : HelloTriangleApplication_16
+public unsafe class HelloTriangleApplication_20 : HelloTriangleApplication_19
 {
     const int MAX_FRAMES_IN_FLIGHT = 2;
 

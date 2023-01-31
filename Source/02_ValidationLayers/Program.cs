@@ -7,7 +7,7 @@ using Silk.NET.Vulkan.Extensions.EXT;
 var app = new HelloTriangleApplication_02();
 app.Run();
 
-public unsafe class HelloTriangleApplication_02 : HelloTriangleApplication_00
+public unsafe class HelloTriangleApplication_02 : HelloTriangleApplication_01
 {
     bool EnableValidationLayers = true;
 
