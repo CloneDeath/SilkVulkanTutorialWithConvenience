@@ -236,7 +236,7 @@ public unsafe class HelloTriangleApplication_27 : HelloTriangleApplication_26
 
                 vk!.CmdDrawIndexed(commandBuffers[i], (uint)indices_27!.Length, 1, 0, 0, 0);
 
-            vk!.CmdEndRenderPass(commandBuffers[i]);
+            commandBuffers[i].EndRenderPass();
             
             if (vk!.EndCommandBuffer(commandBuffers[i]) != Result.Success)
             {

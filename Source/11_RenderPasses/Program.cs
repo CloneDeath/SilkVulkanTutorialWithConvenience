@@ -1,11 +1,14 @@
 ﻿using Silk.NET.Vulkan;
+using SilkNetConvenience.CreateInfo;
+using SilkNetConvenience.CreateInfo.Pipelines;
+using SilkNetConvenience.Wrappers;
 
 var app = new HelloTriangleApplication_11();
 app.Run();
 
-public unsafe class HelloTriangleApplication_11 : HelloTriangleApplication_10
+public class HelloTriangleApplication_11 : HelloTriangleApplication_10
 {
-    protected RenderPass renderPass;
+    protected VulkanRenderPass? renderPass;
 
     protected override void InitVulkan()
     {
@@ -23,7 +26,7 @@ public unsafe class HelloTriangleApplication_11 : HelloTriangleApplication_10
     protected override void CleanUp()
     {
         pipelineLayout!.Dispose();
-        vk!.DestroyRenderPass(device, renderPass, null);
+        renderPass!.Dispose();
 
         foreach (var imageView in swapchainImageViews!)
         {
@@ -66,25 +69,18 @@ public unsafe class HelloTriangleApplication_11 : HelloTriangleApplication_10
             Layout = ImageLayout.ColorAttachmentOptimal,
         };
 
-        SubpassDescription subpass = new()
+        SubpassDescriptionInformation subpass = new()
         {
             PipelineBindPoint = PipelineBindPoint.Graphics,
-            ColorAttachmentCount = 1,
-            PColorAttachments = &colorAttachmentRef,
+            ColorAttachments = new []{colorAttachmentRef}
         };
 
-        RenderPassCreateInfo renderPassInfo = new() 
+        RenderPassCreateInformation renderPassInfo = new() 
         { 
-            SType = StructureType.RenderPassCreateInfo,
-            AttachmentCount = 1,
-            PAttachments = &colorAttachment,
-            SubpassCount = 1,
-            PSubpasses = &subpass,
+            Attachments = new[]{colorAttachment},
+            Subpasses = new[]{subpass}
         };
 
-        if(vk!.CreateRenderPass(device, renderPassInfo, null, out renderPass) != Result.Success)
-        {
-            throw new Exception("failed to create render pass!");
-        }
+        renderPass = device!.CreateRenderPass(renderPassInfo);
     }
 }

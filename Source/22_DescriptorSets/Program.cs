@@ -39,7 +39,7 @@ public unsafe class HelloTriangleApplication_22 : HelloTriangleApplication_21
     {
         foreach (var framebuffer in swapchainFramebuffers!)
         {
-            vk!.DestroyFramebuffer(device, framebuffer, null);
+            framebuffer.Dispose();
         }
 
         fixed (CommandBuffer* commandBuffersPtr = commandBuffers)
@@ -47,9 +47,9 @@ public unsafe class HelloTriangleApplication_22 : HelloTriangleApplication_21
             vk!.FreeCommandBuffers(device, commandPool, (uint)commandBuffers!.Length, commandBuffersPtr);
         }
 
-        vk!.DestroyPipeline(device, graphicsPipeline, null);
+        graphicsPipeline!.Dispose();
         pipelineLayout!.Dispose();
-        vk!.DestroyRenderPass(device, renderPass, null);
+        renderPass!.Dispose();
 
         foreach (var imageView in swapchainImageViews!)
         {
@@ -77,7 +77,7 @@ public unsafe class HelloTriangleApplication_22 : HelloTriangleApplication_21
             window.DoEvents();
         }
 
-        vk!.DeviceWaitIdle(device);
+        device!.WaitIdle();
 
         CleanUpSwapchain();
 
@@ -99,26 +99,24 @@ public unsafe class HelloTriangleApplication_22 : HelloTriangleApplication_21
         var vertShaderCode = File.ReadAllBytes("shaders/vert.spv");
         var fragShaderCode = File.ReadAllBytes("shaders/frag.spv");
 
-        var vertShaderModule = CreateShaderModule(vertShaderCode);
-        var fragShaderModule = CreateShaderModule(fragShaderCode);
+        using var vertShaderModule = CreateShaderModule(vertShaderCode);
+        using var fragShaderModule = CreateShaderModule(fragShaderCode);
 
-        PipelineShaderStageCreateInfo vertShaderStageInfo = new()
+        PipelineShaderStageCreateInformation vertShaderStageInfo = new()
         {
-            SType = StructureType.PipelineShaderStageCreateInfo,
             Stage = ShaderStageFlags.VertexBit,
             Module = vertShaderModule,
-            PName = (byte*)SilkMarshal.StringToPtr("main")
+            Name = "main"
         };
 
-        PipelineShaderStageCreateInfo fragShaderStageInfo = new()
+        PipelineShaderStageCreateInformation fragShaderStageInfo = new()
         {
-            SType = StructureType.PipelineShaderStageCreateInfo,
             Stage = ShaderStageFlags.FragmentBit,
             Module = fragShaderModule,
-            PName = (byte*)SilkMarshal.StringToPtr("main")
+            Name = "main"
         };
 
-        var shaderStages = stackalloc []
+        var shaderStages = new []
         {
             vertShaderStageInfo,
             fragShaderStageInfo
@@ -206,10 +204,10 @@ public unsafe class HelloTriangleApplication_22 : HelloTriangleApplication_21
                 PAttachments = &colorBlendAttachment,
             };
 
-            colorBlending.BlendConstants[0] = 0;
-            colorBlending.BlendConstants[1] = 0;
-            colorBlending.BlendConstants[2] = 0;
-            colorBlending.BlendConstants[3] = 0;
+            colorBlending.BlendConstants.X = 0;
+            colorBlending.BlendConstants.Y = 0;
+            colorBlending.BlendConstants.Z = 0;
+            colorBlending.BlendConstants.W = 0;
 
             PipelineLayoutCreateInfo pipelineLayoutInfo = new()
             {
@@ -247,11 +245,7 @@ public unsafe class HelloTriangleApplication_22 : HelloTriangleApplication_21
             }
         }
 
-        vk!.DestroyShaderModule(device, fragShaderModule, null);
-        vk!.DestroyShaderModule(device, vertShaderModule, null);
-
-        SilkMarshal.Free((nint)vertShaderStageInfo.PName);
-        SilkMarshal.Free((nint)fragShaderStageInfo.PName);
+        
     }
 
     protected virtual void CreateDescriptorPool()
@@ -405,12 +399,9 @@ public unsafe class HelloTriangleApplication_22 : HelloTriangleApplication_21
 
                 vk!.CmdDrawIndexed(commandBuffers[i], (uint)indices.Length, 1, 0, 0, 0);
 
-            vk!.CmdEndRenderPass(commandBuffers[i]);
+            commandBuffers[i].EndRenderPass();
 
-            if(vk!.EndCommandBuffer(commandBuffers[i]) != Result.Success)
-            {
-                throw new Exception("failed to record command buffer!");
-            }
+            commandBuffers[i].End();
 
         }
     }

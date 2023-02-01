@@ -1,18 +1,21 @@
 ﻿using Silk.NET.Vulkan;
 using Silk.NET.Windowing;
-using Semaphore = Silk.NET.Vulkan.Semaphore;
+using SilkNetConvenience.CreateInfo;
+using SilkNetConvenience.CreateInfo.KHR;
+using SilkNetConvenience.CreateInfo.Pipelines;
+using SilkNetConvenience.Wrappers;
 
 var app = new HelloTriangleApplication_15();
 app.Run();
 
-public unsafe class HelloTriangleApplication_15 : HelloTriangleApplication_14
+public class HelloTriangleApplication_15 : HelloTriangleApplication_14
 {
     protected const int MAX_FRAMES_IN_FLIGHT = 2;
 
-    protected Semaphore[]? imageAvailableSemaphores;
-    protected Semaphore[]? renderFinishedSemaphores;
-    protected Fence[]? inFlightFences;
-    protected Fence[]? imagesInFlight;
+    protected VulkanSemaphore[]? imageAvailableSemaphores;
+    protected VulkanSemaphore[]? renderFinishedSemaphores;
+    protected VulkanFence[]? inFlightFences;
+    protected VulkanFence[]? imagesInFlight;
     protected int currentFrame;
 
     protected override void InitVulkan()
@@ -36,28 +39,28 @@ public unsafe class HelloTriangleApplication_15 : HelloTriangleApplication_14
     {
         window!.Render += DrawFrame;
         window!.Run();
-        vk!.DeviceWaitIdle(device);
+        device!.WaitIdle();
     }
 
     protected override void CleanUp()
     {
         for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
         {
-            vk!.DestroySemaphore(device, renderFinishedSemaphores![i], null);
-            vk!.DestroySemaphore(device, imageAvailableSemaphores![i], null);
-            vk!.DestroyFence(device, inFlightFences![i], null);
+            renderFinishedSemaphores![i].Dispose();
+            imageAvailableSemaphores![i].Dispose();
+            inFlightFences![i].Dispose();
         }
 
-        vk!.DestroyCommandPool(device, commandPool, null);
+        commandPool?.Dispose();
 
         foreach (var framebuffer in swapchainFramebuffers!)
         {
-            vk!.DestroyFramebuffer(device, framebuffer, null);
+            framebuffer.Dispose();
         }
 
-        vk!.DestroyPipeline(device, graphicsPipeline, null);
+        graphicsPipeline!.Dispose();
         pipelineLayout!.Dispose();
-        vk!.DestroyRenderPass(device, renderPass, null);
+        renderPass!.Dispose();
 
         foreach (var imageView in swapchainImageViews!)
         {
@@ -100,11 +103,10 @@ public unsafe class HelloTriangleApplication_15 : HelloTriangleApplication_14
             Layout = ImageLayout.ColorAttachmentOptimal,
         };
 
-        SubpassDescription subpass = new()
+        SubpassDescriptionInformation subpass = new()
         {
             PipelineBindPoint = PipelineBindPoint.Graphics,
-            ColorAttachmentCount = 1,
-            PColorAttachments = &colorAttachmentRef,
+            ColorAttachments = new[]{colorAttachmentRef}
         };
 
         SubpassDependency dependency = new()
@@ -117,114 +119,67 @@ public unsafe class HelloTriangleApplication_15 : HelloTriangleApplication_14
             DstAccessMask = AccessFlags.ColorAttachmentWriteBit
         };
 
-        RenderPassCreateInfo renderPassInfo = new() 
-        { 
-            SType = StructureType.RenderPassCreateInfo,
-            AttachmentCount = 1,
-            PAttachments = &colorAttachment,
-            SubpassCount = 1,
-            PSubpasses = &subpass,
-            DependencyCount = 1,
-            PDependencies = &dependency,
+        RenderPassCreateInformation renderPassInfo = new() 
+        {
+            Attachments = new[]{colorAttachment},
+            Subpasses = new[]{subpass},
+            Dependencies = new[]{dependency}
         };
 
-        if(vk!.CreateRenderPass(device, renderPassInfo, null, out renderPass) != Result.Success)
-        {
-            throw new Exception("failed to create render pass!");
-        }
+        renderPass = device!.CreateRenderPass(renderPassInfo);
     }
 
     protected void CreateSyncObjects()
     {
-        imageAvailableSemaphores = new Semaphore[MAX_FRAMES_IN_FLIGHT];
-        renderFinishedSemaphores = new Semaphore[MAX_FRAMES_IN_FLIGHT];
-        inFlightFences = new Fence[MAX_FRAMES_IN_FLIGHT];
-        imagesInFlight = new Fence[swapchainImages!.Length];
+        imageAvailableSemaphores = new VulkanSemaphore[MAX_FRAMES_IN_FLIGHT];
+        renderFinishedSemaphores = new VulkanSemaphore[MAX_FRAMES_IN_FLIGHT];
+        inFlightFences = new VulkanFence[MAX_FRAMES_IN_FLIGHT];
+        imagesInFlight = new VulkanFence[swapchainImages!.Length];
 
-        SemaphoreCreateInfo semaphoreInfo = new()
-        {
-            SType = StructureType.SemaphoreCreateInfo,
-        };
-
-        FenceCreateInfo fenceInfo = new()
-        {
-            SType = StructureType.FenceCreateInfo,
-            Flags = FenceCreateFlags.SignaledBit,
-        };
-
-        for (var i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
-        {
-            if (vk!.CreateSemaphore(device, semaphoreInfo, null, out imageAvailableSemaphores[i]) != Result.Success ||
-                vk!.CreateSemaphore(device, semaphoreInfo, null, out renderFinishedSemaphores[i]) != Result.Success ||
-                vk!.CreateFence(device, fenceInfo, null, out inFlightFences[i]) != Result.Success)
-            {
-                throw new Exception("failed to create synchronization objects for a frame!");
-            }
+        for (var i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
+            imageAvailableSemaphores[i] = device!.CreateSemaphore();
+            renderFinishedSemaphores[i] = device!.CreateSemaphore();
+            inFlightFences[i] = device!.CreateFence(FenceCreateFlags.SignaledBit);
         }
     }
 
-    protected virtual void DrawFrame(double delta)
-    {
-        vk!.WaitForFences(device, 1, inFlightFences![currentFrame], true, ulong.MaxValue);
+    protected virtual void DrawFrame(double delta) {
+        inFlightFences![currentFrame].Wait();
 
-        uint imageIndex = 0;
-        khrSwapchain!.AcquireNextImage(device, swapchain, ulong.MaxValue, imageAvailableSemaphores![currentFrame], default, ref imageIndex);
+        var imageIndex = swapchain!.AcquireNextImage(null, imageAvailableSemaphores![currentFrame]);
 
-        if(imagesInFlight![imageIndex].Handle != default)
+        if(imagesInFlight![imageIndex].Fence.Handle != default)
         {
-            vk!.WaitForFences(device, 1, imagesInFlight[imageIndex], true, ulong.MaxValue);
+            imagesInFlight[imageIndex].Wait();
         }
         imagesInFlight[imageIndex] = inFlightFences[currentFrame];
 
-        SubmitInfo submitInfo = new()
-        {
-            SType = StructureType.SubmitInfo,
-        };
+        var waitSemaphores = new [] {imageAvailableSemaphores[currentFrame].Semaphore};
+        var waitStages = new [] { PipelineStageFlags.ColorAttachmentOutputBit };
 
-        var waitSemaphores = stackalloc [] {imageAvailableSemaphores[currentFrame]};
-        var waitStages = stackalloc [] { PipelineStageFlags.ColorAttachmentOutputBit };
-
+        SubmitInformation submitInfo = new();
         var buffer = commandBuffers![imageIndex];
 
-        submitInfo = submitInfo with 
-        { 
-            WaitSemaphoreCount = 1,
-            PWaitSemaphores = waitSemaphores,
-            PWaitDstStageMask = waitStages,
-            
-            CommandBufferCount = 1,
-            PCommandBuffers = &buffer
-        };
+        submitInfo.WaitSemaphores = waitSemaphores;
+        submitInfo.WaitDstStageMask = waitStages;
+        submitInfo.CommandBuffers = new[]{buffer.CommandBuffer};
 
-        var signalSemaphores = stackalloc[] { renderFinishedSemaphores![currentFrame] };
-        submitInfo = submitInfo with
+        var signalSemaphores = new[] { renderFinishedSemaphores![currentFrame].Semaphore };
+        submitInfo.SignalSemaphores = signalSemaphores;
+
+        inFlightFences[currentFrame].Reset();
+
+        graphicsQueue!.Submit(submitInfo, inFlightFences[currentFrame]);
+
+        var swapchains = new[] { swapchain.Swapchain };
+        PresentInformation presentInfo = new()
         {
-            SignalSemaphoreCount = 1,
-            PSignalSemaphores = signalSemaphores,
+            WaitSemaphores = signalSemaphores,
+            Swapchains = swapchains,
+            ImageIndices = new[]{imageIndex}
         };
-
-        vk!.ResetFences(device, 1,inFlightFences[currentFrame]);
-
-        if(vk!.QueueSubmit(graphicsQueue, 1, submitInfo, inFlightFences[currentFrame]) != Result.Success)
-        {
-            throw new Exception("failed to submit draw command buffer!");
-        }
-
-        var swapchains = stackalloc[] { swapchain };
-        PresentInfoKHR presentInfo = new()
-        {
-            SType = StructureType.PresentInfoKhr,
-
-            WaitSemaphoreCount = 1,
-            PWaitSemaphores = signalSemaphores,
-
-            SwapchainCount = 1,
-            PSwapchains = swapchains,
-
-            PImageIndices = &imageIndex
-        };
-
-        khrSwapchain.QueuePresent(presentQueue, presentInfo);
+        
+        khrSwapchain!.QueuePresent(presentQueue!, presentInfo);
 
         currentFrame = (currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
 

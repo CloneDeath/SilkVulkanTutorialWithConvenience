@@ -36,12 +36,12 @@ public unsafe class HelloTriangleApplication_18 : HelloTriangleApplication_17
 
         for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
         {
-            vk!.DestroySemaphore(device, renderFinishedSemaphores![i], null);
-            vk!.DestroySemaphore(device, imageAvailableSemaphores![i], null);
-            vk!.DestroyFence(device, inFlightFences![i], null);
+            renderFinishedSemaphores![i].Dispose();
+            imageAvailableSemaphores![i].Dispose();
+            inFlightFences![i].Dispose();
         }
 
-        vk!.DestroyCommandPool(device, commandPool, null);
+        commandPool?.Dispose();
 
         device!.Dispose();
 
@@ -186,12 +186,9 @@ public unsafe class HelloTriangleApplication_18 : HelloTriangleApplication_17
 
                 vk!.CmdDraw(commandBuffers[i], (uint)vertices.Length, 1, 0, 0);
 
-            vk!.CmdEndRenderPass(commandBuffers[i]);
+            commandBuffers[i].EndRenderPass();
 
-            if(vk!.EndCommandBuffer(commandBuffers[i]) != Result.Success)
-            {
-                throw new Exception("failed to record command buffer!");
-            }
+            commandBuffers[i].End();
 
         }
     }

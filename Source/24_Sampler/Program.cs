@@ -56,12 +56,12 @@ public unsafe class HelloTriangleApplication_24 : HelloTriangleApplication_23
 
         for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
         {
-            vk!.DestroySemaphore(device, renderFinishedSemaphores![i], null);
-            vk!.DestroySemaphore(device, imageAvailableSemaphores![i], null);
-            vk!.DestroyFence(device, inFlightFences![i], null);
+            renderFinishedSemaphores![i].Dispose();
+            imageAvailableSemaphores![i].Dispose();
+            inFlightFences![i].Dispose();
         }
 
-        vk!.DestroyCommandPool(device, commandPool, null);
+        commandPool?.Dispose();
 
         device!.Dispose();
 

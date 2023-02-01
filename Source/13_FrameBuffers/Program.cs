@@ -1,11 +1,12 @@
-﻿using Silk.NET.Vulkan;
+﻿using SilkNetConvenience.CreateInfo;
+using SilkNetConvenience.Wrappers;
 
 var app = new HelloTriangleApplication_13();
 app.Run();
 
-public unsafe class HelloTriangleApplication_13 : HelloTriangleApplication_12
+public class HelloTriangleApplication_13 : HelloTriangleApplication_12
 {
-    protected Framebuffer[]? swapchainFramebuffers;
+    protected VulkanFramebuffer[]? swapchainFramebuffers;
 
     protected override void InitVulkan()
     {
@@ -25,12 +26,12 @@ public unsafe class HelloTriangleApplication_13 : HelloTriangleApplication_12
     {
         foreach (var framebuffer in swapchainFramebuffers!)
         {
-            vk!.DestroyFramebuffer(device, framebuffer, null);
+            framebuffer.Dispose();
         }
 
-        vk!.DestroyPipeline(device, graphicsPipeline, null);
+        graphicsPipeline!.Dispose();
         pipelineLayout!.Dispose();
-        vk!.DestroyRenderPass(device, renderPass, null);
+        renderPass!.Dispose();
 
         foreach (var imageView in swapchainImageViews!)
         {
@@ -56,27 +57,22 @@ public unsafe class HelloTriangleApplication_13 : HelloTriangleApplication_12
 
     protected virtual void CreateFramebuffers()
     {
-        swapchainFramebuffers = new Framebuffer[swapchainImageViews!.Length];
+        swapchainFramebuffers = new VulkanFramebuffer[swapchainImageViews!.Length];
 
         for(int i = 0; i < swapchainImageViews.Length; i++)
         {
             var attachment = swapchainImageViews[i];
             
-            FramebufferCreateInfo framebufferInfo = new()
+            FramebufferCreateInformation framebufferInfo = new()
             {
-                SType = StructureType.FramebufferCreateInfo,
-                RenderPass = renderPass,
-                AttachmentCount = 1,
-                PAttachments = &attachment,
+                RenderPass = renderPass!,
+                Attachments = new[]{attachment.ImageView},
                 Width = swapchainExtent.Width,
                 Height = swapchainExtent.Height,
                 Layers = 1,
             };
 
-            if(vk!.CreateFramebuffer(device,framebufferInfo, null,out swapchainFramebuffers[i]) != Result.Success)
-            {
-                throw new Exception("failed to create framebuffer!");
-            }
+            swapchainFramebuffers[i] = device!.CreateFramebuffer(framebufferInfo);
         }
     }
 }

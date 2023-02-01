@@ -1,12 +1,14 @@
 ﻿using Silk.NET.Vulkan;
+using SilkNetConvenience.CreateInfo;
+using SilkNetConvenience.Wrappers;
 
 var app = new HelloTriangleApplication_14();
 app.Run();
 
-public unsafe class HelloTriangleApplication_14 : HelloTriangleApplication_13
+public class HelloTriangleApplication_14 : HelloTriangleApplication_13
 {
-    protected CommandPool commandPool;
-    protected CommandBuffer[]? commandBuffers;
+    protected VulkanCommandPool? commandPool;
+    protected VulkanCommandBuffer[]? commandBuffers;
 
     protected override void InitVulkan()
     {
@@ -26,16 +28,16 @@ public unsafe class HelloTriangleApplication_14 : HelloTriangleApplication_13
 
     protected override void CleanUp()
     {
-        vk!.DestroyCommandPool(device, commandPool, null);
+        commandPool?.Dispose();
 
         foreach (var framebuffer in swapchainFramebuffers!)
         {
-            vk!.DestroyFramebuffer(device, framebuffer, null);
+            framebuffer.Dispose();
         }
 
-        vk!.DestroyPipeline(device, graphicsPipeline, null);
+        graphicsPipeline!.Dispose();
         pipelineLayout!.Dispose();
-        vk!.DestroyRenderPass(device, renderPass, null);
+        renderPass!.Dispose();
 
         foreach (var imageView in swapchainImageViews!)
         {
@@ -61,56 +63,29 @@ public unsafe class HelloTriangleApplication_14 : HelloTriangleApplication_13
 
     protected void CreateCommandPool()
     {
-        var queueFamiliyIndicies = FindQueueFamilies_05(physicalDevice);
+        var queueFamilyIndices = FindQueueFamilies_05(physicalDevice!);
 
-        CommandPoolCreateInfo poolInfo = new()
+        CommandPoolCreateInformation poolInfo = new()
         {
-            SType = StructureType.CommandPoolCreateInfo,
-            QueueFamilyIndex = queueFamiliyIndicies.GraphicsFamily!.Value,
+            QueueFamilyIndex = queueFamilyIndices.GraphicsFamily!.Value,
         };
 
-        if(vk!.CreateCommandPool(device, poolInfo, null,out commandPool) != Result.Success)
-        {
-            throw new Exception("failed to create command pool!");
-        }
+        commandPool = device!.CreateCommandPool(poolInfo);
     }
 
     protected virtual void CreateCommandBuffers()
     {
-        commandBuffers = new CommandBuffer[swapchainFramebuffers!.Length];
+        commandBuffers = new VulkanCommandBuffer[swapchainFramebuffers!.Length];
 
-        CommandBufferAllocateInfo allocInfo = new()
-        {
-            SType = StructureType.CommandBufferAllocateInfo,
-            CommandPool = commandPool,
-            Level = CommandBufferLevel.Primary,
-            CommandBufferCount = (uint)commandBuffers.Length,
-        };
-
-        fixed (CommandBuffer* commandBuffersPtr = commandBuffers)
-        {
-            if (vk!.AllocateCommandBuffers(device, allocInfo, commandBuffersPtr) != Result.Success)
-            {
-                throw new Exception("failed to allocate command buffers!");
-            }
-        }
+        commandBuffers = commandPool!.AllocateCommandBuffers((uint)commandBuffers.Length, CommandBufferLevel.Primary);
 
         for (int i = 0; i < commandBuffers.Length; i++)
         {
-            CommandBufferBeginInfo beginInfo = new()
-            {
-                SType = StructureType.CommandBufferBeginInfo,
-            };
+            commandBuffers[i].Begin();
 
-            if(vk!.BeginCommandBuffer(commandBuffers[i], beginInfo ) != Result.Success)
+            RenderPassBeginInformation renderPassInfo = new()
             {
-                throw new Exception("failed to begin recording command buffer!");
-            }
-
-            RenderPassBeginInfo renderPassInfo = new()
-            {
-                SType= StructureType.RenderPassBeginInfo,
-                RenderPass = renderPass,
+                RenderPass = renderPass!,
                 Framebuffer = swapchainFramebuffers[i],
                 RenderArea =
                 {
@@ -124,21 +99,14 @@ public unsafe class HelloTriangleApplication_14 : HelloTriangleApplication_13
                 Color = new (){ Float32_0 = 0, Float32_1 = 0, Float32_2 = 0, Float32_3 = 1 },                
             };
 
-            renderPassInfo.ClearValueCount = 1;
-            renderPassInfo.PClearValues = &clearColor;
+            renderPassInfo.ClearValues = new[]{clearColor};
 
-            vk!.CmdBeginRenderPass(commandBuffers[i], &renderPassInfo, SubpassContents.Inline);
+            commandBuffers[i].BeginRenderPass(renderPassInfo, SubpassContents.Inline);
+                commandBuffers[i].BindPipeline(PipelineBindPoint.Graphics, graphicsPipeline!);
+                commandBuffers[i].Draw(3);
+            commandBuffers[i].EndRenderPass();
 
-                vk!.CmdBindPipeline(commandBuffers[i], PipelineBindPoint.Graphics, graphicsPipeline);
-
-                vk!.CmdDraw(commandBuffers[i], 3, 1, 0, 0);
-
-            vk!.CmdEndRenderPass(commandBuffers[i]);
-
-            if(vk!.EndCommandBuffer(commandBuffers[i]) != Result.Success)
-            {
-                throw new Exception("failed to record command buffer!");
-            }
+            commandBuffers[i].End();
 
         }
     }

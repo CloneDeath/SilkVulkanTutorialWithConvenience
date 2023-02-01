@@ -111,26 +111,24 @@ public unsafe class HelloTriangleApplication_25 : HelloTriangleApplication_24
         var vertShaderCode = File.ReadAllBytes("shaders/vert.spv");
         var fragShaderCode = File.ReadAllBytes("shaders/frag.spv");
 
-        var vertShaderModule = CreateShaderModule(vertShaderCode);
-        var fragShaderModule = CreateShaderModule(fragShaderCode);
+        using var vertShaderModule = CreateShaderModule(vertShaderCode);
+        using var fragShaderModule = CreateShaderModule(fragShaderCode);
 
-        PipelineShaderStageCreateInfo vertShaderStageInfo = new()
+        PipelineShaderStageCreateInformation vertShaderStageInfo = new()
         {
-            SType = StructureType.PipelineShaderStageCreateInfo,
             Stage = ShaderStageFlags.VertexBit,
             Module = vertShaderModule,
-            PName = (byte*)SilkMarshal.StringToPtr("main")
+            Name = "main"
         };
 
-        PipelineShaderStageCreateInfo fragShaderStageInfo = new()
+        PipelineShaderStageCreateInformation fragShaderStageInfo = new()
         {
-            SType = StructureType.PipelineShaderStageCreateInfo,
             Stage = ShaderStageFlags.FragmentBit,
             Module = fragShaderModule,
-            PName = (byte*)SilkMarshal.StringToPtr("main")
+            Name = "main"
         };
 
-        var shaderStages = stackalloc []
+        var shaderStages = new []
         {
             vertShaderStageInfo,
             fragShaderStageInfo
@@ -218,10 +216,10 @@ public unsafe class HelloTriangleApplication_25 : HelloTriangleApplication_24
                 PAttachments = &colorBlendAttachment,
             };
 
-            colorBlending.BlendConstants[0] = 0;
-            colorBlending.BlendConstants[1] = 0;
-            colorBlending.BlendConstants[2] = 0;
-            colorBlending.BlendConstants[3] = 0;
+            colorBlending.BlendConstants.X = 0;
+            colorBlending.BlendConstants.Y = 0;
+            colorBlending.BlendConstants.Z = 0;
+            colorBlending.BlendConstants.W = 0;
 
             PipelineLayoutCreateInfo pipelineLayoutInfo = new()
             {
@@ -259,11 +257,7 @@ public unsafe class HelloTriangleApplication_25 : HelloTriangleApplication_24
             }
         }
 
-        vk!.DestroyShaderModule(device, fragShaderModule, null);
-        vk!.DestroyShaderModule(device, vertShaderModule, null);
-
-        SilkMarshal.Free((nint)vertShaderStageInfo.PName);
-        SilkMarshal.Free((nint)fragShaderStageInfo.PName);
+        
     }
 
     protected override void CreateVertexBuffer()

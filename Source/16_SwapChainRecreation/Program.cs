@@ -38,7 +38,7 @@ public unsafe class HelloTriangleApplication_16 : HelloTriangleApplication_15
     {
         foreach (var framebuffer in swapchainFramebuffers!)
         {
-            vk!.DestroyFramebuffer(device, framebuffer, null);
+            framebuffer.Dispose();
         }
 
         fixed (CommandBuffer* commandBuffersPtr = commandBuffers)
@@ -46,9 +46,9 @@ public unsafe class HelloTriangleApplication_16 : HelloTriangleApplication_15
             vk!.FreeCommandBuffers(device, commandPool, (uint)commandBuffers!.Length, commandBuffersPtr);
         }
 
-        vk!.DestroyPipeline(device, graphicsPipeline, null);
+        graphicsPipeline!.Dispose();
         pipelineLayout!.Dispose();
-        vk!.DestroyRenderPass(device, renderPass, null);
+        renderPass!.Dispose();
 
         foreach (var imageView in swapchainImageViews!)
         {
@@ -64,12 +64,12 @@ public unsafe class HelloTriangleApplication_16 : HelloTriangleApplication_15
 
         for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
         {
-            vk!.DestroySemaphore(device, renderFinishedSemaphores![i], null);
-            vk!.DestroySemaphore(device, imageAvailableSemaphores![i], null);
-            vk!.DestroyFence(device, inFlightFences![i], null);
+            renderFinishedSemaphores![i].Dispose();
+            imageAvailableSemaphores![i].Dispose();
+            inFlightFences![i].Dispose();
         }
 
-        vk!.DestroyCommandPool(device, commandPool, null);
+        commandPool?.Dispose();
 
         device!.Dispose();
 
@@ -96,7 +96,7 @@ public unsafe class HelloTriangleApplication_16 : HelloTriangleApplication_15
             window.DoEvents();
         }
 
-        vk!.DeviceWaitIdle(device);
+        device!.WaitIdle();
 
         CleanUpSwapchain();
 
@@ -185,7 +185,7 @@ public unsafe class HelloTriangleApplication_16 : HelloTriangleApplication_15
 
     protected override void DrawFrame(double delta)
     {
-        vk!.WaitForFences(device, 1, inFlightFences![currentFrame], true, ulong.MaxValue);
+        inFlightFences![currentFrame].Wait();
 
         uint imageIndex = 0;
         var result = khrSwapchain!.AcquireNextImage(device, swapchain, ulong.MaxValue, imageAvailableSemaphores![currentFrame], default, ref imageIndex);

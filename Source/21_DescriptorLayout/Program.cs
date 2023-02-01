@@ -46,7 +46,7 @@ public unsafe class HelloTriangleApplication_21 : HelloTriangleApplication_20
     {
         foreach (var framebuffer in swapchainFramebuffers!)
         {
-            vk!.DestroyFramebuffer(device, framebuffer, null);
+            framebuffer.Dispose();
         }
 
         fixed (CommandBuffer* commandBuffersPtr = commandBuffers)
@@ -54,9 +54,9 @@ public unsafe class HelloTriangleApplication_21 : HelloTriangleApplication_20
             vk!.FreeCommandBuffers(device, commandPool, (uint)commandBuffers!.Length, commandBuffersPtr);
         }
 
-        vk!.DestroyPipeline(device, graphicsPipeline, null);
+        graphicsPipeline!.Dispose();
         pipelineLayout!.Dispose();
-        vk!.DestroyRenderPass(device, renderPass, null);
+        renderPass!.Dispose();
 
         foreach (var imageView in swapchainImageViews!)
         {
@@ -86,12 +86,12 @@ public unsafe class HelloTriangleApplication_21 : HelloTriangleApplication_20
 
         for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
         {
-            vk!.DestroySemaphore(device, renderFinishedSemaphores![i], null);
-            vk!.DestroySemaphore(device, imageAvailableSemaphores![i], null);
-            vk!.DestroyFence(device, inFlightFences![i], null);
+            renderFinishedSemaphores![i].Dispose();
+            imageAvailableSemaphores![i].Dispose();
+            inFlightFences![i].Dispose();
         }
 
-        vk!.DestroyCommandPool(device, commandPool, null);
+        commandPool?.Dispose();
 
         device!.Dispose();
 
@@ -118,7 +118,7 @@ public unsafe class HelloTriangleApplication_21 : HelloTriangleApplication_20
             window.DoEvents();
         }
 
-        vk!.DeviceWaitIdle(device);
+        device!.WaitIdle();
 
         CleanUpSwapchain();
 
@@ -165,26 +165,24 @@ public unsafe class HelloTriangleApplication_21 : HelloTriangleApplication_20
         var vertShaderCode = File.ReadAllBytes("shaders/vert.spv");
         var fragShaderCode = File.ReadAllBytes("shaders/frag.spv");
 
-        var vertShaderModule = CreateShaderModule(vertShaderCode);
-        var fragShaderModule = CreateShaderModule(fragShaderCode);
+        using var vertShaderModule = CreateShaderModule(vertShaderCode);
+        using var fragShaderModule = CreateShaderModule(fragShaderCode);
 
-        PipelineShaderStageCreateInfo vertShaderStageInfo = new()
+        PipelineShaderStageCreateInformation vertShaderStageInfo = new()
         {
-            SType = StructureType.PipelineShaderStageCreateInfo,
             Stage = ShaderStageFlags.VertexBit,
             Module = vertShaderModule,
-            PName = (byte*)SilkMarshal.StringToPtr("main")
+            Name = "main"
         };
 
-        PipelineShaderStageCreateInfo fragShaderStageInfo = new()
+        PipelineShaderStageCreateInformation fragShaderStageInfo = new()
         {
-            SType = StructureType.PipelineShaderStageCreateInfo,
             Stage = ShaderStageFlags.FragmentBit,
             Module = fragShaderModule,
-            PName = (byte*)SilkMarshal.StringToPtr("main")
+            Name = "main"
         };
 
-        var shaderStages = stackalloc []
+        var shaderStages = new []
         {
             vertShaderStageInfo,
             fragShaderStageInfo
@@ -272,10 +270,10 @@ public unsafe class HelloTriangleApplication_21 : HelloTriangleApplication_20
                 PAttachments = &colorBlendAttachment,
             };
 
-            colorBlending.BlendConstants[0] = 0;
-            colorBlending.BlendConstants[1] = 0;
-            colorBlending.BlendConstants[2] = 0;
-            colorBlending.BlendConstants[3] = 0;
+            colorBlending.BlendConstants.X = 0;
+            colorBlending.BlendConstants.Y = 0;
+            colorBlending.BlendConstants.Z = 0;
+            colorBlending.BlendConstants.W = 0;
 
             PipelineLayoutCreateInfo pipelineLayoutInfo = new()
             {
@@ -313,11 +311,7 @@ public unsafe class HelloTriangleApplication_21 : HelloTriangleApplication_20
             }
         }
 
-        vk!.DestroyShaderModule(device, fragShaderModule, null);
-        vk!.DestroyShaderModule(device, vertShaderModule, null);
-
-        SilkMarshal.Free((nint)vertShaderStageInfo.PName);
-        SilkMarshal.Free((nint)fragShaderStageInfo.PName);
+        
     }
 
     protected void CreateUniformBuffers()
@@ -356,7 +350,7 @@ public unsafe class HelloTriangleApplication_21 : HelloTriangleApplication_20
 
     protected override void DrawFrame(double delta)
     {
-        vk!.WaitForFences(device, 1, inFlightFences![currentFrame], true, ulong.MaxValue);
+        inFlightFences![currentFrame].Wait();
 
         uint imageIndex = 0;
         var result = khrSwapchain!.AcquireNextImage(device, swapchain, ulong.MaxValue, imageAvailableSemaphores![currentFrame], default, ref imageIndex);
