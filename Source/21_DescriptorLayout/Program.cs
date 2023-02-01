@@ -133,7 +133,7 @@ public unsafe class HelloTriangleApplication_21 : HelloTriangleApplication_20
         imagesInFlight = new Fence[swapChainImages!.Length];
     }
 
-    protected void CreateDescriptorSetLayout()
+    protected virtual void CreateDescriptorSetLayout()
     {
         DescriptorSetLayoutBinding uboLayoutBinding = new()
         {

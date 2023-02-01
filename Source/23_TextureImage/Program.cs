@@ -72,7 +72,7 @@ public unsafe class HelloTriangleApplication_23 : HelloTriangleApplication_22
         window?.Dispose();
     }
 
-    protected void CreateTextureImage()
+    protected virtual void CreateTextureImage()
     {
         using var img = SixLabors.ImageSharp.Image.Load<SixLabors.ImageSharp.PixelFormats.Rgba32>("Textures/texture.jpg");
 

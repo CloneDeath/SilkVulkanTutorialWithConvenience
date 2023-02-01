@@ -39,7 +39,7 @@ public unsafe class HelloTriangleApplication_02 : HelloTriangleApplication_01
         window?.Dispose();
     }
 
-    protected void CreateInstance()
+    protected override void CreateInstance()
     {
         vk = Vk.GetApi();
 

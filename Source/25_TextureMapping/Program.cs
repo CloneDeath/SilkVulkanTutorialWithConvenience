@@ -57,29 +57,9 @@ public struct Vertex_25
     }
 }
 
-
-
 public unsafe class HelloTriangleApplication_25 : HelloTriangleApplication_24
 {
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    protected Vertex_25[] vertices = new Vertex_25[]
+    protected Vertex_25[] vertices_25 = new Vertex_25[]
     {
         new Vertex_25 { pos = new Vector2D<float>(-0.5f,-0.5f), color = new Vector3D<float>(1.0f, 0.0f, 0.0f), textCoord = new Vector2D<float>(1.0f, 0.0f) },
         new Vertex_25 { pos = new Vector2D<float>(0.5f,-0.5f), color = new Vector3D<float>(0.0f, 1.0f, 0.0f), textCoord = new Vector2D<float>(0.0f, 0.0f) },
@@ -87,31 +67,7 @@ public unsafe class HelloTriangleApplication_25 : HelloTriangleApplication_24
         new Vertex_25 { pos = new Vector2D<float>(-0.5f,0.5f), color = new Vector3D<float>(1.0f, 1.0f, 1.0f), textCoord = new Vector2D<float>(1.0f, 1.0f) },
     };
 
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    protected void CreateDescriptorSetLayout()
+    protected override void CreateDescriptorSetLayout()
     {
         DescriptorSetLayoutBinding uboLayoutBinding = new()
         {
@@ -150,7 +106,7 @@ public unsafe class HelloTriangleApplication_25 : HelloTriangleApplication_24
         }
     }
 
-    protected void CreateGraphicsPipeline()
+    protected override void CreateGraphicsPipeline()
     {
         var vertShaderCode = File.ReadAllBytes("shaders/vert.spv");
         var fragShaderCode = File.ReadAllBytes("shaders/frag.spv");
@@ -310,52 +266,9 @@ public unsafe class HelloTriangleApplication_25 : HelloTriangleApplication_24
         SilkMarshal.Free((nint)fragShaderStageInfo.PName);
     }
 
-    
-
-    
-
-    protected void CreateTextureImage()
+    protected override void CreateVertexBuffer()
     {
-        using var img = SixLabors.ImageSharp.Image.Load<SixLabors.ImageSharp.PixelFormats.Rgba32>("Textures/texture.jpg");
-
-        ulong imageSize = (ulong)(img.Width * img.Height * img.PixelType.BitsPerPixel / 8);
-
-        Buffer stagingBuffer = default;
-        DeviceMemory stagingBufferMemory = default;
-        CreateBuffer(imageSize, BufferUsageFlags.TransferSrcBit, MemoryPropertyFlags.HostVisibleBit | MemoryPropertyFlags.HostCoherentBit, ref stagingBuffer, ref stagingBufferMemory);
-
-        void* data;
-        vk!.MapMemory(device, stagingBufferMemory, 0, imageSize, 0, &data);
-        img.CopyPixelDataTo(new Span<byte>(data, (int)imageSize));
-        vk!.UnmapMemory(device, stagingBufferMemory);
-
-        CreateImage((uint)img.Width, (uint)img.Height, Format.R8G8B8A8Srgb, ImageTiling.Optimal, ImageUsageFlags.TransferDstBit | ImageUsageFlags.SampledBit, MemoryPropertyFlags.DeviceLocalBit, ref textureImage, ref textureImageMemory);
-
-        TransitionImageLayout(textureImage, Format.R8G8B8A8Srgb, ImageLayout.Undefined, ImageLayout.TransferDstOptimal);
-        CopyBufferToImage(stagingBuffer, textureImage, (uint)img.Width, (uint)img.Height);
-        TransitionImageLayout(textureImage, Format.R8G8B8A8Srgb, ImageLayout.TransferDstOptimal, ImageLayout.ShaderReadOnlyOptimal);
-
-        vk!.DestroyBuffer(device, stagingBuffer, null);
-        vk!.FreeMemory(device, stagingBufferMemory, null);
-    }
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-
-
-    protected void CreateVertexBuffer()
-    {
-        ulong bufferSize = (ulong)(Unsafe.SizeOf<Vertex_25>() * vertices.Length);
+        ulong bufferSize = (ulong)(Unsafe.SizeOf<Vertex_25>() * vertices_25.Length);
 
         Buffer stagingBuffer = default;
         DeviceMemory stagingBufferMemory = default;
@@ -363,7 +276,7 @@ public unsafe class HelloTriangleApplication_25 : HelloTriangleApplication_24
         
         void* data;
         vk!.MapMemory(device, stagingBufferMemory, 0, bufferSize, 0, &data);
-            vertices.AsSpan().CopyTo(new Span<Vertex_25>(data, vertices.Length));
+            vertices_25.AsSpan().CopyTo(new Span<Vertex_25>(data, vertices_25.Length));
         vk!.UnmapMemory(device, stagingBufferMemory);
 
         CreateBuffer(bufferSize, BufferUsageFlags.TransferDstBit | BufferUsageFlags.VertexBufferBit, MemoryPropertyFlags.DeviceLocalBit, ref vertexBuffer, ref vertexBufferMemory);
@@ -374,11 +287,7 @@ public unsafe class HelloTriangleApplication_25 : HelloTriangleApplication_24
         vk!.FreeMemory(device, stagingBufferMemory, null);
     }
 
-    
-
-    
-
-    protected void CreateDescriptorPool()
+    protected override void CreateDescriptorPool()
     {
         var poolSizes = new[]
         {
@@ -414,7 +323,7 @@ public unsafe class HelloTriangleApplication_25 : HelloTriangleApplication_24
         }
     }
 
-    protected void CreateDescriptorSets()
+    protected override void CreateDescriptorSets()
     {
         var layouts = new DescriptorSetLayout[swapChainImages!.Length];
         Array.Fill(layouts, descriptorSetLayout); 
@@ -488,44 +397,4 @@ public unsafe class HelloTriangleApplication_25 : HelloTriangleApplication_24
         }
 
     }
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
 }

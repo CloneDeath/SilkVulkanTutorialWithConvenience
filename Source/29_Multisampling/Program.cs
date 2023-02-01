@@ -1,58 +1,18 @@
-﻿using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
-using Silk.NET.Core.Native;
+﻿using Silk.NET.Core.Native;
 using Silk.NET.Maths;
 using Silk.NET.Vulkan;
-using Semaphore = Silk.NET.Vulkan.Semaphore;
 using Buffer = Silk.NET.Vulkan.Buffer;
-using Silk.NET.Assimp;
 
 var app = new HelloTriangleApplication_29();
 app.Run();
 
-
-
-
-
 public unsafe class HelloTriangleApplication_29 : HelloTriangleApplication_28
 {
-    const string MODEL_PATH = @"Assets/viking_room.obj";
-    const string TEXTURE_PATH = @"Assets/viking_room.png";
-
     protected SampleCountFlags msaaSamples = SampleCountFlags.Count1Bit;
-
-
 
     protected Image colorImage;
     protected DeviceMemory colorImageMemory;
     protected ImageView colorImageView;
-
-    protected Image depthImage;
-    protected DeviceMemory depthImageMemory;
-    protected ImageView depthImageView;
-
-    protected uint mipLevels;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    protected Vertex_26[]? vertices;
-
-    protected uint[]? indices;
-
-    
 
     protected override void InitVulkan()
     {
@@ -83,9 +43,7 @@ public unsafe class HelloTriangleApplication_29 : HelloTriangleApplication_28
         CreateSyncObjects();
     }
 
-    
-
-    protected void CleanUpSwapChain()
+    protected override void CleanUpSwapChain()
     {
         vk!.DestroyImageView(device, depthImageView, null);
         vk!.DestroyImage(device, depthImage, null);
@@ -124,10 +82,8 @@ public unsafe class HelloTriangleApplication_29 : HelloTriangleApplication_28
 
         vk!.DestroyDescriptorPool(device, descriptorPool, null);
     }
-
     
-
-    protected void RecreateSwapChain()
+    protected override void RecreateSwapChain()
     {
         Vector2D<int> framebufferSize = window!.FramebufferSize;
 
@@ -156,8 +112,7 @@ public unsafe class HelloTriangleApplication_29 : HelloTriangleApplication_28
         imagesInFlight = new Fence[swapChainImages!.Length];
     }
 
-
-    protected void PickPhysicalDevice()
+    protected override void PickPhysicalDevice()
     {
         uint devicedCount = 0;
         vk!.EnumeratePhysicalDevices(instance, ref devicedCount, null);
@@ -189,13 +144,7 @@ public unsafe class HelloTriangleApplication_29 : HelloTriangleApplication_28
         }
     }
 
-    
-
-    
-
-    
-
-    protected void CreateRenderPass()
+    protected override void CreateRenderPass()
     {
         AttachmentDescription colorAttachment = new()
         {
@@ -290,50 +239,11 @@ public unsafe class HelloTriangleApplication_29 : HelloTriangleApplication_28
             } 
         }
     }
-
-    protected void CreateDescriptorSetLayout()
+    
+    protected override void CreateGraphicsPipeline()
     {
-        DescriptorSetLayoutBinding uboLayoutBinding = new()
-        {
-            Binding = 0,
-            DescriptorCount = 1,
-            DescriptorType = DescriptorType.UniformBuffer,
-            PImmutableSamplers = null,
-            StageFlags = ShaderStageFlags.VertexBit,
-        };
-
-        DescriptorSetLayoutBinding samplerLayoutBinding = new()
-        {
-            Binding = 1,
-            DescriptorCount = 1,
-            DescriptorType = DescriptorType.CombinedImageSampler,
-            PImmutableSamplers = null,
-            StageFlags = ShaderStageFlags.FragmentBit,
-        };
-
-        var bindings = new[] { uboLayoutBinding, samplerLayoutBinding };
-        
-        fixed(DescriptorSetLayoutBinding* bindingsPtr = bindings)
-        fixed(DescriptorSetLayout* descriptorSetLayoutPtr = &descriptorSetLayout)
-        {
-            DescriptorSetLayoutCreateInfo layoutInfo = new()
-            {
-                SType = StructureType.DescriptorSetLayoutCreateInfo,
-                BindingCount = (uint)bindings.Length,
-                PBindings = bindingsPtr,
-            };
-
-            if (vk!.CreateDescriptorSetLayout(device, layoutInfo, null, descriptorSetLayoutPtr) != Result.Success)
-            {
-                throw new Exception("failed to create descriptor set layout!");
-            }
-        }
-    }
-
-    protected void CreateGraphicsPipeline()
-    {
-        var vertShaderCode = System.IO.File.ReadAllBytes("shaders/vert.spv");
-        var fragShaderCode = System.IO.File.ReadAllBytes("shaders/frag.spv");
+        var vertShaderCode = File.ReadAllBytes("shaders/vert.spv");
+        var fragShaderCode = File.ReadAllBytes("shaders/frag.spv");
 
         var vertShaderModule = CreateShaderModule(vertShaderCode);
         var fragShaderModule = CreateShaderModule(fragShaderCode);
@@ -501,7 +411,7 @@ public unsafe class HelloTriangleApplication_29 : HelloTriangleApplication_28
         SilkMarshal.Free((nint)fragShaderStageInfo.PName);
     }
 
-    protected void CreateFramebuffers()
+    protected override void CreateFramebuffers()
     {
         swapChainFramebuffers = new Framebuffer[swapChainImageViews!.Length];
 
@@ -529,9 +439,7 @@ public unsafe class HelloTriangleApplication_29 : HelloTriangleApplication_28
             }
         }
     }
-
     
-
     protected void CreateColorResources()
     {
         Format colorFormat = swapChainImageFormat;
@@ -540,7 +448,7 @@ public unsafe class HelloTriangleApplication_29 : HelloTriangleApplication_28
         colorImageView = CreateImageView(colorImage, colorFormat, ImageAspectFlags.ColorBit, 1);
     }
 
-    protected void CreateDepthResources()
+    protected override void CreateDepthResources()
     {
         Format depthFormat = FindDepthFormat();
 
@@ -548,31 +456,7 @@ public unsafe class HelloTriangleApplication_29 : HelloTriangleApplication_28
         depthImageView = CreateImageView(depthImage, depthFormat, ImageAspectFlags.DepthBit, 1);
     }
 
-    protected Format FindSupportedFormat(IEnumerable<Format> candidates, ImageTiling tiling, FormatFeatureFlags features)
-    {
-        foreach (var format in candidates)
-        {
-            vk!.GetPhysicalDeviceFormatProperties(physicalDevice, format, out var props);
-            
-            if(tiling == ImageTiling.Linear && (props.LinearTilingFeatures & features) == features)
-            {
-                return format;
-            }
-            else if (tiling == ImageTiling.Optimal && (props.OptimalTilingFeatures & features) == features)
-            {
-                return format;
-            }
-        }
-
-        throw new Exception("failed to find supported format!");
-    }
-
-    protected Format FindDepthFormat()
-    {
-        return FindSupportedFormat(new[] { Format.D32Sfloat, Format.D32SfloatS8Uint, Format.D24UnormS8Uint }, ImageTiling.Optimal, FormatFeatureFlags.DepthStencilAttachmentBit);
-    }
-
-    protected void CreateTextureImage()
+    protected override void CreateTextureImage()
     {
         using var img = SixLabors.ImageSharp.Image.Load<SixLabors.ImageSharp.PixelFormats.Rgba32>(TEXTURE_PATH);
         
@@ -599,112 +483,7 @@ public unsafe class HelloTriangleApplication_29 : HelloTriangleApplication_28
 
         GenerateMipMaps(textureImage, Format.R8G8B8A8Srgb, (uint)img.Width, (uint)img.Height, mipLevels);
     }
-
-    protected void GenerateMipMaps(Image image, Format imageFormat, uint width, uint height, uint withMipLevels)
-    {
-        vk!.GetPhysicalDeviceFormatProperties(physicalDevice, imageFormat, out var formatProperties);
-
-        if((formatProperties.OptimalTilingFeatures & FormatFeatureFlags.SampledImageFilterLinearBit) == 0)
-        {
-            throw new Exception("texture image format does not support linear blitting!");
-        }
-
-        var commandBuffer = BeginSingleTimeCommands();
-
-        ImageMemoryBarrier barrier = new()
-        {
-            SType = StructureType.ImageMemoryBarrier,
-            Image = image,
-            SrcQueueFamilyIndex = Vk.QueueFamilyIgnored,
-            DstQueueFamilyIndex = Vk.QueueFamilyIgnored,
-            SubresourceRange =
-            {
-                AspectMask = ImageAspectFlags.ColorBit,
-                BaseArrayLayer = 0,
-                LayerCount = 1,
-                LevelCount = 1,
-            }
-        };
-
-        var mipWidth = width;
-        var mipHeight = height;
-
-        for (uint i = 1; i < withMipLevels; i++)
-        {
-            barrier.SubresourceRange.BaseMipLevel = i - 1;
-            barrier.OldLayout = ImageLayout.TransferDstOptimal;
-            barrier.NewLayout = ImageLayout.TransferSrcOptimal;
-            barrier.SrcAccessMask = AccessFlags.TransferWriteBit;
-            barrier.DstAccessMask = AccessFlags.TransferReadBit;
-
-            vk!.CmdPipelineBarrier(commandBuffer, PipelineStageFlags.TransferBit, PipelineStageFlags.TransferBit, 0,
-                0, null,
-                0, null,
-                1, barrier);
-
-            ImageBlit blit = new()
-            {
-                SrcOffsets =
-                {
-                    Element0 = new Offset3D(0,0,0),
-                    Element1 = new Offset3D((int)mipWidth, (int)mipHeight, 1),
-                },
-                SrcSubresource =
-                {
-                    AspectMask = ImageAspectFlags.ColorBit,
-                    MipLevel = i - 1,
-                    BaseArrayLayer = 0,
-                    LayerCount = 1,                    
-                },
-                DstOffsets =
-                {
-                    Element0 = new Offset3D(0,0,0),
-                    Element1 = new Offset3D((int)(mipWidth > 1 ? mipWidth / 2 : 1), (int)(mipHeight > 1 ? mipHeight / 2 : 1),1),
-                },
-                DstSubresource =
-                {
-                    AspectMask = ImageAspectFlags.ColorBit,
-                    MipLevel = i,
-                    BaseArrayLayer = 0,
-                    LayerCount = 1,
-                },
-
-            };
-
-            vk!.CmdBlitImage(commandBuffer,
-                image, ImageLayout.TransferSrcOptimal,
-                image, ImageLayout.TransferDstOptimal,
-                1, blit,
-                Filter.Linear);
-
-            barrier.OldLayout = ImageLayout.TransferSrcOptimal;
-            barrier.NewLayout = ImageLayout.ShaderReadOnlyOptimal;
-            barrier.SrcAccessMask = AccessFlags.TransferReadBit;
-            barrier.DstAccessMask = AccessFlags.ShaderReadBit;
-
-            vk!.CmdPipelineBarrier(commandBuffer, PipelineStageFlags.TransferBit, PipelineStageFlags.FragmentShaderBit, 0,
-                0, null,
-                0, null,
-                1, barrier);
-
-            if (mipWidth > 1) mipWidth /= 2;
-            if (mipHeight > 1) mipHeight /= 2;
-        }
-
-        barrier.SubresourceRange.BaseMipLevel = withMipLevels - 1;
-        barrier.OldLayout = ImageLayout.TransferDstOptimal;
-        barrier.NewLayout = ImageLayout.ShaderReadOnlyOptimal;
-        barrier.SrcAccessMask = AccessFlags.TransferWriteBit;
-        barrier.DstAccessMask = AccessFlags.ShaderReadBit;
-
-        vk!.CmdPipelineBarrier(commandBuffer, PipelineStageFlags.TransferBit, PipelineStageFlags.FragmentShaderBit, 0,
-            0, null,
-            0, null,
-            1, barrier);
-
-        EndSingleTimeCommands(commandBuffer);
-    }
-
+    
     protected SampleCountFlags GetMaxUsableSampleCount()
     {
         vk!.GetPhysicalDeviceProperties(physicalDevice, out var physicalDeviceProperties);
@@ -721,81 +500,6 @@ public unsafe class HelloTriangleApplication_29 : HelloTriangleApplication_28
             var c when (c & SampleCountFlags.Count2Bit) != 0 => SampleCountFlags.Count2Bit,
             _ => SampleCountFlags.Count1Bit
         };
-    }
-
-    protected void CreateTextureImageView()
-    {
-        textureImageView = CreateImageView(textureImage, Format.R8G8B8A8Srgb, ImageAspectFlags.ColorBit, mipLevels);
-    }
-
-    protected void CreateTextureSampler()
-    {
-        PhysicalDeviceProperties properties;
-        vk!.GetPhysicalDeviceProperties(physicalDevice, out properties);
-
-        SamplerCreateInfo samplerInfo = new()
-        {
-            SType = StructureType.SamplerCreateInfo,
-            MagFilter = Filter.Linear,
-            MinFilter = Filter.Linear,
-            AddressModeU = SamplerAddressMode.Repeat,
-            AddressModeV = SamplerAddressMode.Repeat,
-            AddressModeW = SamplerAddressMode.Repeat,
-            AnisotropyEnable = true,
-            MaxAnisotropy = properties.Limits.MaxSamplerAnisotropy,
-            BorderColor = BorderColor.IntOpaqueBlack,
-            UnnormalizedCoordinates = false,
-            CompareEnable = false,
-            CompareOp = CompareOp.Always,
-            MipmapMode = SamplerMipmapMode.Linear,
-            MinLod = 0,
-            MaxLod = mipLevels,
-            MipLodBias = 0,
-        };
-
-        fixed(Sampler* textureSamplerPtr = &textureSampler)
-        {
-            if(vk!.CreateSampler(device, samplerInfo, null, textureSamplerPtr) != Result.Success)
-            {
-                throw new Exception("failed to create texture sampler!");
-            }
-        }
-    }
-
-    protected ImageView CreateImageView(Image image, Format format, ImageAspectFlags aspectFlags, uint withMipLevels)
-    {
-        ImageViewCreateInfo createInfo = new()
-        {
-            SType = StructureType.ImageViewCreateInfo,
-            Image = image,
-            ViewType = ImageViewType.Type2D,
-            Format = format,
-            //Components =
-            //    {
-            //        R = ComponentSwizzle.Identity,
-            //        G = ComponentSwizzle.Identity,
-            //        B = ComponentSwizzle.Identity,
-            //        A = ComponentSwizzle.Identity,
-            //    },
-            SubresourceRange =
-                {
-                    AspectMask = aspectFlags,
-                    BaseMipLevel = 0,
-                    LevelCount = withMipLevels,
-                    BaseArrayLayer = 0,
-                    LayerCount = 1,
-                }
-
-        };
-
-        ImageView imageView;
-
-        if (vk!.CreateImageView(device, createInfo, null, out imageView) != Result.Success)
-        {
-            throw new Exception("failed to create image views!");
-        }
-
-        return imageView;
     }
 
     protected void CreateImage(uint width, uint height, uint withMipLevels, SampleCountFlags numSamples, Format format, ImageTiling tiling, ImageUsageFlags usage, MemoryPropertyFlags properties, ref Image image, ref DeviceMemory imageMemory)
@@ -848,408 +552,4 @@ public unsafe class HelloTriangleApplication_29 : HelloTriangleApplication_28
 
         vk!.BindImageMemory(device, image, imageMemory, 0);
     }
-
-    // ReSharper disable once UnusedParameter.Local
-    protected void TransitionImageLayout(Image image, Format format, ImageLayout oldLayout, ImageLayout newLayout, uint withMipLevels)
-    {
-        CommandBuffer commandBuffer = BeginSingleTimeCommands();
-
-        ImageMemoryBarrier barrier = new()
-        {
-            SType = StructureType.ImageMemoryBarrier,
-            OldLayout = oldLayout,
-            NewLayout = newLayout,
-            SrcQueueFamilyIndex = Vk.QueueFamilyIgnored,
-            DstQueueFamilyIndex = Vk.QueueFamilyIgnored,
-            Image = image,
-            SubresourceRange =
-            {
-                AspectMask = ImageAspectFlags.ColorBit,
-                BaseMipLevel = 0,
-                LevelCount = withMipLevels,
-                BaseArrayLayer = 0,
-                LayerCount = 1,
-            }
-        };
-
-        PipelineStageFlags sourceStage;
-        PipelineStageFlags destinationStage;
-
-        if(oldLayout == ImageLayout.Undefined && newLayout == ImageLayout.TransferDstOptimal)
-        {
-            barrier.SrcAccessMask = 0;
-            barrier.DstAccessMask = AccessFlags.TransferWriteBit;
-
-            sourceStage = PipelineStageFlags.TopOfPipeBit;
-            destinationStage = PipelineStageFlags.TransferBit;
-        }
-        else if (oldLayout == ImageLayout.TransferDstOptimal && newLayout == ImageLayout.ShaderReadOnlyOptimal)
-        {
-            barrier.SrcAccessMask = AccessFlags.TransferWriteBit;
-            barrier.DstAccessMask = AccessFlags.ShaderReadBit;
-
-            sourceStage = PipelineStageFlags.TransferBit;
-            destinationStage = PipelineStageFlags.FragmentShaderBit;
-        }
-        else
-        {
-            throw new Exception("unsupported layout transition!");
-        }
-
-        vk!.CmdPipelineBarrier(commandBuffer,sourceStage,destinationStage,0,0,null,0,null,1,barrier);
-
-        EndSingleTimeCommands(commandBuffer);
-
-    }
-
-    
-
-    protected void LoadModel()
-    {
-        using var assimp = Assimp.GetApi();
-        var scene = assimp.ImportFile(MODEL_PATH, (uint)PostProcessPreset.TargetRealTimeMaximumQuality);
-
-        var vertexMap = new Dictionary<Vertex_26, uint>();
-        var localVertices = new List<Vertex_26>();
-        var localIndices = new List<uint>();
-
-        VisitSceneNode(scene->MRootNode);
-
-        assimp.ReleaseImport(scene);
-
-        this.vertices = localVertices.ToArray();
-        this.indices = localIndices.ToArray();
-
-        void VisitSceneNode(Node* node)
-        {
-            for (int m = 0; m < node->MNumMeshes; m++)
-            {
-                var mesh = scene->MMeshes[node->MMeshes[m]];
-
-                for (int f = 0; f < mesh->MNumFaces; f++)
-                {
-                    var face = mesh->MFaces[f];
-                    
-                    for (int i = 0; i < face.MNumIndices; i++)
-                    {
-                        uint index = face.MIndices[i];                      
-
-                        var position = mesh->MVertices[index];
-                        var texture = mesh->MTextureCoords[0][(int)index];
-
-                        Vertex_26 vertex = new Vertex_26
-                        {
-                            pos = new Vector3D<float>(position.X, position.Y, position.Z),
-                            color = new Vector3D<float>(1, 1, 1),
-                            //Flip Y for OBJ in Vulkan
-                            textCoord = new Vector2D<float>(texture.X, 1.0f - texture.Y)
-                        };
-
-                        if(vertexMap.TryGetValue(vertex, out var meshIndex))
-                        {
-                            localIndices.Add(meshIndex);
-                        }
-                        else
-                        {
-                            localIndices.Add((uint)localVertices.Count);
-                            vertexMap[vertex] = (uint)localVertices.Count;
-                            localVertices.Add(vertex);
-                        }                        
-                    }
-                }
-            }
-
-            for (int c = 0; c < node->MNumChildren; c++)
-            {
-                VisitSceneNode(node->MChildren[c]);
-            }
-        }
-    }
-
-
-    protected void CreateVertexBuffer()
-    {
-        ulong bufferSize = (ulong)(Unsafe.SizeOf<Vertex_26>() * vertices!.Length);
-
-        Buffer stagingBuffer = default;
-        DeviceMemory stagingBufferMemory = default;
-        CreateBuffer(bufferSize, BufferUsageFlags.TransferSrcBit, MemoryPropertyFlags.HostVisibleBit | MemoryPropertyFlags.HostCoherentBit, ref stagingBuffer, ref stagingBufferMemory);
-        
-        void* data;
-        vk!.MapMemory(device, stagingBufferMemory, 0, bufferSize, 0, &data);
-            vertices.AsSpan().CopyTo(new Span<Vertex_26>(data, vertices.Length));
-        vk!.UnmapMemory(device, stagingBufferMemory);
-
-        CreateBuffer(bufferSize, BufferUsageFlags.TransferDstBit | BufferUsageFlags.VertexBufferBit, MemoryPropertyFlags.DeviceLocalBit, ref vertexBuffer, ref vertexBufferMemory);
-
-        CopyBuffer(stagingBuffer, vertexBuffer, bufferSize);
-
-        vk!.DestroyBuffer(device, stagingBuffer, null);
-        vk!.FreeMemory(device, stagingBufferMemory, null);
-    }
-
-    protected void CreateIndexBuffer()
-    {
-        ulong bufferSize = (ulong)(Unsafe.SizeOf<uint>() * indices!.Length);
-
-        Buffer stagingBuffer = default;
-        DeviceMemory stagingBufferMemory = default;
-        CreateBuffer(bufferSize, BufferUsageFlags.TransferSrcBit, MemoryPropertyFlags.HostVisibleBit | MemoryPropertyFlags.HostCoherentBit, ref stagingBuffer, ref stagingBufferMemory);
-
-        void* data;
-        vk!.MapMemory(device, stagingBufferMemory, 0, bufferSize, 0, &data);
-            indices.AsSpan().CopyTo(new Span<uint>(data, indices.Length));
-        vk!.UnmapMemory(device, stagingBufferMemory);
-
-        CreateBuffer(bufferSize, BufferUsageFlags.TransferDstBit | BufferUsageFlags.IndexBufferBit, MemoryPropertyFlags.DeviceLocalBit, ref indexBuffer, ref indexBufferMemory);
-
-        CopyBuffer(stagingBuffer, indexBuffer, bufferSize);
-
-        vk!.DestroyBuffer(device, stagingBuffer, null);
-        vk!.FreeMemory(device, stagingBufferMemory, null);
-    }
-
-    
-
-    protected void CreateDescriptorPool()
-    {
-        var poolSizes = new[]
-        {
-            new DescriptorPoolSize()
-            {
-                Type = DescriptorType.UniformBuffer,
-                DescriptorCount = (uint)swapChainImages!.Length,
-            },
-            new DescriptorPoolSize()
-            {
-                Type = DescriptorType.CombinedImageSampler,
-                DescriptorCount = (uint)swapChainImages!.Length,
-            }
-        };
-        
-        fixed (DescriptorPoolSize* poolSizesPtr = poolSizes)
-        fixed (DescriptorPool* descriptorPoolPtr = &descriptorPool)
-        {
-
-            DescriptorPoolCreateInfo poolInfo = new()
-            {
-                SType = StructureType.DescriptorPoolCreateInfo,
-                PoolSizeCount = (uint)poolSizes.Length,
-                PPoolSizes = poolSizesPtr,
-                MaxSets = (uint)swapChainImages!.Length,
-            };
-
-            if (vk!.CreateDescriptorPool(device, poolInfo, null, descriptorPoolPtr) != Result.Success)
-            {
-                throw new Exception("failed to create descriptor pool!");
-            }
-
-        }
-    }
-
-    protected void CreateDescriptorSets()
-    {
-        var layouts = new DescriptorSetLayout[swapChainImages!.Length];
-        Array.Fill(layouts, descriptorSetLayout); 
-
-        fixed (DescriptorSetLayout* layoutsPtr = layouts)
-        {
-            DescriptorSetAllocateInfo allocateInfo = new()
-            {
-                SType = StructureType.DescriptorSetAllocateInfo,
-                DescriptorPool = descriptorPool,
-                DescriptorSetCount = (uint)swapChainImages!.Length,
-                PSetLayouts = layoutsPtr,
-            };
-
-            descriptorSets = new DescriptorSet[swapChainImages.Length];
-            fixed (DescriptorSet* descriptorSetsPtr = descriptorSets)
-            {
-                if (vk!.AllocateDescriptorSets(device, allocateInfo, descriptorSetsPtr) != Result.Success)
-                {
-                    throw new Exception("failed to allocate descriptor sets!");
-                }
-            }
-        }
-        
-
-        for (int i = 0; i < swapChainImages.Length; i++)
-        {
-            DescriptorBufferInfo bufferInfo = new()
-            {
-                Buffer = uniformBuffers![i],
-                Offset = 0,
-                Range = (ulong)Unsafe.SizeOf<UniformBufferObject>(),
-
-            };
-
-            DescriptorImageInfo imageInfo = new()
-            {
-                ImageLayout = ImageLayout.ShaderReadOnlyOptimal,
-                ImageView = textureImageView,
-                Sampler = textureSampler,
-            };
-
-            var descriptorWrites = new WriteDescriptorSet[]
-            {
-                new()
-                {
-                    SType = StructureType.WriteDescriptorSet,
-                    DstSet = descriptorSets[i],
-                    DstBinding = 0,
-                    DstArrayElement = 0,
-                    DescriptorType = DescriptorType.UniformBuffer,
-                    DescriptorCount = 1,
-                    PBufferInfo = &bufferInfo,
-                },
-                new()
-                {
-                    SType = StructureType.WriteDescriptorSet,
-                    DstSet = descriptorSets[i],
-                    DstBinding = 1,
-                    DstArrayElement = 0,
-                    DescriptorType = DescriptorType.CombinedImageSampler,
-                    DescriptorCount = 1,
-                    PImageInfo = &imageInfo,
-                }
-            };
-
-            fixed (WriteDescriptorSet* descriptorWritesPtr = descriptorWrites)
-            {
-                vk!.UpdateDescriptorSets(device, (uint)descriptorWrites.Length, descriptorWritesPtr, 0, null);
-            }
-        }
-
-    }
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    protected void CreateCommandBuffers()
-    {
-        commandBuffers = new CommandBuffer[swapChainFramebuffers!.Length];
-
-        CommandBufferAllocateInfo allocInfo = new()
-        {
-            SType = StructureType.CommandBufferAllocateInfo,
-            CommandPool = commandPool,
-            Level = CommandBufferLevel.Primary,
-            CommandBufferCount = (uint)commandBuffers.Length,
-        };
-
-        fixed(CommandBuffer* commandBuffersPtr = commandBuffers)
-        {
-            if (vk!.AllocateCommandBuffers(device, allocInfo, commandBuffersPtr) != Result.Success)
-            {
-                throw new Exception("failed to allocate command buffers!");
-            }
-        }
-        
-
-        for (int i = 0; i < commandBuffers.Length; i++)
-        {
-            CommandBufferBeginInfo beginInfo = new()
-            {
-                SType = StructureType.CommandBufferBeginInfo,
-            };
-
-            if(vk!.BeginCommandBuffer(commandBuffers[i], beginInfo ) != Result.Success)
-            {
-                throw new Exception("failed to begin recording command buffer!");
-            }
-
-            RenderPassBeginInfo renderPassInfo = new()
-            {
-                SType= StructureType.RenderPassBeginInfo,
-                RenderPass = renderPass,
-                Framebuffer = swapChainFramebuffers[i],
-                RenderArea =
-                {
-                    Offset = { X = 0, Y = 0 }, 
-                    Extent = swapChainExtent,
-                }
-            };
-
-            var clearValues = new ClearValue[]
-            {
-                new()
-                {
-                    Color = new (){ Float32_0 = 0, Float32_1 = 0, Float32_2 = 0, Float32_3 = 1 },
-                },
-                new()
-                {
-                    DepthStencil = new () { Depth = 1, Stencil = 0 }
-                }
-            };
-
-
-            fixed(ClearValue* clearValuesPtr = clearValues)
-            {
-                renderPassInfo.ClearValueCount = (uint)clearValues.Length;
-                renderPassInfo.PClearValues = clearValuesPtr;
-
-                vk!.CmdBeginRenderPass(commandBuffers[i], &renderPassInfo, SubpassContents.Inline);
-            }
-
-            vk!.CmdBindPipeline(commandBuffers[i], PipelineBindPoint.Graphics, graphicsPipeline);
-
-                var vertexBuffers = new[] { vertexBuffer };
-                var offsets = new ulong[] { 0 };
-
-                fixed (ulong* offsetsPtr = offsets)
-                fixed (Buffer* vertexBuffersPtr = vertexBuffers)
-                {
-                    vk!.CmdBindVertexBuffers(commandBuffers[i], 0, 1, vertexBuffersPtr, offsetsPtr);
-                }
-
-                vk!.CmdBindIndexBuffer(commandBuffers[i], indexBuffer, 0, IndexType.Uint32);
-
-                vk!.CmdBindDescriptorSets(commandBuffers[i], PipelineBindPoint.Graphics, pipelineLayout, 0, 1, descriptorSets![i], 0, null);
-
-                vk!.CmdDrawIndexed(commandBuffers[i], (uint)indices!.Length, 1, 0, 0, 0);
-
-            vk!.CmdEndRenderPass(commandBuffers[i]);
-            
-            if (vk!.EndCommandBuffer(commandBuffers[i]) != Result.Success)
-            {
-                throw new Exception("failed to record command buffer!");
-            }
-
-        }
-    }
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
 }

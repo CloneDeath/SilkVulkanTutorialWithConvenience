@@ -158,12 +158,12 @@ public unsafe class HelloTriangleApplication_24 : HelloTriangleApplication_23
         }
     }
 
-    protected void CreateTextureImageView()
+    protected virtual void CreateTextureImageView()
     {
         textureImageView = CreateImageView(textureImage, Format.R8G8B8A8Srgb);
     }
 
-    protected void CreateTextureSampler()
+    protected virtual void CreateTextureSampler()
     {
         PhysicalDeviceProperties properties;
         vk!.GetPhysicalDeviceProperties(physicalDevice, out properties);

@@ -23,7 +23,7 @@ public unsafe class HelloTriangleApplication_03 : HelloTriangleApplication_02
         PickPhysicalDevice();
     }
     
-    protected void PickPhysicalDevice()
+    protected virtual void PickPhysicalDevice()
     {
         uint devicedCount = 0;
         vk!.EnumeratePhysicalDevices(instance, ref devicedCount, null);
@@ -39,11 +39,11 @@ public unsafe class HelloTriangleApplication_03 : HelloTriangleApplication_02
             vk!.EnumeratePhysicalDevices(instance, ref devicedCount, devicesPtr);
         }
 
-        foreach (var candidateDevice in devices)
+        foreach (var physDevice in devices)
         {
-            if (IsDeviceSuitable(candidateDevice))
+            if (IsDeviceSuitable(physDevice))
             {
-                physicalDevice = candidateDevice;
+                physicalDevice = physDevice;
                 break;
             }
         }

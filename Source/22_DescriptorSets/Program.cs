@@ -254,7 +254,7 @@ public unsafe class HelloTriangleApplication_22 : HelloTriangleApplication_21
         SilkMarshal.Free((nint)fragShaderStageInfo.PName);
     }
 
-    protected void CreateDescriptorPool()
+    protected virtual void CreateDescriptorPool()
     {
         DescriptorPoolSize poolSize = new()
         {
@@ -281,7 +281,7 @@ public unsafe class HelloTriangleApplication_22 : HelloTriangleApplication_21
         }
     }
 
-    protected void CreateDescriptorSets()
+    protected virtual void CreateDescriptorSets()
     {
         var layouts = new DescriptorSetLayout[swapChainImages!.Length];
         Array.Fill(layouts, descriptorSetLayout); 

@@ -24,7 +24,7 @@ public unsafe class HelloTriangleApplication_01 : HelloTriangleApplication_00
         window?.Dispose();
     }
 
-    protected void CreateInstance()
+    protected virtual void CreateInstance()
     {
         vk = Vk.GetApi();
 

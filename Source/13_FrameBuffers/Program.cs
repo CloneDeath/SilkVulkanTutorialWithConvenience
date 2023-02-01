@@ -54,7 +54,7 @@ public unsafe class HelloTriangleApplication_13 : HelloTriangleApplication_12
         window?.Dispose();
     }
 
-    protected void CreateFramebuffers()
+    protected virtual void CreateFramebuffers()
     {
         swapChainFramebuffers = new Framebuffer[swapChainImageViews!.Length];
 

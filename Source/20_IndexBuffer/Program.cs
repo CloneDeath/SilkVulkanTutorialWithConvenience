@@ -19,7 +19,7 @@ public unsafe class HelloTriangleApplication_20 : HelloTriangleApplication_19
         new Vertex_17 { pos = new Vector2D<float>(-0.5f,0.5f), color = new Vector3D<float>(1.0f, 1.0f, 1.0f) },
     };
 
-    protected ushort[] indices = new ushort[]
+    protected virtual ushort[] indices { get; } = new ushort[]
     {
         0, 1, 2, 2, 3, 0
     };
@@ -77,7 +77,7 @@ public unsafe class HelloTriangleApplication_20 : HelloTriangleApplication_19
         window?.Dispose();
     }
 
-    protected void CreateIndexBuffer()
+    protected virtual void CreateIndexBuffer()
     {
         ulong bufferSize = (ulong)(Unsafe.SizeOf<ushort>() * indices.Length);
 
