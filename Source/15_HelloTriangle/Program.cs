@@ -15,7 +15,7 @@ public class HelloTriangleApplication_15 : HelloTriangleApplication_14
     protected VulkanSemaphore[]? imageAvailableSemaphores;
     protected VulkanSemaphore[]? renderFinishedSemaphores;
     protected VulkanFence[]? inFlightFences;
-    protected VulkanFence[]? imagesInFlight;
+    protected VulkanFence?[]? imagesInFlight;
     protected int currentFrame;
 
     protected override void InitVulkan()
@@ -148,9 +148,9 @@ public class HelloTriangleApplication_15 : HelloTriangleApplication_14
 
         var imageIndex = swapchain!.AcquireNextImage(null, imageAvailableSemaphores![currentFrame]);
 
-        if(imagesInFlight![imageIndex].Fence.Handle != default)
+        if(imagesInFlight![imageIndex] != null)
         {
-            imagesInFlight[imageIndex].Wait();
+            imagesInFlight![imageIndex]!.Wait();
         }
         imagesInFlight[imageIndex] = inFlightFences[currentFrame];
 
