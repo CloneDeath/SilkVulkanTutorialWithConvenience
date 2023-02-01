@@ -10,12 +10,12 @@ public unsafe class HelloTriangleApplication_28 : HelloTriangleApplication_27
     
     protected override void CreateImageViews()
     {
-        swapChainImageViews = new ImageView[swapChainImages!.Length];
+        swapchainImageViews = new ImageView[swapchainImages!.Length];
 
-        for (int i = 0; i < swapChainImages.Length; i++)
+        for (int i = 0; i < swapchainImages.Length; i++)
         {
 
-            swapChainImageViews[i] = CreateImageView(swapChainImages[i], swapChainImageFormat, ImageAspectFlags.ColorBit, 1);
+            swapchainImageViews[i] = CreateImageView(swapchainImages[i], swapchainImageFormat, ImageAspectFlags.ColorBit, 1);
         }
     }
 
@@ -23,7 +23,7 @@ public unsafe class HelloTriangleApplication_28 : HelloTriangleApplication_27
     {
         Format depthFormat = FindDepthFormat();
 
-        CreateImage(swapChainExtent.Width, swapChainExtent.Height, 1, depthFormat, ImageTiling.Optimal, ImageUsageFlags.DepthStencilAttachmentBit, MemoryPropertyFlags.DeviceLocalBit, ref depthImage, ref depthImageMemory);
+        CreateImage(swapchainExtent.Width, swapchainExtent.Height, 1, depthFormat, ImageTiling.Optimal, ImageUsageFlags.DepthStencilAttachmentBit, MemoryPropertyFlags.DeviceLocalBit, ref depthImage, ref depthImageMemory);
         depthImageView = CreateImageView(depthImage, depthFormat, ImageAspectFlags.DepthBit, 1);
     }
 

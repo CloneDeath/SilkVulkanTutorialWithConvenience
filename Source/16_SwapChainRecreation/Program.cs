@@ -34,9 +34,9 @@ public unsafe class HelloTriangleApplication_16 : HelloTriangleApplication_15
         frameBufferResized = true;
     }
 
-    protected virtual void CleanUpSwapChain()
+    protected virtual void CleanUpSwapchain()
     {
-        foreach (var framebuffer in swapChainFramebuffers!)
+        foreach (var framebuffer in swapchainFramebuffers!)
         {
             vk!.DestroyFramebuffer(device, framebuffer, null);
         }
@@ -50,17 +50,17 @@ public unsafe class HelloTriangleApplication_16 : HelloTriangleApplication_15
         vk!.DestroyPipelineLayout(device, pipelineLayout, null);
         vk!.DestroyRenderPass(device, renderPass, null);
 
-        foreach (var imageView in swapChainImageViews!)
+        foreach (var imageView in swapchainImageViews!)
         {
             vk!.DestroyImageView(device, imageView, null);
         }
 
-        khrSwapChain!.DestroySwapchain(device, swapChain, null);
+        khrSwapchain!.DestroySwapchain(device, swapchain, null);
     }
 
     protected override void CleanUp()
     {
-        CleanUpSwapChain();
+        CleanUpSwapchain();
 
         for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
         {
@@ -79,14 +79,14 @@ public unsafe class HelloTriangleApplication_16 : HelloTriangleApplication_15
             debugMessenger!.Dispose();
         }
 
-        khrSurface!.DestroySurface(instance, surface, null);
+        surface!.Dispose();
         instance!.Dispose();
         vk!.Dispose();
 
         window?.Dispose();
     }
 
-    protected virtual void RecreateSwapChain()
+    protected virtual void RecreateSwapchain()
     {
         Vector2D<int> framebufferSize = window!.FramebufferSize;
 
@@ -98,30 +98,30 @@ public unsafe class HelloTriangleApplication_16 : HelloTriangleApplication_15
 
         vk!.DeviceWaitIdle(device);
 
-        CleanUpSwapChain();
+        CleanUpSwapchain();
 
-        CreateSwapChain();
+        CreateSwapchain();
         CreateImageViews();
         CreateRenderPass();
         CreateGraphicsPipeline();
         CreateFramebuffers();
         CreateCommandBuffers();
 
-        imagesInFlight = new Fence[swapChainImages!.Length];
+        imagesInFlight = new Fence[swapchainImages!.Length];
     }
 
-    protected override void CreateSwapChain()
+    protected override void CreateSwapchain()
     {
-        var swapChainSupport = QuerySwapChainSupport(physicalDevice);
+        var swapchainSupport = QuerySwapchainSupport(physicalDevice);
 
-        var surfaceFormat = ChooseSwapSurfaceFormat(swapChainSupport.Formats);
-        var presentMode = ChoosePresentMode(swapChainSupport.PresentModes);
-        var extent = ChooseSwapExtent(swapChainSupport.Capabilities);
+        var surfaceFormat = ChooseSwapSurfaceFormat(swapchainSupport.Formats);
+        var presentMode = ChoosePresentMode(swapchainSupport.PresentModes);
+        var extent = ChooseSwapExtent(swapchainSupport.Capabilities);
 
-        var imageCount = swapChainSupport.Capabilities.MinImageCount + 1;
-        if(swapChainSupport.Capabilities.MaxImageCount > 0 && imageCount > swapChainSupport.Capabilities.MaxImageCount)
+        var imageCount = swapchainSupport.Capabilities.MinImageCount + 1;
+        if(swapchainSupport.Capabilities.MaxImageCount > 0 && imageCount > swapchainSupport.Capabilities.MaxImageCount)
         {
-            imageCount = swapChainSupport.Capabilities.MaxImageCount;
+            imageCount = swapchainSupport.Capabilities.MaxImageCount;
         }
 
         SwapchainCreateInfoKHR creatInfo = new()
@@ -156,34 +156,31 @@ public unsafe class HelloTriangleApplication_16 : HelloTriangleApplication_15
 
         creatInfo = creatInfo with
         {
-            PreTransform = swapChainSupport.Capabilities.CurrentTransform,
+            PreTransform = swapchainSupport.Capabilities.CurrentTransform,
             CompositeAlpha = CompositeAlphaFlagsKHR.OpaqueBitKhr,
             PresentMode = presentMode,
             Clipped = true,
         };
 
-        if (khrSwapChain is null)
+        if (khrSwapchain is null)
         {
-            if (!vk!.TryGetDeviceExtension(instance, device, out khrSwapChain))
+            if (!vk!.TryGetDeviceExtension(instance, device, out khrSwapchain))
             {
                 throw new NotSupportedException("VK_KHR_swapchain extension not found.");
             } 
         }
 
-        if(khrSwapChain!.CreateSwapchain(device, creatInfo, null, out swapChain) != Result.Success)
+        swapchain = khrSwapchain!.CreateSwapchain(creatInfo);
+
+        khrSwapchain.GetSwapchainImages(device, swapchain, ref imageCount, null);
+        swapchainImages = new Image[imageCount];
+        fixed (Image* swapchainImagesPtr = swapchainImages)
         {
-            throw new Exception("failed to create swap chain!");
+            khrSwapchain.GetSwapchainImages(device, swapchain, ref imageCount, swapchainImagesPtr);
         }
 
-        khrSwapChain.GetSwapchainImages(device, swapChain, ref imageCount, null);
-        swapChainImages = new Image[imageCount];
-        fixed (Image* swapChainImagesPtr = swapChainImages)
-        {
-            khrSwapChain.GetSwapchainImages(device, swapChain, ref imageCount, swapChainImagesPtr);
-        }
-
-        swapChainImageFormat = surfaceFormat.Format;
-        swapChainExtent = extent;
+        swapchainImageFormat = surfaceFormat.Format;
+        swapchainExtent = extent;
     }
 
     protected override void DrawFrame(double delta)
@@ -191,11 +188,11 @@ public unsafe class HelloTriangleApplication_16 : HelloTriangleApplication_15
         vk!.WaitForFences(device, 1, inFlightFences![currentFrame], true, ulong.MaxValue);
 
         uint imageIndex = 0;
-        var result = khrSwapChain!.AcquireNextImage(device, swapChain, ulong.MaxValue, imageAvailableSemaphores![currentFrame], default, ref imageIndex);
+        var result = khrSwapchain!.AcquireNextImage(device, swapchain, ulong.MaxValue, imageAvailableSemaphores![currentFrame], default, ref imageIndex);
 
         if(result == Result.ErrorOutOfDateKhr)
         {
-            RecreateSwapChain();
+            RecreateSwapchain();
             return;
         }
         else if(result != Result.Success && result != Result.SuboptimalKhr)
@@ -243,7 +240,7 @@ public unsafe class HelloTriangleApplication_16 : HelloTriangleApplication_15
             throw new Exception("failed to submit draw command buffer!");
         }
 
-        var swapChains = stackalloc[] { swapChain };
+        var swapchains = stackalloc[] { swapchain };
         PresentInfoKHR presentInfo = new()
         {
             SType = StructureType.PresentInfoKhr,
@@ -252,17 +249,17 @@ public unsafe class HelloTriangleApplication_16 : HelloTriangleApplication_15
             PWaitSemaphores = signalSemaphores,
 
             SwapchainCount = 1,
-            PSwapchains = swapChains,
+            PSwapchains = swapchains,
 
             PImageIndices = &imageIndex
         };
 
-        result = khrSwapChain.QueuePresent(presentQueue, presentInfo);
+        result = khrSwapchain.QueuePresent(presentQueue, presentInfo);
 
         if(result == Result.ErrorOutOfDateKhr || result == Result.SuboptimalKhr || frameBufferResized)
         {
             frameBufferResized = false;
-            RecreateSwapChain();
+            RecreateSwapchain();
         }
         else if(result != Result.Success)
         {

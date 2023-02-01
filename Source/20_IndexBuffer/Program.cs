@@ -31,7 +31,7 @@ public unsafe class HelloTriangleApplication_20 : HelloTriangleApplication_19
         CreateSurface();
         PickPhysicalDevice();
         CreateLogicalDevice();
-        CreateSwapChain();
+        CreateSwapchain();
         CreateImageViews();
         CreateRenderPass();
         CreateGraphicsPipeline();
@@ -45,7 +45,7 @@ public unsafe class HelloTriangleApplication_20 : HelloTriangleApplication_19
 
     protected override void CleanUp()
     {
-        CleanUpSwapChain();
+        CleanUpSwapchain();
 
         vk!.DestroyBuffer(device, indexBuffer, null);
         vk!.FreeMemory(device, indexBufferMemory, null);
@@ -70,7 +70,7 @@ public unsafe class HelloTriangleApplication_20 : HelloTriangleApplication_19
             debugMessenger!.Dispose();
         }
 
-        khrSurface!.DestroySurface(instance, surface, null);
+        surface!.Dispose();
         instance!.Dispose();
         vk!.Dispose();
 
@@ -100,7 +100,7 @@ public unsafe class HelloTriangleApplication_20 : HelloTriangleApplication_19
 
     protected override void CreateCommandBuffers()
     {
-        commandBuffers = new CommandBuffer[swapChainFramebuffers!.Length];
+        commandBuffers = new CommandBuffer[swapchainFramebuffers!.Length];
 
         CommandBufferAllocateInfo allocInfo = new()
         {
@@ -135,11 +135,11 @@ public unsafe class HelloTriangleApplication_20 : HelloTriangleApplication_19
             {
                 SType= StructureType.RenderPassBeginInfo,
                 RenderPass = renderPass,
-                Framebuffer = swapChainFramebuffers[i],
+                Framebuffer = swapchainFramebuffers[i],
                 RenderArea =
                 {
                     Offset = { X = 0, Y = 0 }, 
-                    Extent = swapChainExtent,
+                    Extent = swapchainExtent,
                 }
             };
 

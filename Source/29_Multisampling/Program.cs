@@ -21,7 +21,7 @@ public unsafe class HelloTriangleApplication_29 : HelloTriangleApplication_28
         CreateSurface();
         PickPhysicalDevice();
         CreateLogicalDevice();
-        CreateSwapChain();
+        CreateSwapchain();
         CreateImageViews();
         CreateRenderPass();
         CreateDescriptorSetLayout();
@@ -43,7 +43,7 @@ public unsafe class HelloTriangleApplication_29 : HelloTriangleApplication_28
         CreateSyncObjects();
     }
 
-    protected override void CleanUpSwapChain()
+    protected override void CleanUpSwapchain()
     {
         vk!.DestroyImageView(device, depthImageView, null);
         vk!.DestroyImage(device, depthImage, null);
@@ -53,7 +53,7 @@ public unsafe class HelloTriangleApplication_29 : HelloTriangleApplication_28
         vk!.DestroyImage(device, colorImage, null);
         vk!.FreeMemory(device, colorImageMemory, null);
 
-        foreach (var framebuffer in swapChainFramebuffers!)
+        foreach (var framebuffer in swapchainFramebuffers!)
         {
             vk!.DestroyFramebuffer(device, framebuffer, null);
         }
@@ -67,14 +67,14 @@ public unsafe class HelloTriangleApplication_29 : HelloTriangleApplication_28
         vk!.DestroyPipelineLayout(device, pipelineLayout, null);
         vk!.DestroyRenderPass(device, renderPass, null);
 
-        foreach (var imageView in swapChainImageViews!)
+        foreach (var imageView in swapchainImageViews!)
         {
             vk!.DestroyImageView(device, imageView, null);
         }
 
-        khrSwapChain!.DestroySwapchain(device, swapChain, null);
+        khrSwapchain!.DestroySwapchain(device, swapchain, null);
 
-        for (int i = 0; i < swapChainImages!.Length; i++)
+        for (int i = 0; i < swapchainImages!.Length; i++)
         {
             vk!.DestroyBuffer(device, uniformBuffers![i], null);
             vk!.FreeMemory(device, uniformBuffersMemory![i], null);
@@ -83,7 +83,7 @@ public unsafe class HelloTriangleApplication_29 : HelloTriangleApplication_28
         vk!.DestroyDescriptorPool(device, descriptorPool, null);
     }
     
-    protected override void RecreateSwapChain()
+    protected override void RecreateSwapchain()
     {
         Vector2D<int> framebufferSize = window!.FramebufferSize;
 
@@ -95,9 +95,9 @@ public unsafe class HelloTriangleApplication_29 : HelloTriangleApplication_28
 
         vk!.DeviceWaitIdle(device);
 
-        CleanUpSwapChain();
+        CleanUpSwapchain();
 
-        CreateSwapChain();
+        CreateSwapchain();
         CreateImageViews();
         CreateRenderPass();
         CreateGraphicsPipeline();
@@ -109,7 +109,7 @@ public unsafe class HelloTriangleApplication_29 : HelloTriangleApplication_28
         CreateDescriptorSets();
         CreateCommandBuffers();
 
-        imagesInFlight = new Fence[swapChainImages!.Length];
+        imagesInFlight = new Fence[swapchainImages!.Length];
     }
 
     protected override void PickPhysicalDevice()
@@ -148,7 +148,7 @@ public unsafe class HelloTriangleApplication_29 : HelloTriangleApplication_28
     {
         AttachmentDescription colorAttachment = new()
         {
-            Format = swapChainImageFormat,
+            Format = swapchainImageFormat,
             Samples = msaaSamples,
             LoadOp = AttachmentLoadOp.Clear,
             StoreOp = AttachmentStoreOp.Store,
@@ -171,7 +171,7 @@ public unsafe class HelloTriangleApplication_29 : HelloTriangleApplication_28
 
         AttachmentDescription colorAttachmentResolve = new()
         {
-            Format = swapChainImageFormat,
+            Format = swapchainImageFormat,
             Samples = SampleCountFlags.Count1Bit,
             LoadOp = AttachmentLoadOp.DontCare,
             StoreOp = AttachmentStoreOp.Store,
@@ -297,8 +297,8 @@ public unsafe class HelloTriangleApplication_29 : HelloTriangleApplication_28
             {
                 X = 0,
                 Y = 0,
-                Width = swapChainExtent.Width,
-                Height = swapChainExtent.Height,
+                Width = swapchainExtent.Width,
+                Height = swapchainExtent.Height,
                 MinDepth = 0,
                 MaxDepth = 1,
             };
@@ -306,7 +306,7 @@ public unsafe class HelloTriangleApplication_29 : HelloTriangleApplication_28
             Rect2D scissor = new()
             {
                 Offset = { X = 0, Y = 0 },
-                Extent = swapChainExtent,
+                Extent = swapchainExtent,
             };
 
             PipelineViewportStateCreateInfo viewportState = new()
@@ -413,11 +413,11 @@ public unsafe class HelloTriangleApplication_29 : HelloTriangleApplication_28
 
     protected override void CreateFramebuffers()
     {
-        swapChainFramebuffers = new Framebuffer[swapChainImageViews!.Length];
+        swapchainFramebuffers = new Framebuffer[swapchainImageViews!.Length];
 
-        for(int i = 0; i < swapChainImageViews.Length; i++)
+        for(int i = 0; i < swapchainImageViews.Length; i++)
         {
-            var attachments = new[] { colorImageView, depthImageView, swapChainImageViews[i] };
+            var attachments = new[] { colorImageView, depthImageView, swapchainImageViews[i] };
 
             fixed(ImageView* attachmentsPtr = attachments)
             {
@@ -427,12 +427,12 @@ public unsafe class HelloTriangleApplication_29 : HelloTriangleApplication_28
                     RenderPass = renderPass,
                     AttachmentCount = (uint)attachments.Length,
                     PAttachments = attachmentsPtr,
-                    Width = swapChainExtent.Width,
-                    Height = swapChainExtent.Height,
+                    Width = swapchainExtent.Width,
+                    Height = swapchainExtent.Height,
                     Layers = 1,
                 };
 
-                if (vk!.CreateFramebuffer(device, framebufferInfo, null, out swapChainFramebuffers[i]) != Result.Success)
+                if (vk!.CreateFramebuffer(device, framebufferInfo, null, out swapchainFramebuffers[i]) != Result.Success)
                 {
                     throw new Exception("failed to create framebuffer!");
                 } 
@@ -442,9 +442,9 @@ public unsafe class HelloTriangleApplication_29 : HelloTriangleApplication_28
     
     protected void CreateColorResources()
     {
-        Format colorFormat = swapChainImageFormat;
+        Format colorFormat = swapchainImageFormat;
 
-        CreateImage(swapChainExtent.Width, swapChainExtent.Height, 1, msaaSamples, colorFormat, ImageTiling.Optimal, ImageUsageFlags.TransientAttachmentBit | ImageUsageFlags.ColorAttachmentBit, MemoryPropertyFlags.DeviceLocalBit, ref colorImage, ref colorImageMemory);
+        CreateImage(swapchainExtent.Width, swapchainExtent.Height, 1, msaaSamples, colorFormat, ImageTiling.Optimal, ImageUsageFlags.TransientAttachmentBit | ImageUsageFlags.ColorAttachmentBit, MemoryPropertyFlags.DeviceLocalBit, ref colorImage, ref colorImageMemory);
         colorImageView = CreateImageView(colorImage, colorFormat, ImageAspectFlags.ColorBit, 1);
     }
 
@@ -452,7 +452,7 @@ public unsafe class HelloTriangleApplication_29 : HelloTriangleApplication_28
     {
         Format depthFormat = FindDepthFormat();
 
-        CreateImage(swapChainExtent.Width, swapChainExtent.Height, 1, msaaSamples, depthFormat, ImageTiling.Optimal, ImageUsageFlags.DepthStencilAttachmentBit, MemoryPropertyFlags.DeviceLocalBit, ref depthImage, ref depthImageMemory);
+        CreateImage(swapchainExtent.Width, swapchainExtent.Height, 1, msaaSamples, depthFormat, ImageTiling.Optimal, ImageUsageFlags.DepthStencilAttachmentBit, MemoryPropertyFlags.DeviceLocalBit, ref depthImage, ref depthImageMemory);
         depthImageView = CreateImageView(depthImage, depthFormat, ImageAspectFlags.DepthBit, 1);
     }
 

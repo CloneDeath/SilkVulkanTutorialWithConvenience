@@ -163,8 +163,8 @@ public unsafe class HelloTriangleApplication_25 : HelloTriangleApplication_24
             {
                 X = 0,
                 Y = 0,
-                Width = swapChainExtent.Width,
-                Height = swapChainExtent.Height,
+                Width = swapchainExtent.Width,
+                Height = swapchainExtent.Height,
                 MinDepth = 0,
                 MaxDepth = 1,
             };
@@ -172,7 +172,7 @@ public unsafe class HelloTriangleApplication_25 : HelloTriangleApplication_24
             Rect2D scissor = new()
             {
                 Offset = { X = 0, Y = 0 },
-                Extent = swapChainExtent,
+                Extent = swapchainExtent,
             };
 
             PipelineViewportStateCreateInfo viewportState = new()
@@ -294,12 +294,12 @@ public unsafe class HelloTriangleApplication_25 : HelloTriangleApplication_24
             new DescriptorPoolSize()
             {
                 Type = DescriptorType.UniformBuffer,
-                DescriptorCount = (uint)swapChainImages!.Length,
+                DescriptorCount = (uint)swapchainImages!.Length,
             },
             new DescriptorPoolSize()
             {
                 Type = DescriptorType.CombinedImageSampler,
-                DescriptorCount = (uint)swapChainImages!.Length,
+                DescriptorCount = (uint)swapchainImages!.Length,
             }
         };
         
@@ -312,7 +312,7 @@ public unsafe class HelloTriangleApplication_25 : HelloTriangleApplication_24
                 SType = StructureType.DescriptorPoolCreateInfo,
                 PoolSizeCount = (uint)poolSizes.Length,
                 PPoolSizes = poolSizesPtr,
-                MaxSets = (uint)swapChainImages!.Length,
+                MaxSets = (uint)swapchainImages!.Length,
             };
 
             if (vk!.CreateDescriptorPool(device, poolInfo, null, descriptorPoolPtr) != Result.Success)
@@ -325,7 +325,7 @@ public unsafe class HelloTriangleApplication_25 : HelloTriangleApplication_24
 
     protected override void CreateDescriptorSets()
     {
-        var layouts = new DescriptorSetLayout[swapChainImages!.Length];
+        var layouts = new DescriptorSetLayout[swapchainImages!.Length];
         Array.Fill(layouts, descriptorSetLayout); 
 
         fixed (DescriptorSetLayout* layoutsPtr = layouts)
@@ -334,11 +334,11 @@ public unsafe class HelloTriangleApplication_25 : HelloTriangleApplication_24
             {
                 SType = StructureType.DescriptorSetAllocateInfo,
                 DescriptorPool = descriptorPool,
-                DescriptorSetCount = (uint)swapChainImages!.Length,
+                DescriptorSetCount = (uint)swapchainImages!.Length,
                 PSetLayouts = layoutsPtr,
             };
 
-            descriptorSets = new DescriptorSet[swapChainImages.Length];
+            descriptorSets = new DescriptorSet[swapchainImages.Length];
             fixed (DescriptorSet* descriptorSetsPtr = descriptorSets)
             {
                 if (vk!.AllocateDescriptorSets(device, allocateInfo, descriptorSetsPtr) != Result.Success)
@@ -349,7 +349,7 @@ public unsafe class HelloTriangleApplication_25 : HelloTriangleApplication_24
         }
         
 
-        for (int i = 0; i < swapChainImages.Length; i++)
+        for (int i = 0; i < swapchainImages.Length; i++)
         {
             DescriptorBufferInfo bufferInfo = new()
             {

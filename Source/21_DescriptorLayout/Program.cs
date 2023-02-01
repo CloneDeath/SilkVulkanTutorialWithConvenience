@@ -28,7 +28,7 @@ public unsafe class HelloTriangleApplication_21 : HelloTriangleApplication_20
         CreateSurface();
         PickPhysicalDevice();
         CreateLogicalDevice();
-        CreateSwapChain();
+        CreateSwapchain();
         CreateImageViews();
         CreateRenderPass();
         CreateDescriptorSetLayout();
@@ -42,9 +42,9 @@ public unsafe class HelloTriangleApplication_21 : HelloTriangleApplication_20
         CreateSyncObjects();
     }
 
-    protected override void CleanUpSwapChain()
+    protected override void CleanUpSwapchain()
     {
-        foreach (var framebuffer in swapChainFramebuffers!)
+        foreach (var framebuffer in swapchainFramebuffers!)
         {
             vk!.DestroyFramebuffer(device, framebuffer, null);
         }
@@ -58,14 +58,14 @@ public unsafe class HelloTriangleApplication_21 : HelloTriangleApplication_20
         vk!.DestroyPipelineLayout(device, pipelineLayout, null);
         vk!.DestroyRenderPass(device, renderPass, null);
 
-        foreach (var imageView in swapChainImageViews!)
+        foreach (var imageView in swapchainImageViews!)
         {
             vk!.DestroyImageView(device, imageView, null);
         }
 
-        khrSwapChain!.DestroySwapchain(device, swapChain, null);
+        khrSwapchain!.DestroySwapchain(device, swapchain, null);
 
-        for (int i = 0; i < swapChainImages!.Length; i++)
+        for (int i = 0; i < swapchainImages!.Length; i++)
         {
             vk!.DestroyBuffer(device, uniformBuffers![i], null);
             vk!.FreeMemory(device, uniformBuffersMemory![i], null);
@@ -74,7 +74,7 @@ public unsafe class HelloTriangleApplication_21 : HelloTriangleApplication_20
 
     protected override void CleanUp()
     {
-        CleanUpSwapChain();
+        CleanUpSwapchain();
 
         vk!.DestroyDescriptorSetLayout(device, descriptorSetLayout, null);
 
@@ -101,14 +101,14 @@ public unsafe class HelloTriangleApplication_21 : HelloTriangleApplication_20
             debugMessenger!.Dispose();
         }
 
-        khrSurface!.DestroySurface(instance, surface, null);
+        surface!.Dispose();
         instance!.Dispose();
         vk!.Dispose();
 
         window?.Dispose();
     }
 
-    protected override void RecreateSwapChain()
+    protected override void RecreateSwapchain()
     {
         Vector2D<int> framebufferSize = window!.FramebufferSize;
 
@@ -120,9 +120,9 @@ public unsafe class HelloTriangleApplication_21 : HelloTriangleApplication_20
 
         vk!.DeviceWaitIdle(device);
 
-        CleanUpSwapChain();
+        CleanUpSwapchain();
 
-        CreateSwapChain();
+        CreateSwapchain();
         CreateImageViews();
         CreateRenderPass();
         CreateGraphicsPipeline();
@@ -130,7 +130,7 @@ public unsafe class HelloTriangleApplication_21 : HelloTriangleApplication_20
         CreateUniformBuffers();
         CreateCommandBuffers();
 
-        imagesInFlight = new Fence[swapChainImages!.Length];
+        imagesInFlight = new Fence[swapchainImages!.Length];
     }
 
     protected virtual void CreateDescriptorSetLayout()
@@ -217,8 +217,8 @@ public unsafe class HelloTriangleApplication_21 : HelloTriangleApplication_20
             {
                 X = 0,
                 Y = 0,
-                Width = swapChainExtent.Width,
-                Height = swapChainExtent.Height,
+                Width = swapchainExtent.Width,
+                Height = swapchainExtent.Height,
                 MinDepth = 0,
                 MaxDepth = 1,
             };
@@ -226,7 +226,7 @@ public unsafe class HelloTriangleApplication_21 : HelloTriangleApplication_20
             Rect2D scissor = new()
             {
                 Offset = { X = 0, Y = 0 },
-                Extent = swapChainExtent,
+                Extent = swapchainExtent,
             };
 
             PipelineViewportStateCreateInfo viewportState = new()
@@ -324,10 +324,10 @@ public unsafe class HelloTriangleApplication_21 : HelloTriangleApplication_20
     {
         ulong bufferSize = (ulong)Unsafe.SizeOf<UniformBufferObject>();
 
-        uniformBuffers = new Buffer[swapChainImages!.Length];
-        uniformBuffersMemory = new DeviceMemory[swapChainImages!.Length];
+        uniformBuffers = new Buffer[swapchainImages!.Length];
+        uniformBuffersMemory = new DeviceMemory[swapchainImages!.Length];
 
-        for (int i = 0; i < swapChainImages.Length; i++)
+        for (int i = 0; i < swapchainImages.Length; i++)
         {
             CreateBuffer(bufferSize, BufferUsageFlags.UniformBufferBit, MemoryPropertyFlags.HostVisibleBit | MemoryPropertyFlags.HostCoherentBit, ref uniformBuffers[i], ref uniformBuffersMemory[i]);   
         }
@@ -343,7 +343,7 @@ public unsafe class HelloTriangleApplication_21 : HelloTriangleApplication_20
         {
             model = Matrix4X4<float>.Identity * Matrix4X4.CreateFromAxisAngle(new Vector3D<float>(0,0,1), time * Scalar.DegreesToRadians(90.0f)),
             view = Matrix4X4.CreateLookAt(new Vector3D<float>(2, 2, 2), new Vector3D<float>(0, 0, 0), new Vector3D<float>(0, 0, 1)),
-            proj = Matrix4X4.CreatePerspectiveFieldOfView(Scalar.DegreesToRadians(45.0f), swapChainExtent.Width * 1f / swapChainExtent.Height, 0.1f, 10.0f),
+            proj = Matrix4X4.CreatePerspectiveFieldOfView(Scalar.DegreesToRadians(45.0f), swapchainExtent.Width * 1f / swapchainExtent.Height, 0.1f, 10.0f),
         };
         ubo.proj.M22 *= -1;
 
@@ -359,11 +359,11 @@ public unsafe class HelloTriangleApplication_21 : HelloTriangleApplication_20
         vk!.WaitForFences(device, 1, inFlightFences![currentFrame], true, ulong.MaxValue);
 
         uint imageIndex = 0;
-        var result = khrSwapChain!.AcquireNextImage(device, swapChain, ulong.MaxValue, imageAvailableSemaphores![currentFrame], default, ref imageIndex);
+        var result = khrSwapchain!.AcquireNextImage(device, swapchain, ulong.MaxValue, imageAvailableSemaphores![currentFrame], default, ref imageIndex);
 
         if(result == Result.ErrorOutOfDateKhr)
         {
-            RecreateSwapChain();
+            RecreateSwapchain();
             return;
         }
         else if(result != Result.Success && result != Result.SuboptimalKhr)
@@ -413,7 +413,7 @@ public unsafe class HelloTriangleApplication_21 : HelloTriangleApplication_20
             throw new Exception("failed to submit draw command buffer!");
         }
 
-        var swapChains = stackalloc[] { swapChain };
+        var swapchains = stackalloc[] { swapchain };
         PresentInfoKHR presentInfo = new()
         {
             SType = StructureType.PresentInfoKhr,
@@ -422,17 +422,17 @@ public unsafe class HelloTriangleApplication_21 : HelloTriangleApplication_20
             PWaitSemaphores = signalSemaphores,
 
             SwapchainCount = 1,
-            PSwapchains = swapChains,
+            PSwapchains = swapchains,
 
             PImageIndices = &imageIndex
         };
 
-        result = khrSwapChain.QueuePresent(presentQueue, presentInfo);
+        result = khrSwapchain.QueuePresent(presentQueue, presentInfo);
 
         if(result == Result.ErrorOutOfDateKhr || result == Result.SuboptimalKhr || frameBufferResized)
         {
             frameBufferResized = false;
-            RecreateSwapChain();
+            RecreateSwapchain();
         }
         else if(result != Result.Success)
         {

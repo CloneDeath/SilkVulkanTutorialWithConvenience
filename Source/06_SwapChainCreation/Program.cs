@@ -1,31 +1,33 @@
-﻿using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
-using Silk.NET.Core.Native;
-using Silk.NET.Vulkan;
+﻿using Silk.NET.Vulkan;
 using Silk.NET.Vulkan.Extensions.KHR;
+using SilkNetConvenience;
+using SilkNetConvenience.CreateInfo;
+using SilkNetConvenience.CreateInfo.KHR;
+using SilkNetConvenience.Wrappers;
+using SilkNetConvenience.Wrappers.KHR;
 
 var app = new HelloTriangleApplication_06();
 app.Run();
 
-public struct SwapChainSupportDetails
+public struct SwapchainSupportDetails
 {
     public SurfaceCapabilitiesKHR Capabilities;
     public SurfaceFormatKHR[] Formats;
     public PresentModeKHR[] PresentModes;
 }
 
-public unsafe class HelloTriangleApplication_06 : HelloTriangleApplication_05
+public class HelloTriangleApplication_06 : HelloTriangleApplication_05
 {
     protected readonly string[] deviceExtensions = new[]
     {
         KhrSwapchain.ExtensionName
     };
 
-    protected KhrSwapchain? khrSwapChain;
-    protected SwapchainKHR swapChain;
-    protected Image[]? swapChainImages;
-    protected Format swapChainImageFormat;
-    protected Extent2D swapChainExtent;
+    protected VulkanKhrSwapchain? khrSwapchain;
+    protected VulkanSwapchain? swapchain;
+    protected VulkanSwapchainImage[]? swapchainImages;
+    protected Format swapchainImageFormat;
+    protected Extent2D swapchainExtent;
 
     protected override void InitVulkan()
     {
@@ -34,12 +36,11 @@ public unsafe class HelloTriangleApplication_06 : HelloTriangleApplication_05
         CreateSurface();
         PickPhysicalDevice();
         CreateLogicalDevice();
-        CreateSwapChain();
+        CreateSwapchain();
     }
 
-    protected override void CleanUp()
-    {
-        khrSwapChain!.DestroySwapchain(device, swapChain, null);
+    protected override void CleanUp() {
+        swapchain!.Dispose();
 
         device!.Dispose();
 
@@ -49,7 +50,7 @@ public unsafe class HelloTriangleApplication_06 : HelloTriangleApplication_05
             debugMessenger!.Dispose();
         }
 
-        khrSurface!.DestroySurface(instance, surface, null);
+        surface!.Dispose();
         instance!.Dispose();
         vk!.Dispose();
 
@@ -63,80 +64,54 @@ public unsafe class HelloTriangleApplication_06 : HelloTriangleApplication_05
         var uniqueQueueFamilies = new[] { indices.GraphicsFamily!.Value, indices.PresentFamily!.Value };
         uniqueQueueFamilies = uniqueQueueFamilies.Distinct().ToArray();
 
-        using var mem = GlobalMemory.Allocate(uniqueQueueFamilies.Length * sizeof(DeviceQueueCreateInfo));
-        var queueCreateInfos = (DeviceQueueCreateInfo*)Unsafe.AsPointer(ref mem.GetPinnableReference());
+        var queueCreateInfos = new DeviceQueueCreateInformation[uniqueQueueFamilies.Length];
 
-        float queuePriority = 1.0f;
         for (int i = 0; i < uniqueQueueFamilies.Length; i++)
         {
             queueCreateInfos[i] = new()
             {
-                SType = StructureType.DeviceQueueCreateInfo,
                 QueueFamilyIndex = uniqueQueueFamilies[i],
-                QueueCount = 1
+                QueuePriorities = new[]{1f}
             };
-
-
-            queueCreateInfos[i].PQueuePriorities = &queuePriority;
         }
 
         PhysicalDeviceFeatures deviceFeatures = new();
 
-        DeviceCreateInfo createInfo = new()
+        DeviceCreateInformation createInfo = new()
         {
-            SType = StructureType.DeviceCreateInfo,
-            QueueCreateInfoCount = (uint)uniqueQueueFamilies.Length,
-            PQueueCreateInfos = queueCreateInfos,
-
-            PEnabledFeatures = &deviceFeatures,
-
-            EnabledExtensionCount = (uint)deviceExtensions.Length,
-            PpEnabledExtensionNames = (byte**)SilkMarshal.StringArrayToPtr(deviceExtensions)
+            QueueCreateInfos = queueCreateInfos,
+            EnabledFeatures = deviceFeatures,
+            EnabledExtensions = deviceExtensions,
         };
 
         if (EnableValidationLayers)
         {
-            createInfo.EnabledLayerCount = (uint)validationLayers.Length;
-            createInfo.PpEnabledLayerNames = (byte**)SilkMarshal.StringArrayToPtr(validationLayers);
-        }
-        else
-        {
-            createInfo.EnabledLayerCount = 0;
+            createInfo.EnabledLayers = validationLayers;
         }
 
         device = physicalDevice!.CreateDevice(createInfo);
 
         graphicsQueue = device.GetDeviceQueue(indices.GraphicsFamily!.Value, 0);
         presentQueue = device.GetDeviceQueue(indices.PresentFamily!.Value, 0);
-
-        if (EnableValidationLayers)
-        {
-            SilkMarshal.Free((nint)createInfo.PpEnabledLayerNames);
-        }
-
-        SilkMarshal.Free((nint)createInfo.PpEnabledExtensionNames);
-
     }
 
-    protected virtual void CreateSwapChain()
+    protected virtual void CreateSwapchain()
     {
-        var swapChainSupport = QuerySwapChainSupport(physicalDevice);
+        var swapchainSupport = QuerySwapchainSupport(physicalDevice!);
 
-        var surfaceFormat = ChooseSwapSurfaceFormat(swapChainSupport.Formats);
-        var presentMode = ChoosePresentMode(swapChainSupport.PresentModes);
-        var extent = ChooseSwapExtent(swapChainSupport.Capabilities);
+        var surfaceFormat = ChooseSwapSurfaceFormat(swapchainSupport.Formats);
+        var presentMode = ChoosePresentMode(swapchainSupport.PresentModes);
+        var extent = ChooseSwapExtent(swapchainSupport.Capabilities);
 
-        var imageCount = swapChainSupport.Capabilities.MinImageCount + 1;
-        if(swapChainSupport.Capabilities.MaxImageCount > 0 && imageCount > swapChainSupport.Capabilities.MaxImageCount)
+        var imageCount = swapchainSupport.Capabilities.MinImageCount + 1;
+        if(swapchainSupport.Capabilities.MaxImageCount > 0 && imageCount > swapchainSupport.Capabilities.MaxImageCount)
         {
-            imageCount = swapChainSupport.Capabilities.MaxImageCount;
+            imageCount = swapchainSupport.Capabilities.MaxImageCount;
         }
 
-        SwapchainCreateInfoKHR creatInfo = new()
+        SwapchainCreateInformation creatInfo = new()
         {
-            SType = StructureType.SwapchainCreateInfoKhr,
-            Surface = surface,
-
+            Surface = surface!,
             MinImageCount = imageCount,
             ImageFormat = surfaceFormat.Format,
             ImageColorSpace = surfaceFormat.ColorSpace,
@@ -145,59 +120,40 @@ public unsafe class HelloTriangleApplication_06 : HelloTriangleApplication_05
             ImageUsage = ImageUsageFlags.ColorAttachmentBit,
         };
 
-        var indices = FindQueueFamilies_05(physicalDevice);
-        var queueFamilyIndices = stackalloc[] { indices.GraphicsFamily!.Value, indices.PresentFamily!.Value };
+        var indices = FindQueueFamilies_05(physicalDevice!);
+        var queueFamilyIndices = new[] { indices.GraphicsFamily!.Value, indices.PresentFamily!.Value };
 
         if (indices.GraphicsFamily != indices.PresentFamily)
         {
-            creatInfo = creatInfo with
-            {
-                ImageSharingMode = SharingMode.Concurrent,
-                QueueFamilyIndexCount = 2,
-                PQueueFamilyIndices = queueFamilyIndices,
-            };
+            creatInfo.ImageSharingMode = SharingMode.Concurrent;
+            creatInfo.QueueFamilyIndices = queueFamilyIndices;
         }
         else
         {
             creatInfo.ImageSharingMode = SharingMode.Exclusive;
         }
 
-        creatInfo = creatInfo with
-        {
-            PreTransform = swapChainSupport.Capabilities.CurrentTransform,
-            CompositeAlpha = CompositeAlphaFlagsKHR.OpaqueBitKhr,
-            PresentMode = presentMode,
-            Clipped = true,
+        creatInfo.PreTransform = swapchainSupport.Capabilities.CurrentTransform;
+        creatInfo.CompositeAlpha = CompositeAlphaFlagsKHR.OpaqueBitKhr;
+        creatInfo.PresentMode = presentMode;
+        creatInfo.Clipped = true;
+        creatInfo.OldSwapchain = default;
 
-            OldSwapchain = default
-        };
+        khrSwapchain = device!.GetKhrSwapchainExtension();
 
-        if (!vk!.TryGetDeviceExtension(instance, device, out khrSwapChain))
-        {
-            throw new NotSupportedException("VK_KHR_swapchain extension not found.");
-        }
+        swapchain = khrSwapchain!.CreateSwapchain(creatInfo);
 
-        if(khrSwapChain!.CreateSwapchain(device, creatInfo, null, out swapChain) != Result.Success)
-        {
-            throw new Exception("failed to create swap chain!");
-        }
+        swapchainImages = swapchain.GetImages();
 
-        khrSwapChain.GetSwapchainImages(device, swapChain, ref imageCount, null);
-        swapChainImages = new Image[imageCount];
-        fixed (Image* swapChainImagesPtr = swapChainImages)
-        {
-            khrSwapChain.GetSwapchainImages(device, swapChain, ref imageCount, swapChainImagesPtr);
-        }
-
-        swapChainImageFormat = surfaceFormat.Format;
-        swapChainExtent = extent;
+        swapchainImageFormat = surfaceFormat.Format;
+        swapchainExtent = extent;
     }
 
     protected SurfaceFormatKHR ChooseSwapSurfaceFormat(IReadOnlyList<SurfaceFormatKHR> availableFormats)
     {
         foreach (var availableFormat in availableFormats)
         {
-            if(availableFormat.Format == Format.B8G8R8A8Srgb && availableFormat.ColorSpace == ColorSpaceKHR.SpaceSrgbNonlinearKhr)
+            if(availableFormat is { Format: Format.B8G8R8A8Srgb, ColorSpace: ColorSpaceKHR.SpaceSrgbNonlinearKhr })
             {
                 return availableFormat;
             }
@@ -241,78 +197,35 @@ public unsafe class HelloTriangleApplication_06 : HelloTriangleApplication_05
         }
     }
 
-    protected SwapChainSupportDetails QuerySwapChainSupport(PhysicalDevice physDevice)
+    protected SwapchainSupportDetails QuerySwapchainSupport(VulkanPhysicalDevice physDevice)
     {
-        var details = new SwapChainSupportDetails();
-
-        khrSurface!.GetPhysicalDeviceSurfaceCapabilities(physDevice, surface, out details.Capabilities);
-
-        uint formatCount = 0;
-        khrSurface.GetPhysicalDeviceSurfaceFormats(physDevice, surface, ref formatCount, null);
-
-        if (formatCount != 0)
-        {
-            details.Formats = new SurfaceFormatKHR[formatCount];
-            fixed (SurfaceFormatKHR* formatsPtr = details.Formats)
-            {
-                khrSurface.GetPhysicalDeviceSurfaceFormats(physDevice, surface, ref formatCount, formatsPtr);
-            }
-        }
-        else
-        {
-            details.Formats = Array.Empty<SurfaceFormatKHR>();
-        }
-
-        uint presentModeCount = 0;
-        khrSurface.GetPhysicalDeviceSurfacePresentModes(physDevice, surface, ref presentModeCount, null);
-
-        if (presentModeCount != 0)
-        {
-            details.PresentModes = new PresentModeKHR[presentModeCount];
-            fixed (PresentModeKHR* formatsPtr = details.PresentModes)
-            {
-                khrSurface.GetPhysicalDeviceSurfacePresentModes(physDevice, surface, ref presentModeCount, formatsPtr);
-            }
-
-        }
-        else
-        {
-            details.PresentModes = Array.Empty<PresentModeKHR>();
-        }
-
-        return details;
+        return new SwapchainSupportDetails {
+            Capabilities = khrSurface!.GetPhysicalDeviceSurfaceCapabilities(physDevice, surface!),
+            Formats = khrSurface!.GetPhysicalDeviceSurfaceFormats(physDevice, surface!),
+            PresentModes = khrSurface.GetPhysicalDeviceSurfacePresentModes(physDevice, surface!)
+        };
     }
 
-    protected override bool IsDeviceSuitable(PhysicalDevice candidateDevice)
+    protected override bool IsDeviceSuitable(VulkanPhysicalDevice candidateDevice)
     {
         var indices = FindQueueFamilies_05(candidateDevice);
 
         bool extensionsSupported = CheckDeviceExtensionsSupport(candidateDevice);
 
-        bool swapChainAdequate = false;
+        bool swapchainAdequate = false;
         if (extensionsSupported)
         {
-            var swapChainSupport = QuerySwapChainSupport(candidateDevice);
-            swapChainAdequate =  swapChainSupport.Formats.Any() && swapChainSupport.PresentModes.Any();
+            var swapchainSupport = QuerySwapchainSupport(candidateDevice);
+            swapchainAdequate =  swapchainSupport.Formats.Any() && swapchainSupport.PresentModes.Any();
         }
 
-        return indices.IsComplete() && extensionsSupported && swapChainAdequate;
+        return indices.IsComplete() && extensionsSupported && swapchainAdequate;
     }
 
-    protected bool CheckDeviceExtensionsSupport(PhysicalDevice physDevice)
+    protected bool CheckDeviceExtensionsSupport(VulkanPhysicalDevice physDevice)
     {
-        uint extentionsCount = 0;
-        vk!.EnumerateDeviceExtensionProperties(physDevice, (byte*)null, ref extentionsCount, null);
-
-        var availableExtensions = new ExtensionProperties[extentionsCount];
-        fixed (ExtensionProperties* availableExtensionsPtr = availableExtensions)
-        {
-            vk!.EnumerateDeviceExtensionProperties(physDevice, (byte*)null, ref extentionsCount, availableExtensionsPtr);
-        }
-
-        var availableExtensionNames = availableExtensions.Select(extension => Marshal.PtrToStringAnsi((IntPtr)extension.ExtensionName)).ToHashSet();
-
+        var availableExtensions = physDevice.EnumerateExtensionProperties();
+        var availableExtensionNames = availableExtensions.Select(extension => extension.GetExtensionName()).ToHashSet();
         return deviceExtensions.All(availableExtensionNames.Contains);
-
     }
 }

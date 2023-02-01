@@ -113,8 +113,8 @@ public unsafe class HelloTriangleApplication_17 : HelloTriangleApplication_16
             {
                 X = 0,
                 Y = 0,
-                Width = swapChainExtent.Width,
-                Height = swapChainExtent.Height,
+                Width = swapchainExtent.Width,
+                Height = swapchainExtent.Height,
                 MinDepth = 0,
                 MaxDepth = 1,
             };
@@ -122,7 +122,7 @@ public unsafe class HelloTriangleApplication_17 : HelloTriangleApplication_16
             Rect2D scissor = new()
             {
                 Offset = { X = 0, Y = 0 },
-                Extent = swapChainExtent,
+                Extent = swapchainExtent,
             };
 
             PipelineViewportStateCreateInfo viewportState = new()

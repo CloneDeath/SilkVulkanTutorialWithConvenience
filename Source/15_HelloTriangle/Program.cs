@@ -22,7 +22,7 @@ public unsafe class HelloTriangleApplication_15 : HelloTriangleApplication_14
         CreateSurface();
         PickPhysicalDevice();
         CreateLogicalDevice();
-        CreateSwapChain();
+        CreateSwapchain();
         CreateImageViews();
         CreateRenderPass();
         CreateGraphicsPipeline();
@@ -50,7 +50,7 @@ public unsafe class HelloTriangleApplication_15 : HelloTriangleApplication_14
 
         vk!.DestroyCommandPool(device, commandPool, null);
 
-        foreach (var framebuffer in swapChainFramebuffers!)
+        foreach (var framebuffer in swapchainFramebuffers!)
         {
             vk!.DestroyFramebuffer(device, framebuffer, null);
         }
@@ -59,12 +59,12 @@ public unsafe class HelloTriangleApplication_15 : HelloTriangleApplication_14
         vk!.DestroyPipelineLayout(device, pipelineLayout, null);
         vk!.DestroyRenderPass(device, renderPass, null);
 
-        foreach (var imageView in swapChainImageViews!)
+        foreach (var imageView in swapchainImageViews!)
         {
             vk!.DestroyImageView(device, imageView, null);
         }
 
-        khrSwapChain!.DestroySwapchain(device, swapChain, null);
+        khrSwapchain!.DestroySwapchain(device, swapchain, null);
 
         device!.Dispose();
 
@@ -74,7 +74,7 @@ public unsafe class HelloTriangleApplication_15 : HelloTriangleApplication_14
             debugMessenger!.Dispose();
         }
 
-        khrSurface!.DestroySurface(instance, surface, null);
+        surface!.Dispose();
         instance!.Dispose();
         vk!.Dispose();
 
@@ -85,7 +85,7 @@ public unsafe class HelloTriangleApplication_15 : HelloTriangleApplication_14
     {
         AttachmentDescription colorAttachment = new()
         {
-            Format = swapChainImageFormat,
+            Format = swapchainImageFormat,
             Samples = SampleCountFlags.Count1Bit,
             LoadOp = AttachmentLoadOp.Clear,
             StoreOp = AttachmentStoreOp.Store,
@@ -139,7 +139,7 @@ public unsafe class HelloTriangleApplication_15 : HelloTriangleApplication_14
         imageAvailableSemaphores = new Semaphore[MAX_FRAMES_IN_FLIGHT];
         renderFinishedSemaphores = new Semaphore[MAX_FRAMES_IN_FLIGHT];
         inFlightFences = new Fence[MAX_FRAMES_IN_FLIGHT];
-        imagesInFlight = new Fence[swapChainImages!.Length];
+        imagesInFlight = new Fence[swapchainImages!.Length];
 
         SemaphoreCreateInfo semaphoreInfo = new()
         {
@@ -168,7 +168,7 @@ public unsafe class HelloTriangleApplication_15 : HelloTriangleApplication_14
         vk!.WaitForFences(device, 1, inFlightFences![currentFrame], true, ulong.MaxValue);
 
         uint imageIndex = 0;
-        khrSwapChain!.AcquireNextImage(device, swapChain, ulong.MaxValue, imageAvailableSemaphores![currentFrame], default, ref imageIndex);
+        khrSwapchain!.AcquireNextImage(device, swapchain, ulong.MaxValue, imageAvailableSemaphores![currentFrame], default, ref imageIndex);
 
         if(imagesInFlight![imageIndex].Handle != default)
         {
@@ -210,7 +210,7 @@ public unsafe class HelloTriangleApplication_15 : HelloTriangleApplication_14
             throw new Exception("failed to submit draw command buffer!");
         }
 
-        var swapChains = stackalloc[] { swapChain };
+        var swapchains = stackalloc[] { swapchain };
         PresentInfoKHR presentInfo = new()
         {
             SType = StructureType.PresentInfoKhr,
@@ -219,12 +219,12 @@ public unsafe class HelloTriangleApplication_15 : HelloTriangleApplication_14
             PWaitSemaphores = signalSemaphores,
 
             SwapchainCount = 1,
-            PSwapchains = swapChains,
+            PSwapchains = swapchains,
 
             PImageIndices = &imageIndex
         };
 
-        khrSwapChain.QueuePresent(presentQueue, presentInfo);
+        khrSwapchain.QueuePresent(presentQueue, presentInfo);
 
         currentFrame = (currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
 

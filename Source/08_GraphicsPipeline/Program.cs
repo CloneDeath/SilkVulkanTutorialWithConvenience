@@ -10,7 +10,7 @@ public class HelloTriangleApplication_08 : HelloTriangleApplication_07
         CreateSurface();
         PickPhysicalDevice();
         CreateLogicalDevice();
-        CreateSwapChain();
+        CreateSwapchain();
         CreateImageViews();
         CreateGraphicsPipeline();
     }

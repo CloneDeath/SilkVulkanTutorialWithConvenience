@@ -5,7 +5,7 @@ app.Run();
 
 public unsafe class HelloTriangleApplication_13 : HelloTriangleApplication_12
 {
-    protected Framebuffer[]? swapChainFramebuffers;
+    protected Framebuffer[]? swapchainFramebuffers;
 
     protected override void InitVulkan()
     {
@@ -14,7 +14,7 @@ public unsafe class HelloTriangleApplication_13 : HelloTriangleApplication_12
         CreateSurface();
         PickPhysicalDevice();
         CreateLogicalDevice();
-        CreateSwapChain();
+        CreateSwapchain();
         CreateImageViews();
         CreateRenderPass();
         CreateGraphicsPipeline();
@@ -23,7 +23,7 @@ public unsafe class HelloTriangleApplication_13 : HelloTriangleApplication_12
 
     protected override void CleanUp()
     {
-        foreach (var framebuffer in swapChainFramebuffers!)
+        foreach (var framebuffer in swapchainFramebuffers!)
         {
             vk!.DestroyFramebuffer(device, framebuffer, null);
         }
@@ -32,12 +32,12 @@ public unsafe class HelloTriangleApplication_13 : HelloTriangleApplication_12
         vk!.DestroyPipelineLayout(device, pipelineLayout, null);
         vk!.DestroyRenderPass(device, renderPass, null);
 
-        foreach (var imageView in swapChainImageViews!)
+        foreach (var imageView in swapchainImageViews!)
         {
             vk!.DestroyImageView(device, imageView, null);
         }
 
-        khrSwapChain!.DestroySwapchain(device, swapChain, null);
+        khrSwapchain!.DestroySwapchain(device, swapchain, null);
 
         device!.Dispose();
 
@@ -47,7 +47,7 @@ public unsafe class HelloTriangleApplication_13 : HelloTriangleApplication_12
             debugMessenger!.Dispose();
         }
 
-        khrSurface!.DestroySurface(instance, surface, null);
+        surface!.Dispose();
         instance!.Dispose();
         vk!.Dispose();
 
@@ -56,11 +56,11 @@ public unsafe class HelloTriangleApplication_13 : HelloTriangleApplication_12
 
     protected virtual void CreateFramebuffers()
     {
-        swapChainFramebuffers = new Framebuffer[swapChainImageViews!.Length];
+        swapchainFramebuffers = new Framebuffer[swapchainImageViews!.Length];
 
-        for(int i = 0; i < swapChainImageViews.Length; i++)
+        for(int i = 0; i < swapchainImageViews.Length; i++)
         {
-            var attachment = swapChainImageViews[i];
+            var attachment = swapchainImageViews[i];
             
             FramebufferCreateInfo framebufferInfo = new()
             {
@@ -68,12 +68,12 @@ public unsafe class HelloTriangleApplication_13 : HelloTriangleApplication_12
                 RenderPass = renderPass,
                 AttachmentCount = 1,
                 PAttachments = &attachment,
-                Width = swapChainExtent.Width,
-                Height = swapChainExtent.Height,
+                Width = swapchainExtent.Width,
+                Height = swapchainExtent.Height,
                 Layers = 1,
             };
 
-            if(vk!.CreateFramebuffer(device,framebufferInfo, null,out swapChainFramebuffers[i]) != Result.Success)
+            if(vk!.CreateFramebuffer(device,framebufferInfo, null,out swapchainFramebuffers[i]) != Result.Success)
             {
                 throw new Exception("failed to create framebuffer!");
             }

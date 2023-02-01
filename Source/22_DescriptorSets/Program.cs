@@ -19,7 +19,7 @@ public unsafe class HelloTriangleApplication_22 : HelloTriangleApplication_21
         CreateSurface();
         PickPhysicalDevice();
         CreateLogicalDevice();
-        CreateSwapChain();
+        CreateSwapchain();
         CreateImageViews();
         CreateRenderPass();
         CreateDescriptorSetLayout();
@@ -35,9 +35,9 @@ public unsafe class HelloTriangleApplication_22 : HelloTriangleApplication_21
         CreateSyncObjects();
     }
 
-    protected override void CleanUpSwapChain()
+    protected override void CleanUpSwapchain()
     {
-        foreach (var framebuffer in swapChainFramebuffers!)
+        foreach (var framebuffer in swapchainFramebuffers!)
         {
             vk!.DestroyFramebuffer(device, framebuffer, null);
         }
@@ -51,14 +51,14 @@ public unsafe class HelloTriangleApplication_22 : HelloTriangleApplication_21
         vk!.DestroyPipelineLayout(device, pipelineLayout, null);
         vk!.DestroyRenderPass(device, renderPass, null);
 
-        foreach (var imageView in swapChainImageViews!)
+        foreach (var imageView in swapchainImageViews!)
         {
             vk!.DestroyImageView(device, imageView, null);
         }
 
-        khrSwapChain!.DestroySwapchain(device, swapChain, null);
+        khrSwapchain!.DestroySwapchain(device, swapchain, null);
 
-        for (int i = 0; i < swapChainImages!.Length; i++)
+        for (int i = 0; i < swapchainImages!.Length; i++)
         {
             vk!.DestroyBuffer(device, uniformBuffers![i], null);
             vk!.FreeMemory(device, uniformBuffersMemory![i], null);
@@ -67,7 +67,7 @@ public unsafe class HelloTriangleApplication_22 : HelloTriangleApplication_21
         vk!.DestroyDescriptorPool(device, descriptorPool, null);
     }
 
-    protected override void RecreateSwapChain()
+    protected override void RecreateSwapchain()
     {
         Vector2D<int> framebufferSize = window!.FramebufferSize;
 
@@ -79,9 +79,9 @@ public unsafe class HelloTriangleApplication_22 : HelloTriangleApplication_21
 
         vk!.DeviceWaitIdle(device);
 
-        CleanUpSwapChain();
+        CleanUpSwapchain();
 
-        CreateSwapChain();
+        CreateSwapchain();
         CreateImageViews();
         CreateRenderPass();
         CreateGraphicsPipeline();
@@ -91,7 +91,7 @@ public unsafe class HelloTriangleApplication_22 : HelloTriangleApplication_21
         CreateDescriptorSets();
         CreateCommandBuffers();
 
-        imagesInFlight = new Fence[swapChainImages!.Length];
+        imagesInFlight = new Fence[swapchainImages!.Length];
     }
 
     protected override void CreateGraphicsPipeline()
@@ -151,8 +151,8 @@ public unsafe class HelloTriangleApplication_22 : HelloTriangleApplication_21
             {
                 X = 0,
                 Y = 0,
-                Width = swapChainExtent.Width,
-                Height = swapChainExtent.Height,
+                Width = swapchainExtent.Width,
+                Height = swapchainExtent.Height,
                 MinDepth = 0,
                 MaxDepth = 1,
             };
@@ -160,7 +160,7 @@ public unsafe class HelloTriangleApplication_22 : HelloTriangleApplication_21
             Rect2D scissor = new()
             {
                 Offset = { X = 0, Y = 0 },
-                Extent = swapChainExtent,
+                Extent = swapchainExtent,
             };
 
             PipelineViewportStateCreateInfo viewportState = new()
@@ -259,7 +259,7 @@ public unsafe class HelloTriangleApplication_22 : HelloTriangleApplication_21
         DescriptorPoolSize poolSize = new()
         {
             Type = DescriptorType.UniformBuffer,
-            DescriptorCount = (uint)swapChainImages!.Length,
+            DescriptorCount = (uint)swapchainImages!.Length,
         };
 
 
@@ -268,7 +268,7 @@ public unsafe class HelloTriangleApplication_22 : HelloTriangleApplication_21
             SType = StructureType.DescriptorPoolCreateInfo,
             PoolSizeCount = 1,
             PPoolSizes = &poolSize,
-            MaxSets = (uint)swapChainImages!.Length,
+            MaxSets = (uint)swapchainImages!.Length,
         };
 
         fixed (DescriptorPool* descriptorPoolPtr = &descriptorPool)
@@ -283,7 +283,7 @@ public unsafe class HelloTriangleApplication_22 : HelloTriangleApplication_21
 
     protected virtual void CreateDescriptorSets()
     {
-        var layouts = new DescriptorSetLayout[swapChainImages!.Length];
+        var layouts = new DescriptorSetLayout[swapchainImages!.Length];
         Array.Fill(layouts, descriptorSetLayout); 
 
         fixed (DescriptorSetLayout* layoutsPtr = layouts)
@@ -292,11 +292,11 @@ public unsafe class HelloTriangleApplication_22 : HelloTriangleApplication_21
             {
                 SType = StructureType.DescriptorSetAllocateInfo,
                 DescriptorPool = descriptorPool,
-                DescriptorSetCount = (uint)swapChainImages!.Length,
+                DescriptorSetCount = (uint)swapchainImages!.Length,
                 PSetLayouts = layoutsPtr,
             };
 
-            descriptorSets = new DescriptorSet[swapChainImages.Length];
+            descriptorSets = new DescriptorSet[swapchainImages.Length];
             fixed (DescriptorSet* descriptorSetsPtr = descriptorSets)
             {
                 if (vk!.AllocateDescriptorSets(device, allocateInfo, descriptorSetsPtr) != Result.Success)
@@ -307,7 +307,7 @@ public unsafe class HelloTriangleApplication_22 : HelloTriangleApplication_21
         }
         
 
-        for (int i = 0; i < swapChainImages.Length; i++)
+        for (int i = 0; i < swapchainImages.Length; i++)
         {
             DescriptorBufferInfo bufferInfo = new()
             {
@@ -335,7 +335,7 @@ public unsafe class HelloTriangleApplication_22 : HelloTriangleApplication_21
 
     protected override void CreateCommandBuffers()
     {
-        commandBuffers = new CommandBuffer[swapChainFramebuffers!.Length];
+        commandBuffers = new CommandBuffer[swapchainFramebuffers!.Length];
 
         CommandBufferAllocateInfo allocInfo = new()
         {
@@ -370,11 +370,11 @@ public unsafe class HelloTriangleApplication_22 : HelloTriangleApplication_21
             {
                 SType= StructureType.RenderPassBeginInfo,
                 RenderPass = renderPass,
-                Framebuffer = swapChainFramebuffers[i],
+                Framebuffer = swapchainFramebuffers[i],
                 RenderArea =
                 {
                     Offset = { X = 0, Y = 0 }, 
-                    Extent = swapChainExtent,
+                    Extent = swapchainExtent,
                 }
             };
 

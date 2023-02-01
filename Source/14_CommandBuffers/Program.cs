@@ -15,7 +15,7 @@ public unsafe class HelloTriangleApplication_14 : HelloTriangleApplication_13
         CreateSurface();
         PickPhysicalDevice();
         CreateLogicalDevice();
-        CreateSwapChain();
+        CreateSwapchain();
         CreateImageViews();
         CreateRenderPass();
         CreateGraphicsPipeline();
@@ -28,7 +28,7 @@ public unsafe class HelloTriangleApplication_14 : HelloTriangleApplication_13
     {
         vk!.DestroyCommandPool(device, commandPool, null);
 
-        foreach (var framebuffer in swapChainFramebuffers!)
+        foreach (var framebuffer in swapchainFramebuffers!)
         {
             vk!.DestroyFramebuffer(device, framebuffer, null);
         }
@@ -37,12 +37,12 @@ public unsafe class HelloTriangleApplication_14 : HelloTriangleApplication_13
         vk!.DestroyPipelineLayout(device, pipelineLayout, null);
         vk!.DestroyRenderPass(device, renderPass, null);
 
-        foreach (var imageView in swapChainImageViews!)
+        foreach (var imageView in swapchainImageViews!)
         {
             vk!.DestroyImageView(device, imageView, null);
         }
 
-        khrSwapChain!.DestroySwapchain(device, swapChain, null);
+        khrSwapchain!.DestroySwapchain(device, swapchain, null);
 
         device!.Dispose();
 
@@ -52,7 +52,7 @@ public unsafe class HelloTriangleApplication_14 : HelloTriangleApplication_13
             debugMessenger!.Dispose();
         }
 
-        khrSurface!.DestroySurface(instance, surface, null);
+        surface!.Dispose();
         instance!.Dispose();
         vk!.Dispose();
 
@@ -77,7 +77,7 @@ public unsafe class HelloTriangleApplication_14 : HelloTriangleApplication_13
 
     protected virtual void CreateCommandBuffers()
     {
-        commandBuffers = new CommandBuffer[swapChainFramebuffers!.Length];
+        commandBuffers = new CommandBuffer[swapchainFramebuffers!.Length];
 
         CommandBufferAllocateInfo allocInfo = new()
         {
@@ -111,11 +111,11 @@ public unsafe class HelloTriangleApplication_14 : HelloTriangleApplication_13
             {
                 SType= StructureType.RenderPassBeginInfo,
                 RenderPass = renderPass,
-                Framebuffer = swapChainFramebuffers[i],
+                Framebuffer = swapchainFramebuffers[i],
                 RenderArea =
                 {
                     Offset = { X = 0, Y = 0 }, 
-                    Extent = swapChainExtent,
+                    Extent = swapchainExtent,
                 }
             };
 

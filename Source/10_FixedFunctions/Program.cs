@@ -12,12 +12,12 @@ public unsafe class HelloTriangleApplication_10 : HelloTriangleApplication_09
     {
         vk!.DestroyPipelineLayout(device, pipelineLayout, null);
 
-        foreach (var imageView in swapChainImageViews!)
+        foreach (var imageView in swapchainImageViews!)
         {
             vk!.DestroyImageView(device, imageView, null);
         }
 
-        khrSwapChain!.DestroySwapchain(device, swapChain, null);
+        khrSwapchain!.DestroySwapchain(device, swapchain, null);
 
         device!.Dispose();
 
@@ -27,7 +27,7 @@ public unsafe class HelloTriangleApplication_10 : HelloTriangleApplication_09
             debugMessenger!.Dispose();
         }
 
-        khrSurface!.DestroySurface(instance, surface, null);
+        surface!.Dispose();
         instance!.Dispose();
         vk!.Dispose();
 
@@ -85,8 +85,8 @@ public unsafe class HelloTriangleApplication_10 : HelloTriangleApplication_09
         {
             X = 0,
             Y = 0,
-            Width = swapChainExtent.Width,
-            Height = swapChainExtent.Height,
+            Width = swapchainExtent.Width,
+            Height = swapchainExtent.Height,
             MinDepth = 0,
             MaxDepth = 1,
         };
@@ -94,7 +94,7 @@ public unsafe class HelloTriangleApplication_10 : HelloTriangleApplication_09
         Rect2D scissor = new()
         {
             Offset = { X = 0, Y = 0 },
-            Extent = swapChainExtent,
+            Extent = swapchainExtent,
         };
 
         // ReSharper disable once UnusedVariable

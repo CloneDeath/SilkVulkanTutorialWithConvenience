@@ -24,7 +24,7 @@ public unsafe class HelloTriangleApplication_27 : HelloTriangleApplication_26
         CreateSurface();
         PickPhysicalDevice();
         CreateLogicalDevice();
-        CreateSwapChain();
+        CreateSwapchain();
         CreateImageViews();
         CreateRenderPass();
         CreateDescriptorSetLayout();
@@ -155,7 +155,7 @@ public unsafe class HelloTriangleApplication_27 : HelloTriangleApplication_26
 
     protected override void CreateCommandBuffers()
     {
-        commandBuffers = new CommandBuffer[swapChainFramebuffers!.Length];
+        commandBuffers = new CommandBuffer[swapchainFramebuffers!.Length];
 
         CommandBufferAllocateInfo allocInfo = new()
         {
@@ -190,11 +190,11 @@ public unsafe class HelloTriangleApplication_27 : HelloTriangleApplication_26
             {
                 SType= StructureType.RenderPassBeginInfo,
                 RenderPass = renderPass,
-                Framebuffer = swapChainFramebuffers[i],
+                Framebuffer = swapchainFramebuffers[i],
                 RenderArea =
                 {
                     Offset = { X = 0, Y = 0 }, 
-                    Extent = swapChainExtent,
+                    Extent = swapchainExtent,
                 }
             };
 

@@ -7,6 +7,7 @@ using SilkNetConvenience;
 using SilkNetConvenience.CreateInfo;
 using SilkNetConvenience.CreateInfo.EXT;
 using SilkNetConvenience.Wrappers;
+using SilkNetConvenience.Wrappers.EXT;
 
 var app = new HelloTriangleApplication_02();
 app.Run();

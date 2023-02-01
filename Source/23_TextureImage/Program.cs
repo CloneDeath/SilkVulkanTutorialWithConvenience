@@ -16,7 +16,7 @@ public unsafe class HelloTriangleApplication_23 : HelloTriangleApplication_22
         CreateSurface();
         PickPhysicalDevice();
         CreateLogicalDevice();
-        CreateSwapChain();
+        CreateSwapchain();
         CreateImageViews();
         CreateRenderPass();
         CreateDescriptorSetLayout();
@@ -35,7 +35,7 @@ public unsafe class HelloTriangleApplication_23 : HelloTriangleApplication_22
 
     protected override void CleanUp()
     {
-        CleanUpSwapChain();
+        CleanUpSwapchain();
 
         vk!.DestroyImage(device, textureImage, null);
         vk!.FreeMemory(device, textureImageMemory, null);
@@ -65,7 +65,7 @@ public unsafe class HelloTriangleApplication_23 : HelloTriangleApplication_22
             debugMessenger!.Dispose();
         }
 
-        khrSurface!.DestroySurface(instance, surface, null);
+        surface!.Dispose();
         instance!.Dispose();
         vk!.Dispose();
 

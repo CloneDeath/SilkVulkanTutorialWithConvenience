@@ -17,7 +17,7 @@ public unsafe class HelloTriangleApplication_24 : HelloTriangleApplication_23
         CreateSurface();
         PickPhysicalDevice();
         CreateLogicalDevice();
-        CreateSwapChain();
+        CreateSwapchain();
         CreateImageViews();
         CreateRenderPass();
         CreateDescriptorSetLayout();
@@ -38,7 +38,7 @@ public unsafe class HelloTriangleApplication_24 : HelloTriangleApplication_23
 
     protected override void CleanUp()
     {
-        CleanUpSwapChain();
+        CleanUpSwapchain();
 
         vk!.DestroySampler(device, textureSampler, null);
         vk!.DestroyImageView(device, textureImageView, null);
@@ -71,7 +71,7 @@ public unsafe class HelloTriangleApplication_24 : HelloTriangleApplication_23
             debugMessenger!.Dispose();
         }
 
-        khrSurface!.DestroySurface(instance, surface, null);
+        surface!.Dispose();
         instance!.Dispose();
         vk!.Dispose();
 
@@ -146,12 +146,12 @@ public unsafe class HelloTriangleApplication_24 : HelloTriangleApplication_23
 
     protected override void CreateImageViews()
     {
-        swapChainImageViews = new ImageView[swapChainImages!.Length];
+        swapchainImageViews = new ImageView[swapchainImages!.Length];
 
-        for (int i = 0; i < swapChainImages.Length; i++)
+        for (int i = 0; i < swapchainImages.Length; i++)
         {
 
-            swapChainImageViews[i] = CreateImageView(swapChainImages[i], swapChainImageFormat);
+            swapchainImageViews[i] = CreateImageView(swapchainImages[i], swapchainImageFormat);
         }
     }
 
@@ -233,16 +233,16 @@ public unsafe class HelloTriangleApplication_24 : HelloTriangleApplication_23
 
         bool extensionsSupported = CheckDeviceExtensionsSupport(candidateDevice);
 
-        bool swapChainAdequate = false;
+        bool swapchainAdequate = false;
         if (extensionsSupported)
         {
-            var swapChainSupport = QuerySwapChainSupport(candidateDevice);
-            swapChainAdequate =  swapChainSupport.Formats.Any() && swapChainSupport.PresentModes.Any();
+            var swapchainSupport = QuerySwapchainSupport(candidateDevice);
+            swapchainAdequate =  swapchainSupport.Formats.Any() && swapchainSupport.PresentModes.Any();
         }
 
         PhysicalDeviceFeatures supportedFeatures;
         vk!.GetPhysicalDeviceFeatures(candidateDevice, out supportedFeatures);
 
-        return qfIndices.IsComplete() && extensionsSupported && swapChainAdequate && supportedFeatures.SamplerAnisotropy;
+        return qfIndices.IsComplete() && extensionsSupported && swapchainAdequate && supportedFeatures.SamplerAnisotropy;
     }
 }

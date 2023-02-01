@@ -5,7 +5,7 @@ app.Run();
 
 public unsafe class HelloTriangleApplication_07 : HelloTriangleApplication_06
 {
-    protected ImageView[]? swapChainImageViews;
+    protected ImageView[]? swapchainImageViews;
 
     protected override void InitVulkan()
     {
@@ -14,18 +14,18 @@ public unsafe class HelloTriangleApplication_07 : HelloTriangleApplication_06
         CreateSurface();
         PickPhysicalDevice();
         CreateLogicalDevice();
-        CreateSwapChain();
+        CreateSwapchain();
         CreateImageViews();
     }
 
     protected override void CleanUp()
     {
-        foreach (var imageView in swapChainImageViews!)
+        foreach (var imageView in swapchainImageViews!)
         {
             vk!.DestroyImageView(device, imageView, null);
         }
 
-        khrSwapChain!.DestroySwapchain(device, swapChain, null);
+        khrSwapchain!.DestroySwapchain(device, swapchain, null);
 
         device!.Dispose();
 
@@ -35,7 +35,7 @@ public unsafe class HelloTriangleApplication_07 : HelloTriangleApplication_06
             debugMessenger!.Dispose();
         }
 
-        khrSurface!.DestroySurface(instance, surface, null);
+        surface!.Dispose();
         instance!.Dispose();
         vk!.Dispose();
 
@@ -44,16 +44,16 @@ public unsafe class HelloTriangleApplication_07 : HelloTriangleApplication_06
 
     protected virtual void CreateImageViews()
     {
-        swapChainImageViews = new ImageView[swapChainImages!.Length];
+        swapchainImageViews = new ImageView[swapchainImages!.Length];
 
-        for (int i = 0; i < swapChainImages.Length; i++)
+        for (int i = 0; i < swapchainImages.Length; i++)
         {
             ImageViewCreateInfo createInfo = new()
             {
                 SType = StructureType.ImageViewCreateInfo,
-                Image = swapChainImages[i],
+                Image = swapchainImages[i],
                 ViewType = ImageViewType.Type2D,
-                Format = swapChainImageFormat,
+                Format = swapchainImageFormat,
                 Components =
                 {
                     R = ComponentSwizzle.Identity,
@@ -72,7 +72,7 @@ public unsafe class HelloTriangleApplication_07 : HelloTriangleApplication_06
 
             };
 
-            if(vk!.CreateImageView(device, createInfo, null, out swapChainImageViews[i]) != Result.Success)
+            if(vk!.CreateImageView(device, createInfo, null, out swapchainImageViews[i]) != Result.Success)
             {
                 throw new Exception("failed to create image views!");
             }

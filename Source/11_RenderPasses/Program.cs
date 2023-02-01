@@ -14,7 +14,7 @@ public unsafe class HelloTriangleApplication_11 : HelloTriangleApplication_10
         CreateSurface();
         PickPhysicalDevice();
         CreateLogicalDevice();
-        CreateSwapChain();
+        CreateSwapchain();
         CreateImageViews();
         CreateRenderPass();
         CreateGraphicsPipeline();
@@ -25,12 +25,12 @@ public unsafe class HelloTriangleApplication_11 : HelloTriangleApplication_10
         vk!.DestroyPipelineLayout(device, pipelineLayout, null);
         vk!.DestroyRenderPass(device, renderPass, null);
 
-        foreach (var imageView in swapChainImageViews!)
+        foreach (var imageView in swapchainImageViews!)
         {
             vk!.DestroyImageView(device, imageView, null);
         }
 
-        khrSwapChain!.DestroySwapchain(device, swapChain, null);
+        khrSwapchain!.DestroySwapchain(device, swapchain, null);
 
         device!.Dispose();
 
@@ -40,7 +40,7 @@ public unsafe class HelloTriangleApplication_11 : HelloTriangleApplication_10
             debugMessenger!.Dispose();
         }
 
-        khrSurface!.DestroySurface(instance, surface, null);
+        surface!.Dispose();
         instance!.Dispose();
         vk!.Dispose();
 
@@ -51,7 +51,7 @@ public unsafe class HelloTriangleApplication_11 : HelloTriangleApplication_10
     {
         AttachmentDescription colorAttachment = new()
         {
-            Format = swapChainImageFormat,
+            Format = swapchainImageFormat,
             Samples = SampleCountFlags.Count1Bit,
             LoadOp = AttachmentLoadOp.Clear,
             StoreOp = AttachmentStoreOp.Store,
