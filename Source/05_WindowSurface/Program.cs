@@ -1,7 +1,7 @@
-﻿using System.Runtime.CompilerServices;
-using Silk.NET.Core.Native;
-using Silk.NET.Vulkan;
+﻿using Silk.NET.Vulkan;
 using Silk.NET.Vulkan.Extensions.KHR;
+using SilkNetConvenience.CreateInfo;
+using SilkNetConvenience.Wrappers;
 
 var app = new HelloTriangleApplication_05();
 app.Run();
@@ -21,7 +21,7 @@ public unsafe class HelloTriangleApplication_05 : HelloTriangleApplication_04
 {
     protected KhrSurface? khrSurface;
     protected SurfaceKHR surface;
-    protected Queue presentQueue;
+    protected VulkanQueue? presentQueue;
 
     protected override void InitVulkan()
     {
@@ -34,105 +34,69 @@ public unsafe class HelloTriangleApplication_05 : HelloTriangleApplication_04
 
     protected override void CleanUp()
     {
-        vk!.DestroyDevice(device, null);
+        device!.Dispose();
 
         if (EnableValidationLayers)
         {
             //DestroyDebugUtilsMessenger equivalent to method DestroyDebugUtilsMessengerEXT from original tutorial.
-            debugUtils!.DestroyDebugUtilsMessenger(instance, debugMessenger, null);
+            debugMessenger!.Dispose();
         }
-
+        
         khrSurface!.DestroySurface(instance, surface, null);
-        instance!.Dispose()
+        instance!.Dispose();
         vk!.Dispose();
 
         window?.Dispose();
     }
 
-    protected void CreateSurface()
-    {
-        if (!vk!.TryGetInstanceExtension<KhrSurface>(instance, out khrSurface))
-        {
-            throw new NotSupportedException("KHR_surface extension not found.");
-        }
+    protected void CreateSurface() {
+        khrSurface = instance!.GetKhrSurfaceExtension();
 
-        surface = window!.VkSurface!.Create<AllocationCallbacks>(instance.ToHandle(), null).ToSurface();
+        surface = window!.VkSurface!.Create<AllocationCallbacks>(instance!.Instance.ToHandle(), null).ToSurface();
     }
 
     protected override void CreateLogicalDevice()
     {
-        var indices = FindQueueFamilies_05(physicalDevice);
+        var indices = FindQueueFamilies_05(physicalDevice!);
 
         var uniqueQueueFamilies = new[] { indices.GraphicsFamily!.Value, indices.PresentFamily!.Value };
         uniqueQueueFamilies = uniqueQueueFamilies.Distinct().ToArray();
 
-        using var mem = GlobalMemory.Allocate(uniqueQueueFamilies.Length * sizeof(DeviceQueueCreateInfo));
-        var queueCreateInfos = (DeviceQueueCreateInfo*)Unsafe.AsPointer(ref mem.GetPinnableReference());
+        var queueCreateInfos = new DeviceQueueCreateInformation[uniqueQueueFamilies.Length];
 
-        float queuePriority = 1.0f;
         for (int i = 0; i < uniqueQueueFamilies.Length; i++)
         {
             queueCreateInfos[i] = new()
             {
-                SType = StructureType.DeviceQueueCreateInfo,
                 QueueFamilyIndex = uniqueQueueFamilies[i],
-                QueueCount = 1
+                QueuePriorities = new[]{1f}
             };
-
-
-            queueCreateInfos[i].PQueuePriorities = &queuePriority;
         }
 
         PhysicalDeviceFeatures deviceFeatures = new();
 
-        DeviceCreateInfo createInfo = new()
+        DeviceCreateInformation createInfo = new()
         {
-            SType = StructureType.DeviceCreateInfo,
-            QueueCreateInfoCount = (uint)uniqueQueueFamilies.Length,
-            PQueueCreateInfos = queueCreateInfos,
-
-            PEnabledFeatures = &deviceFeatures,
-
-            EnabledExtensionCount = 0
+            QueueCreateInfos = queueCreateInfos,
+            EnabledFeatures = deviceFeatures
         };
 
         if (EnableValidationLayers)
         {
-            createInfo.EnabledLayerCount = (uint)validationLayers.Length;
-            createInfo.PpEnabledLayerNames = (byte**)SilkMarshal.StringArrayToPtr(validationLayers);
-        }
-        else
-        {
-            createInfo.EnabledLayerCount = 0;
+            createInfo.EnabledLayers = validationLayers;
         }
 
-        if (vk!.CreateDevice(physicalDevice, in createInfo, null, out device) != Result.Success)
-        {
-            throw new Exception("failed to create logical device!");
-        }
+        device = physicalDevice!.CreateDevice(createInfo);
 
-        vk!.GetDeviceQueue(device, indices.GraphicsFamily!.Value, 0, out graphicsQueue);
-        vk!.GetDeviceQueue(device, indices.PresentFamily!.Value, 0, out presentQueue);
-
-        if (EnableValidationLayers)
-        {
-            SilkMarshal.Free((nint)createInfo.PpEnabledLayerNames);
-        }
+        graphicsQueue = device.GetDeviceQueue(indices.GraphicsFamily!.Value, 0);
+        presentQueue = device.GetDeviceQueue(indices.PresentFamily!.Value, 0);
     }
     
-    protected QueueFamilyIndices_05 FindQueueFamilies_05(PhysicalDevice physDevice)
+    protected QueueFamilyIndices_05 FindQueueFamilies_05(VulkanPhysicalDevice physDevice)
     {
         var indices = new QueueFamilyIndices_05();
 
-        uint queueFamilyCount = 0;
-        vk!.GetPhysicalDeviceQueueFamilyProperties(physDevice, ref queueFamilyCount, null);
-
-        var queueFamilies = new QueueFamilyProperties[queueFamilyCount];
-        fixed (QueueFamilyProperties* queueFamiliesPtr = queueFamilies)
-        {
-            vk!.GetPhysicalDeviceQueueFamilyProperties(physDevice, ref queueFamilyCount, queueFamiliesPtr);
-        }
-
+        var queueFamilies = physDevice.GetQueueFamilyProperties();
 
         uint i = 0;
         foreach (var queueFamily in queueFamilies)

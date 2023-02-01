@@ -63,16 +63,16 @@ public unsafe class HelloTriangleApplication_24 : HelloTriangleApplication_23
 
         vk!.DestroyCommandPool(device, commandPool, null);
 
-        vk!.DestroyDevice(device, null);
+        device!.Dispose();
 
         if (EnableValidationLayers)
         {
             //DestroyDebugUtilsMessenger equivalent to method DestroyDebugUtilsMessengerEXT from original tutorial.
-            debugUtils!.DestroyDebugUtilsMessenger(instance, debugMessenger, null);
+            debugMessenger!.Dispose();
         }
 
         khrSurface!.DestroySurface(instance, surface, null);
-        instance!.Dispose()
+        instance!.Dispose();
         vk!.Dispose();
 
         window?.Dispose();
@@ -130,10 +130,7 @@ public unsafe class HelloTriangleApplication_24 : HelloTriangleApplication_23
             createInfo.EnabledLayerCount = 0;
         }
 
-        if (vk!.CreateDevice(physicalDevice, in createInfo, null, out device) != Result.Success)
-        {
-            throw new Exception("failed to create logical device!");
-        }
+        device = physicalDevice!.CreateDevice(createInfo);
 
         vk!.GetDeviceQueue(device, qfIndices.GraphicsFamily!.Value, 0, out graphicsQueue);
         vk!.GetDeviceQueue(device, qfIndices.PresentFamily!.Value, 0, out presentQueue);

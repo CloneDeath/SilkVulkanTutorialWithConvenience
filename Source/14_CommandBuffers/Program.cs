@@ -44,16 +44,16 @@ public unsafe class HelloTriangleApplication_14 : HelloTriangleApplication_13
 
         khrSwapChain!.DestroySwapchain(device, swapChain, null);
 
-        vk!.DestroyDevice(device, null);
+        device!.Dispose();
 
         if (EnableValidationLayers)
         {
             //DestroyDebugUtilsMessenger equivalent to method DestroyDebugUtilsMessengerEXT from original tutorial.
-            debugUtils!.DestroyDebugUtilsMessenger(instance, debugMessenger, null);
+            debugMessenger!.Dispose();
         }
 
         khrSurface!.DestroySurface(instance, surface, null);
-        instance!.Dispose()
+        instance!.Dispose();
         vk!.Dispose();
 
         window?.Dispose();
