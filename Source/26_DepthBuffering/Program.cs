@@ -1,21 +1,13 @@
 ﻿using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using Silk.NET.Core;
 using Silk.NET.Core.Native;
 using Silk.NET.Maths;
 using Silk.NET.Vulkan;
-using Silk.NET.Vulkan.Extensions.EXT;
-using Silk.NET.Vulkan.Extensions.KHR;
-using Silk.NET.Windowing;
 using Semaphore = Silk.NET.Vulkan.Semaphore;
 using Buffer = Silk.NET.Vulkan.Buffer;
 
 var app = new HelloTriangleApplication_26();
 app.Run();
-
-
-
-
 
 public struct Vertex
 {
@@ -75,30 +67,7 @@ public struct UniformBufferObject
 
 public unsafe class HelloTriangleApplication_26 : HelloTriangleApplication_25
 {
-    const int MAX_FRAMES_IN_FLIGHT = 2;
-
-
-
-
-
-    
-
-
-
-
-
-
-
-
-
-    protected Framebuffer[]? swapChainFramebuffers;
-
-    protected RenderPass renderPass;
     protected DescriptorSetLayout descriptorSetLayout;
-
-    protected Pipeline graphicsPipeline;
-
-    protected CommandPool commandPool;
 
     protected Image depthImage;
     protected DeviceMemory depthImageMemory;
@@ -120,16 +89,6 @@ public unsafe class HelloTriangleApplication_26 : HelloTriangleApplication_25
     protected DescriptorPool descriptorPool;
     protected DescriptorSet[]? descriptorSets;
 
-    protected CommandBuffer[]? commandBuffers;
-
-    protected Semaphore[]? imageAvailableSemaphores;
-    protected Semaphore[]? renderFinishedSemaphores;
-    protected Fence[]? inFlightFences;
-    protected Fence[]? imagesInFlight;
-    protected int currentFrame;
-
-    protected bool frameBufferResized;
-
     protected Vertex[] vertices = new Vertex[]
     {
         new Vertex { pos = new Vector3D<float>(-0.5f,-0.5f, 0.0f), color = new Vector3D<float>(1.0f, 0.0f, 0.0f), textCoord = new Vector2D<float>(1.0f, 0.0f) },
@@ -148,10 +107,6 @@ public unsafe class HelloTriangleApplication_26 : HelloTriangleApplication_25
         0, 1, 2, 2, 3, 0,
         4, 5, 6, 6, 7, 4
     };
-
-    
-
-    
 
     protected void FramebufferResizeCallback(Vector2D<int> obj)
     {
@@ -620,21 +575,7 @@ public unsafe class HelloTriangleApplication_26 : HelloTriangleApplication_25
         }
     }
 
-    protected void CreateCommandPool()
-    {
-        var queueFamiliyIndicies = FindQueueFamilies_05(physicalDevice);
-
-        CommandPoolCreateInfo poolInfo = new()
-        {
-            SType = StructureType.CommandPoolCreateInfo,
-            QueueFamilyIndex = queueFamiliyIndicies.GraphicsFamily!.Value,
-        };
-
-        if(vk!.CreateCommandPool(device, poolInfo, null,out commandPool) != Result.Success)
-        {
-            throw new Exception("failed to create command pool!");
-        }
-    }
+    
 
     protected void CreateDepthResources()
     {
@@ -1267,34 +1208,7 @@ public unsafe class HelloTriangleApplication_26 : HelloTriangleApplication_25
         }
     }
 
-    protected void CreateSyncObjects()
-    {
-        imageAvailableSemaphores = new Semaphore[MAX_FRAMES_IN_FLIGHT];
-        renderFinishedSemaphores = new Semaphore[MAX_FRAMES_IN_FLIGHT];
-        inFlightFences = new Fence[MAX_FRAMES_IN_FLIGHT];
-        imagesInFlight = new Fence[swapChainImages!.Length];
-
-        SemaphoreCreateInfo semaphoreInfo = new()
-        {
-            SType = StructureType.SemaphoreCreateInfo,
-        };
-
-        FenceCreateInfo fenceInfo = new()
-        {
-            SType = StructureType.FenceCreateInfo,
-            Flags = FenceCreateFlags.SignaledBit,
-        };
-
-        for (var i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
-        {
-            if (vk!.CreateSemaphore(device, semaphoreInfo, null, out imageAvailableSemaphores[i]) != Result.Success ||
-                vk!.CreateSemaphore(device, semaphoreInfo, null, out renderFinishedSemaphores[i]) != Result.Success ||
-                vk!.CreateFence(device, fenceInfo, null, out inFlightFences[i]) != Result.Success)
-            {
-                throw new Exception("failed to create synchronization objects for a frame!");
-            }
-        }
-    }
+    
 
     protected void UpdateUniformBuffer(uint currentImage)
     {

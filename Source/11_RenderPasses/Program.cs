@@ -1,54 +1,11 @@
-﻿using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
-using Silk.NET.Core;
-using Silk.NET.Core.Native;
-using Silk.NET.Vulkan;
-using Silk.NET.Vulkan.Extensions.EXT;
-using Silk.NET.Vulkan.Extensions.KHR;
+﻿using Silk.NET.Vulkan;
 
 var app = new HelloTriangleApplication_11();
 app.Run();
 
-
-
-
-
 public unsafe class HelloTriangleApplication_11 : HelloTriangleApplication_10
 {
-
-
-
-
-    
-
-
-
-
-
-
-
-
-
-
-
-
-
-    
-
-
-
-
-
-
-
-
-
     protected RenderPass renderPass;
-
-
-    
-
-    
 
     protected override void InitVulkan()
     {
@@ -62,8 +19,6 @@ public unsafe class HelloTriangleApplication_11 : HelloTriangleApplication_10
         CreateRenderPass();
         CreateGraphicsPipeline();
     }
-
-    
 
     protected override void CleanUp()
     {
@@ -91,14 +46,8 @@ public unsafe class HelloTriangleApplication_11 : HelloTriangleApplication_10
 
         window?.Dispose();
     }
-
     
-
-    
-
-    
-
-    protected void CreateRenderPass()
+    protected virtual void CreateRenderPass()
     {
         AttachmentDescription colorAttachment = new()
         {
@@ -138,28 +87,4 @@ public unsafe class HelloTriangleApplication_11 : HelloTriangleApplication_10
             throw new Exception("failed to create render pass!");
         }
     }
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
 }

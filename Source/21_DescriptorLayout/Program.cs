@@ -1,21 +1,13 @@
 ﻿using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using Silk.NET.Core;
 using Silk.NET.Core.Native;
 using Silk.NET.Maths;
 using Silk.NET.Vulkan;
-using Silk.NET.Vulkan.Extensions.EXT;
-using Silk.NET.Vulkan.Extensions.KHR;
-using Silk.NET.Windowing;
 using Semaphore = Silk.NET.Vulkan.Semaphore;
 using Buffer = Silk.NET.Vulkan.Buffer;
 
 var app = new HelloTriangleApplication_21();
 app.Run();
-
-
-
-
 
 public struct Vertex
 {
@@ -67,30 +59,7 @@ public struct UniformBufferObject
 
 public unsafe class HelloTriangleApplication_21 : HelloTriangleApplication_20
 {
-    const int MAX_FRAMES_IN_FLIGHT = 2;
-
-
-
-
-
-    
-
-
-
-
-
-
-
-
-
-    protected Framebuffer[]? swapChainFramebuffers;
-
-    protected RenderPass renderPass;
     protected DescriptorSetLayout descriptorSetLayout;
-
-    protected Pipeline graphicsPipeline;
-
-    protected CommandPool commandPool;
 
     protected Buffer vertexBuffer;
     protected DeviceMemory vertexBufferMemory;
@@ -99,16 +68,6 @@ public unsafe class HelloTriangleApplication_21 : HelloTriangleApplication_20
 
     protected Buffer[]? uniformBuffers;
     protected DeviceMemory[]? uniformBuffersMemory;
-
-    protected CommandBuffer[]? commandBuffers;
-
-    protected Semaphore[]? imageAvailableSemaphores;
-    protected Semaphore[]? renderFinishedSemaphores;
-    protected Fence[]? inFlightFences;
-    protected Fence[]? imagesInFlight;
-    protected int currentFrame;
-
-    protected bool frameBufferResized;
 
     protected Vertex[] vertices = new Vertex[]
     {
@@ -122,10 +81,6 @@ public unsafe class HelloTriangleApplication_21 : HelloTriangleApplication_20
     {
         0, 1, 2, 2, 3, 0
     };
-
-    
-
-    
 
     protected void FramebufferResizeCallback(Vector2D<int> obj)
     {
@@ -254,58 +209,7 @@ public unsafe class HelloTriangleApplication_21 : HelloTriangleApplication_20
 
     
 
-    protected void CreateRenderPass()
-    {
-        AttachmentDescription colorAttachment = new()
-        {
-            Format = swapChainImageFormat,
-            Samples = SampleCountFlags.Count1Bit,
-            LoadOp = AttachmentLoadOp.Clear,
-            StoreOp = AttachmentStoreOp.Store,
-            StencilLoadOp = AttachmentLoadOp.DontCare,
-            InitialLayout = ImageLayout.Undefined,
-            FinalLayout = ImageLayout.PresentSrcKhr,
-        };
-
-        AttachmentReference colorAttachmentRef = new()
-        {
-            Attachment = 0,
-            Layout = ImageLayout.ColorAttachmentOptimal,
-        };
-
-        SubpassDescription subpass = new()
-        {
-            PipelineBindPoint = PipelineBindPoint.Graphics,
-            ColorAttachmentCount = 1,
-            PColorAttachments = &colorAttachmentRef,
-        };
-
-        SubpassDependency dependency = new()
-        {
-            SrcSubpass = Vk.SubpassExternal,
-            DstSubpass = 0,
-            SrcStageMask = PipelineStageFlags.ColorAttachmentOutputBit,
-            SrcAccessMask = 0,
-            DstStageMask = PipelineStageFlags.ColorAttachmentOutputBit,
-            DstAccessMask = AccessFlags.ColorAttachmentWriteBit
-        };
-
-        RenderPassCreateInfo renderPassInfo = new() 
-        { 
-            SType = StructureType.RenderPassCreateInfo,
-            AttachmentCount = 1,
-            PAttachments = &colorAttachment,
-            SubpassCount = 1,
-            PSubpasses = &subpass,
-            DependencyCount = 1,
-            PDependencies = &dependency,
-        };
-
-        if(vk!.CreateRenderPass(device, renderPassInfo, null, out renderPass) != Result.Success)
-        {
-            throw new Exception("failed to create render pass!");
-        }
-    }
+    
 
     protected void CreateDescriptorSetLayout()
     {
@@ -494,47 +398,9 @@ public unsafe class HelloTriangleApplication_21 : HelloTriangleApplication_20
         SilkMarshal.Free((nint)fragShaderStageInfo.PName);
     }
 
-    protected void CreateFramebuffers()
-    {
-        swapChainFramebuffers = new Framebuffer[swapChainImageViews!.Length];
+    
 
-        for(int i = 0; i < swapChainImageViews.Length; i++)
-        {
-            var attachment = swapChainImageViews[i];
-            
-            FramebufferCreateInfo framebufferInfo = new()
-            {
-                SType = StructureType.FramebufferCreateInfo,
-                RenderPass = renderPass,
-                AttachmentCount = 1,
-                PAttachments = &attachment,
-                Width = swapChainExtent.Width,
-                Height = swapChainExtent.Height,
-                Layers = 1,
-            };
-
-            if(vk!.CreateFramebuffer(device,framebufferInfo, null,out swapChainFramebuffers[i]) != Result.Success)
-            {
-                throw new Exception("failed to create framebuffer!");
-            }
-        }
-    }
-
-    protected void CreateCommandPool()
-    {
-        var queueFamiliyIndicies = FindQueueFamilies_05(physicalDevice);
-
-        CommandPoolCreateInfo poolInfo = new()
-        {
-            SType = StructureType.CommandPoolCreateInfo,
-            QueueFamilyIndex = queueFamiliyIndicies.GraphicsFamily!.Value,
-        };
-
-        if(vk!.CreateCommandPool(device, poolInfo, null,out commandPool) != Result.Success)
-        {
-            throw new Exception("failed to create command pool!");
-        }
-    }
+    
 
     protected void CreateVertexBuffer()
     {
@@ -770,34 +636,7 @@ public unsafe class HelloTriangleApplication_21 : HelloTriangleApplication_20
         }
     }
 
-    protected void CreateSyncObjects()
-    {
-        imageAvailableSemaphores = new Semaphore[MAX_FRAMES_IN_FLIGHT];
-        renderFinishedSemaphores = new Semaphore[MAX_FRAMES_IN_FLIGHT];
-        inFlightFences = new Fence[MAX_FRAMES_IN_FLIGHT];
-        imagesInFlight = new Fence[swapChainImages!.Length];
-
-        SemaphoreCreateInfo semaphoreInfo = new()
-        {
-            SType = StructureType.SemaphoreCreateInfo,
-        };
-
-        FenceCreateInfo fenceInfo = new()
-        {
-            SType = StructureType.FenceCreateInfo,
-            Flags = FenceCreateFlags.SignaledBit,
-        };
-
-        for (var i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
-        {
-            if (vk!.CreateSemaphore(device, semaphoreInfo, null, out imageAvailableSemaphores[i]) != Result.Success ||
-                vk!.CreateSemaphore(device, semaphoreInfo, null, out renderFinishedSemaphores[i]) != Result.Success ||
-                vk!.CreateFence(device, fenceInfo, null, out inFlightFences[i]) != Result.Success)
-            {
-                throw new Exception("failed to create synchronization objects for a frame!");
-            }
-        }
-    }
+    
 
     protected void UpdateUniformBuffer(uint currentImage)
     {

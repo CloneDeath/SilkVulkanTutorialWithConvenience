@@ -1,70 +1,12 @@
-﻿using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
-using Silk.NET.Core;
-using Silk.NET.Core.Native;
+﻿using Silk.NET.Core.Native;
 using Silk.NET.Vulkan;
-using Silk.NET.Vulkan.Extensions.EXT;
-using Silk.NET.Vulkan.Extensions.KHR;
 
 var app = new HelloTriangleApplication_12();
 app.Run();
 
-
-
-
-
 public unsafe class HelloTriangleApplication_12 : HelloTriangleApplication_11
 {
-
-
-
-
-    
-
-
-
-
-
-
-
-
-
-
-
-
-
-    
-
-
-
-
-
-
-
-
-
-    protected RenderPass renderPass;
-
     protected Pipeline graphicsPipeline;
-
-    
-
-    
-
-    protected override void InitVulkan()
-    {
-        CreateInstance();
-        SetupDebugMessenger();
-        CreateSurface();
-        PickPhysicalDevice();
-        CreateLogicalDevice();
-        CreateSwapChain();
-        CreateImageViews();
-        CreateRenderPass();
-        CreateGraphicsPipeline();
-    }
-
-    
 
     protected override void CleanUp()
     {
@@ -94,54 +36,7 @@ public unsafe class HelloTriangleApplication_12 : HelloTriangleApplication_11
         window?.Dispose();
     }
 
-    
-
-    
-
-    
-
-    protected void CreateRenderPass()
-    {
-        AttachmentDescription colorAttachment = new()
-        {
-            Format = swapChainImageFormat,
-            Samples = SampleCountFlags.Count1Bit,
-            LoadOp = AttachmentLoadOp.Clear,
-            StoreOp = AttachmentStoreOp.Store,
-            StencilLoadOp = AttachmentLoadOp.DontCare,
-            InitialLayout = ImageLayout.Undefined,
-            FinalLayout = ImageLayout.PresentSrcKhr,
-        };
-
-        AttachmentReference colorAttachmentRef = new()
-        {
-            Attachment = 0,
-            Layout = ImageLayout.ColorAttachmentOptimal,
-        };
-
-        SubpassDescription subpass = new()
-        {
-            PipelineBindPoint = PipelineBindPoint.Graphics,
-            ColorAttachmentCount = 1,
-            PColorAttachments = &colorAttachmentRef,
-        };
-
-        RenderPassCreateInfo renderPassInfo = new() 
-        { 
-            SType = StructureType.RenderPassCreateInfo,
-            AttachmentCount = 1,
-            PAttachments = &colorAttachment,
-            SubpassCount = 1,
-            PSubpasses = &subpass,
-        };
-
-        if(vk!.CreateRenderPass(device, renderPassInfo, null, out renderPass) != Result.Success)
-        {
-            throw new Exception("failed to create render pass!");
-        }
-    }
-
-    protected void CreateGraphicsPipeline()
+    protected override void CreateGraphicsPipeline()
     {
         var vertShaderCode = File.ReadAllBytes("shaders/vert.spv");
         var fragShaderCode = File.ReadAllBytes("shaders/frag.spv");
@@ -290,26 +185,4 @@ public unsafe class HelloTriangleApplication_12 : HelloTriangleApplication_11
         SilkMarshal.Free((nint)vertShaderStageInfo.PName);
         SilkMarshal.Free((nint)fragShaderStageInfo.PName);
     }
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
 }
