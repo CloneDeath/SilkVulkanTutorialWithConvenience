@@ -1,11 +1,13 @@
 ﻿using Silk.NET.Vulkan;
+using SilkNetConvenience.CreateInfo.Images;
+using SilkNetConvenience.Wrappers;
 
 var app = new HelloTriangleApplication_07();
 app.Run();
 
-public unsafe class HelloTriangleApplication_07 : HelloTriangleApplication_06
+public class HelloTriangleApplication_07 : HelloTriangleApplication_06
 {
-    protected ImageView[]? swapchainImageViews;
+    protected VulkanImageView[]? swapchainImageViews;
 
     protected override void InitVulkan()
     {
@@ -22,10 +24,10 @@ public unsafe class HelloTriangleApplication_07 : HelloTriangleApplication_06
     {
         foreach (var imageView in swapchainImageViews!)
         {
-            vk!.DestroyImageView(device, imageView, null);
+            imageView.Dispose();
         }
 
-        khrSwapchain!.DestroySwapchain(device, swapchain, null);
+        swapchain!.Dispose();
 
         device!.Dispose();
 
@@ -44,13 +46,12 @@ public unsafe class HelloTriangleApplication_07 : HelloTriangleApplication_06
 
     protected virtual void CreateImageViews()
     {
-        swapchainImageViews = new ImageView[swapchainImages!.Length];
+        swapchainImageViews = new VulkanImageView[swapchainImages!.Length];
 
         for (int i = 0; i < swapchainImages.Length; i++)
         {
-            ImageViewCreateInfo createInfo = new()
+            ImageViewCreateInformation createInfo = new()
             {
-                SType = StructureType.ImageViewCreateInfo,
                 Image = swapchainImages[i],
                 ViewType = ImageViewType.Type2D,
                 Format = swapchainImageFormat,
@@ -72,10 +73,7 @@ public unsafe class HelloTriangleApplication_07 : HelloTriangleApplication_06
 
             };
 
-            if(vk!.CreateImageView(device, createInfo, null, out swapchainImageViews[i]) != Result.Success)
-            {
-                throw new Exception("failed to create image views!");
-            }
+            swapchainImageViews[i] = device!.CreateImageView(createInfo);
         }
     }
 }

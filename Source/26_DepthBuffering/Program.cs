@@ -126,15 +126,15 @@ public unsafe class HelloTriangleApplication_26 : HelloTriangleApplication_25
         }
 
         vk!.DestroyPipeline(device, graphicsPipeline, null);
-        vk!.DestroyPipelineLayout(device, pipelineLayout, null);
+        pipelineLayout!.Dispose();
         vk!.DestroyRenderPass(device, renderPass, null);
 
         foreach (var imageView in swapchainImageViews!)
         {
-            vk!.DestroyImageView(device, imageView, null);
+            imageView.Dispose();
         }
 
-        khrSwapchain!.DestroySwapchain(device, swapchain, null);
+        swapchain!.Dispose();
 
         for (int i = 0; i < swapchainImages!.Length; i++)
         {

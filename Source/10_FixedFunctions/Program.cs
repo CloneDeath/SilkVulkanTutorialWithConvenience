@@ -1,23 +1,24 @@
-﻿using Silk.NET.Core.Native;
-using Silk.NET.Vulkan;
+﻿using Silk.NET.Vulkan;
+using SilkNetConvenience.CreateInfo.Pipelines;
+using SilkNetConvenience.Wrappers.Pipelines;
 
 var app = new HelloTriangleApplication_10();
 app.Run();
 
-public unsafe class HelloTriangleApplication_10 : HelloTriangleApplication_09
+public class HelloTriangleApplication_10 : HelloTriangleApplication_09
 {
-    protected PipelineLayout pipelineLayout;
+    protected VulkanPipelineLayout? pipelineLayout;
     
     protected override void CleanUp()
     {
-        vk!.DestroyPipelineLayout(device, pipelineLayout, null);
+        pipelineLayout!.Dispose();
 
         foreach (var imageView in swapchainImageViews!)
         {
-            vk!.DestroyImageView(device, imageView, null);
+            imageView.Dispose();
         }
 
-        khrSwapchain!.DestroySwapchain(device, swapchain, null);
+        swapchain!.Dispose();
 
         device!.Dispose();
 
@@ -39,44 +40,36 @@ public unsafe class HelloTriangleApplication_10 : HelloTriangleApplication_09
         var vertShaderCode = File.ReadAllBytes("shaders/vert.spv");
         var fragShaderCode = File.ReadAllBytes("shaders/frag.spv");
 
-        var vertShaderModule = CreateShaderModule(vertShaderCode);
-        var fragShaderModule = CreateShaderModule(fragShaderCode);
+        using var vertShaderModule = CreateShaderModule(vertShaderCode);
+        using var fragShaderModule = CreateShaderModule(fragShaderCode);
 
-        PipelineShaderStageCreateInfo vertShaderStageInfo = new()
+        PipelineShaderStageCreateInformation vertShaderStageInfo = new()
         {
-            SType = StructureType.PipelineShaderStageCreateInfo,
             Stage = ShaderStageFlags.VertexBit,
             Module = vertShaderModule,
-            PName = (byte*)SilkMarshal.StringToPtr("main")
+            Name = "main"
         };
 
-        PipelineShaderStageCreateInfo fragShaderStageInfo = new()
+        PipelineShaderStageCreateInformation fragShaderStageInfo = new()
         {
-            SType = StructureType.PipelineShaderStageCreateInfo,
             Stage = ShaderStageFlags.FragmentBit,
             Module = fragShaderModule,
-            PName = (byte*)SilkMarshal.StringToPtr("main")
+            Name = "main"
         };
 
         // ReSharper disable once UnusedVariable
-        var shaderStages = stackalloc []
+        var shaderStages = new []
         {
             vertShaderStageInfo,
             fragShaderStageInfo
         };
 
         // ReSharper disable once UnusedVariable
-        PipelineVertexInputStateCreateInfo vertexInputInfo = new()
-        {
-            SType = StructureType.PipelineVertexInputStateCreateInfo,
-            VertexBindingDescriptionCount = 0,
-            VertexAttributeDescriptionCount = 0,
-        };
+        PipelineVertexInputStateCreateInformation vertexInputInfo = new();
 
         // ReSharper disable once UnusedVariable
-        PipelineInputAssemblyStateCreateInfo inputAssembly = new()
+        PipelineInputAssemblyStateCreateInformation inputAssembly = new()
         {
-            SType = StructureType.PipelineInputAssemblyStateCreateInfo,
             Topology = PrimitiveTopology.TriangleList,
             PrimitiveRestartEnable = false,
         };
@@ -98,19 +91,15 @@ public unsafe class HelloTriangleApplication_10 : HelloTriangleApplication_09
         };
 
         // ReSharper disable once UnusedVariable
-        PipelineViewportStateCreateInfo viewportState = new()
+        PipelineViewportStateCreateInformation viewportState = new()
         {
-            SType = StructureType.PipelineViewportStateCreateInfo,
-            ViewportCount = 1,
-            PViewports = &viewport,
-            ScissorCount = 1,
-            PScissors = &scissor,
+            Viewports = new[]{viewport},
+            Scissors = new[]{scissor}
         };
 
         // ReSharper disable once UnusedVariable
-        PipelineRasterizationStateCreateInfo rasterizer = new()
+        PipelineRasterizationStateCreateInformation rasterizer = new()
         {
-            SType = StructureType.PipelineRasterizationStateCreateInfo,
             DepthClampEnable = false,
             RasterizerDiscardEnable = false,
             PolygonMode = PolygonMode.Fill,
@@ -121,9 +110,8 @@ public unsafe class HelloTriangleApplication_10 : HelloTriangleApplication_09
         };
 
         // ReSharper disable once UnusedVariable
-        PipelineMultisampleStateCreateInfo multisampling = new()
+        PipelineMultisampleStateCreateInformation multisampling = new()
         {
-            SType = StructureType.PipelineMultisampleStateCreateInfo,
             SampleShadingEnable = false,
             RasterizationSamples = SampleCountFlags.Count1Bit,
         };
@@ -134,37 +122,20 @@ public unsafe class HelloTriangleApplication_10 : HelloTriangleApplication_09
             BlendEnable = false,
         };
 
-        PipelineColorBlendStateCreateInfo colorBlending = new()
+        PipelineColorBlendStateCreateInformation colorBlending = new()
         {
-            SType = StructureType.PipelineColorBlendStateCreateInfo,
             LogicOpEnable = false,
             LogicOp = LogicOp.Copy,
-            AttachmentCount = 1,
-            PAttachments = &colorBlendAttachment,
+            Attachments = new[]{colorBlendAttachment}
         };
 
-        colorBlending.BlendConstants[0] = 0;
-        colorBlending.BlendConstants[1] = 0;
-        colorBlending.BlendConstants[2] = 0;
-        colorBlending.BlendConstants[3] = 0;
+        colorBlending.BlendConstants.X = 0;
+        colorBlending.BlendConstants.Y = 0;
+        colorBlending.BlendConstants.Z = 0;
+        colorBlending.BlendConstants.W = 0;
 
-        PipelineLayoutCreateInfo pipelineLayoutInfo = new()
-        {
-            SType = StructureType.PipelineLayoutCreateInfo,
-            SetLayoutCount = 0,
-            PushConstantRangeCount = 0,
-        };
+        PipelineLayoutCreateInformation pipelineLayoutInfo = new();
 
-        if(vk!.CreatePipelineLayout(device, pipelineLayoutInfo, null, out pipelineLayout) != Result.Success)
-        {
-            throw new Exception("failed to create pipeline layout!");
-        }
-
-
-        vk!.DestroyShaderModule(device, fragShaderModule, null);
-        vk!.DestroyShaderModule(device, vertShaderModule, null);
-
-        SilkMarshal.Free((nint)vertShaderStageInfo.PName);
-        SilkMarshal.Free((nint)fragShaderStageInfo.PName);
+        pipelineLayout = device!.CreatePipelineLayout(pipelineLayoutInfo);
     }
 }

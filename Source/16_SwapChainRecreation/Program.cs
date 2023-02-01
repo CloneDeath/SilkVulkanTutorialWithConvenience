@@ -47,15 +47,15 @@ public unsafe class HelloTriangleApplication_16 : HelloTriangleApplication_15
         }
 
         vk!.DestroyPipeline(device, graphicsPipeline, null);
-        vk!.DestroyPipelineLayout(device, pipelineLayout, null);
+        pipelineLayout!.Dispose();
         vk!.DestroyRenderPass(device, renderPass, null);
 
         foreach (var imageView in swapchainImageViews!)
         {
-            vk!.DestroyImageView(device, imageView, null);
+            imageView.Dispose();
         }
 
-        khrSwapchain!.DestroySwapchain(device, swapchain, null);
+        swapchain!.Dispose();
     }
 
     protected override void CleanUp()
