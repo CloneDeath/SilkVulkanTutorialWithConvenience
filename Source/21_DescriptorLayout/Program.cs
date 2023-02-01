@@ -9,46 +9,7 @@ using Buffer = Silk.NET.Vulkan.Buffer;
 var app = new HelloTriangleApplication_21();
 app.Run();
 
-public struct Vertex
-{
-    public Vector2D<float> pos;
-    public Vector3D<float> color;
 
-    public static VertexInputBindingDescription GetBindingDescription()
-    {
-        VertexInputBindingDescription bindingDescription = new()
-        {
-            Binding = 0,
-            Stride = (uint)Unsafe.SizeOf<Vertex>(),
-            InputRate = VertexInputRate.Vertex,
-        };
-
-        return bindingDescription;
-    }
-
-    public static VertexInputAttributeDescription[] GetAttributeDescriptions()
-    {
-        var attributeDescriptions = new[]
-        {
-            new VertexInputAttributeDescription()
-            {
-                Binding = 0,
-                Location = 0,
-                Format = Format.R32G32Sfloat,
-                Offset = (uint)Marshal.OffsetOf<Vertex>(nameof(pos)),
-            },
-            new VertexInputAttributeDescription()
-            {
-                Binding = 0,
-                Location = 1,
-                Format = Format.R32G32B32Sfloat,
-                Offset = (uint)Marshal.OffsetOf<Vertex>(nameof(color)),
-            }
-        };
-
-        return attributeDescriptions;
-    }
-}
 
 public struct UniformBufferObject
 {
@@ -61,31 +22,19 @@ public unsafe class HelloTriangleApplication_21 : HelloTriangleApplication_20
 {
     protected DescriptorSetLayout descriptorSetLayout;
 
-    protected Buffer vertexBuffer;
-    protected DeviceMemory vertexBufferMemory;
-    protected Buffer indexBuffer;
-    protected DeviceMemory indexBufferMemory;
+
+
+
+
 
     protected Buffer[]? uniformBuffers;
     protected DeviceMemory[]? uniformBuffersMemory;
 
-    protected Vertex[] vertices = new Vertex[]
-    {
-        new Vertex { pos = new Vector2D<float>(-0.5f,-0.5f), color = new Vector3D<float>(1.0f, 0.0f, 0.0f) },
-        new Vertex { pos = new Vector2D<float>(0.5f,-0.5f), color = new Vector3D<float>(0.0f, 1.0f, 0.0f) },
-        new Vertex { pos = new Vector2D<float>(0.5f,0.5f), color = new Vector3D<float>(0.0f, 0.0f, 1.0f) },
-        new Vertex { pos = new Vector2D<float>(-0.5f,0.5f), color = new Vector3D<float>(1.0f, 1.0f, 1.0f) },
-    };
+    
 
-    protected ushort[] indices = new ushort[]
-    {
-        0, 1, 2, 2, 3, 0
-    };
+    
 
-    protected void FramebufferResizeCallback(Vector2D<int> obj)
-    {
-        frameBufferResized = true;
-    }
+    
 
     protected override void InitVulkan()
     {
@@ -268,8 +217,8 @@ public unsafe class HelloTriangleApplication_21 : HelloTriangleApplication_20
             fragShaderStageInfo
         };
 
-        var bindingDescription = Vertex.GetBindingDescription();
-        var attributeDescriptions = Vertex.GetAttributeDescriptions();
+        var bindingDescription = Vertex_17.GetBindingDescription();
+        var attributeDescriptions = Vertex_17.GetAttributeDescriptions();
 
         fixed (VertexInputAttributeDescription* attributeDescriptionsPtr = attributeDescriptions)
         fixed (DescriptorSetLayout* descriptorSetLayoutPtr = &descriptorSetLayout)
@@ -402,47 +351,9 @@ public unsafe class HelloTriangleApplication_21 : HelloTriangleApplication_20
 
     
 
-    protected void CreateVertexBuffer()
-    {
-        ulong bufferSize = (ulong)(Unsafe.SizeOf<Vertex>() * vertices.Length);
+    
 
-        Buffer stagingBuffer = default;
-        DeviceMemory stagingBufferMemory = default;
-        CreateBuffer(bufferSize, BufferUsageFlags.TransferSrcBit, MemoryPropertyFlags.HostVisibleBit | MemoryPropertyFlags.HostCoherentBit, ref stagingBuffer, ref stagingBufferMemory);
-        
-        void* data;
-        vk!.MapMemory(device, stagingBufferMemory, 0, bufferSize, 0, &data);
-            vertices.AsSpan().CopyTo(new Span<Vertex>(data, vertices.Length));
-        vk!.UnmapMemory(device, stagingBufferMemory);
-
-        CreateBuffer(bufferSize, BufferUsageFlags.TransferDstBit | BufferUsageFlags.VertexBufferBit, MemoryPropertyFlags.DeviceLocalBit, ref vertexBuffer, ref vertexBufferMemory);
-
-        CopyBuffer(stagingBuffer, vertexBuffer, bufferSize);
-
-        vk!.DestroyBuffer(device, stagingBuffer, null);
-        vk!.FreeMemory(device, stagingBufferMemory, null);
-    }
-
-    protected void CreateIndexBuffer()
-    {
-        ulong bufferSize = (ulong)(Unsafe.SizeOf<ushort>() * indices.Length);
-
-        Buffer stagingBuffer = default;
-        DeviceMemory stagingBufferMemory = default;
-        CreateBuffer(bufferSize, BufferUsageFlags.TransferSrcBit, MemoryPropertyFlags.HostVisibleBit | MemoryPropertyFlags.HostCoherentBit, ref stagingBuffer, ref stagingBufferMemory);
-
-        void* data;
-        vk!.MapMemory(device, stagingBufferMemory, 0, bufferSize, 0, &data);
-            indices.AsSpan().CopyTo(new Span<ushort>(data, indices.Length));
-        vk!.UnmapMemory(device, stagingBufferMemory);
-
-        CreateBuffer(bufferSize, BufferUsageFlags.TransferDstBit | BufferUsageFlags.IndexBufferBit, MemoryPropertyFlags.DeviceLocalBit, ref indexBuffer, ref indexBufferMemory);
-
-        CopyBuffer(stagingBuffer, indexBuffer, bufferSize);
-
-        vk!.DestroyBuffer(device, stagingBuffer, null);
-        vk!.FreeMemory(device, stagingBufferMemory, null);
-    }
+    
 
     protected void CreateUniformBuffers()
     {
@@ -458,183 +369,13 @@ public unsafe class HelloTriangleApplication_21 : HelloTriangleApplication_20
 
     }
 
-    protected void CreateBuffer(ulong size, BufferUsageFlags usage, MemoryPropertyFlags properties, ref Buffer buffer, ref DeviceMemory bufferMemory)
-    {
-        BufferCreateInfo bufferInfo = new()
-        {
-            SType = StructureType.BufferCreateInfo,
-            Size = size,
-            Usage = usage,
-            SharingMode = SharingMode.Exclusive,
-        };
+    
 
-        fixed (Buffer* bufferPtr = &buffer)
-        {
-            if (vk!.CreateBuffer(device, bufferInfo, null, bufferPtr) != Result.Success)
-            {
-                throw new Exception("failed to create vertex buffer!");
-            }
-        }
+    
 
-        MemoryRequirements memRequirements;
-        vk!.GetBufferMemoryRequirements(device, buffer, out memRequirements);
+    
 
-        MemoryAllocateInfo allocateInfo = new()
-        {
-            SType = StructureType.MemoryAllocateInfo,
-            AllocationSize = memRequirements.Size,
-            MemoryTypeIndex = FindMemoryType(memRequirements.MemoryTypeBits, properties),
-        };
-
-        fixed (DeviceMemory* bufferMemoryPtr = &bufferMemory)
-        {
-            if (vk!.AllocateMemory(device, allocateInfo, null, bufferMemoryPtr) != Result.Success)
-            {
-                throw new Exception("failed to allocate vertex buffer memory!");
-            }
-        }
-
-        vk!.BindBufferMemory(device, buffer, bufferMemory, 0);
-    }
-
-    protected void CopyBuffer(Buffer srcBuffer, Buffer dstBuffer, ulong size)
-    {
-        CommandBufferAllocateInfo allocateInfo = new()
-        {
-            SType = StructureType.CommandBufferAllocateInfo,
-            Level = CommandBufferLevel.Primary,
-            CommandPool = commandPool,
-            CommandBufferCount = 1,
-        };
-
-        CommandBuffer commandBuffer;
-        vk!.AllocateCommandBuffers(device, allocateInfo, out commandBuffer);
-
-        CommandBufferBeginInfo beginInfo = new()
-        {
-            SType = StructureType.CommandBufferBeginInfo,
-            Flags = CommandBufferUsageFlags.OneTimeSubmitBit,
-        };
-
-        vk!.BeginCommandBuffer(commandBuffer, beginInfo);
-
-            BufferCopy copyRegion = new()
-            {
-                Size = size,                
-            };
-
-            vk!.CmdCopyBuffer(commandBuffer, srcBuffer, dstBuffer, 1, copyRegion);
-
-        vk!.EndCommandBuffer(commandBuffer);
-
-        SubmitInfo submitInfo = new()
-        {
-            SType = StructureType.SubmitInfo,
-            CommandBufferCount = 1,
-            PCommandBuffers = &commandBuffer,
-        };
-
-        vk!.QueueSubmit(graphicsQueue, 1, submitInfo, default);
-        vk!.QueueWaitIdle(graphicsQueue);
-
-        vk!.FreeCommandBuffers(device, commandPool, 1, commandBuffer);
-    }
-
-    protected uint FindMemoryType(uint typeFilter, MemoryPropertyFlags properties)
-    {
-        PhysicalDeviceMemoryProperties memProperties;
-        vk!.GetPhysicalDeviceMemoryProperties(physicalDevice, out memProperties);
-
-        for (int i = 0; i < memProperties.MemoryTypeCount; i++)
-        {
-            if ((typeFilter & (1 << i)) != 0 && (memProperties.MemoryTypes[i].PropertyFlags & properties) == properties)
-            {
-                return (uint)i;
-            }
-        }
-
-        throw new Exception("failed to find suitable memory type!");
-    }
-
-    protected void CreateCommandBuffers()
-    {
-        commandBuffers = new CommandBuffer[swapChainFramebuffers!.Length];
-
-        CommandBufferAllocateInfo allocInfo = new()
-        {
-            SType = StructureType.CommandBufferAllocateInfo,
-            CommandPool = commandPool,
-            Level = CommandBufferLevel.Primary,
-            CommandBufferCount = (uint)commandBuffers.Length,
-        };
-
-        fixed(CommandBuffer* commandBuffersPtr = commandBuffers)
-        {
-            if (vk!.AllocateCommandBuffers(device, allocInfo, commandBuffersPtr) != Result.Success)
-            {
-                throw new Exception("failed to allocate command buffers!");
-            }
-        }
-        
-
-        for (int i = 0; i < commandBuffers.Length; i++)
-        {
-            CommandBufferBeginInfo beginInfo = new()
-            {
-                SType = StructureType.CommandBufferBeginInfo,
-            };
-
-            if(vk!.BeginCommandBuffer(commandBuffers[i], beginInfo ) != Result.Success)
-            {
-                throw new Exception("failed to begin recording command buffer!");
-            }
-
-            RenderPassBeginInfo renderPassInfo = new()
-            {
-                SType= StructureType.RenderPassBeginInfo,
-                RenderPass = renderPass,
-                Framebuffer = swapChainFramebuffers[i],
-                RenderArea =
-                {
-                    Offset = { X = 0, Y = 0 }, 
-                    Extent = swapChainExtent,
-                }
-            };
-
-            ClearValue clearColor = new()
-            {
-                Color = new (){ Float32_0 = 0, Float32_1 = 0, Float32_2 = 0, Float32_3 = 1 },                
-            };
-
-            renderPassInfo.ClearValueCount = 1;
-            renderPassInfo.PClearValues = &clearColor;
-
-            vk!.CmdBeginRenderPass(commandBuffers[i], &renderPassInfo, SubpassContents.Inline);
-
-                vk!.CmdBindPipeline(commandBuffers[i], PipelineBindPoint.Graphics, graphicsPipeline);
-
-                var vertexBuffers = new[] { vertexBuffer };
-                var offsets = new ulong[] { 0 };
-
-                fixed (ulong* offsetsPtr = offsets)
-                fixed (Buffer* vertexBuffersPtr = vertexBuffers)
-                {
-                    vk!.CmdBindVertexBuffers(commandBuffers[i], 0, 1, vertexBuffersPtr, offsetsPtr);
-                }
-
-                vk!.CmdBindIndexBuffer(commandBuffers[i], indexBuffer, 0, IndexType.Uint16);
-
-                vk!.CmdDrawIndexed(commandBuffers[i], (uint)indices.Length, 1, 0, 0, 0);
-
-            vk!.CmdEndRenderPass(commandBuffers[i]);
-
-            if(vk!.EndCommandBuffer(commandBuffers[i]) != Result.Success)
-            {
-                throw new Exception("failed to record command buffer!");
-            }
-
-        }
-    }
+    
 
     
 

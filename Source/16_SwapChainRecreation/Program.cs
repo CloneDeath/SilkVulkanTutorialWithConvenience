@@ -1,8 +1,6 @@
-﻿using Silk.NET.Core.Native;
-using Silk.NET.Maths;
+﻿using Silk.NET.Maths;
 using Silk.NET.Vulkan;
 using Silk.NET.Windowing;
-using Semaphore = Silk.NET.Vulkan.Semaphore;
 
 var app = new HelloTriangleApplication_16();
 app.Run();
@@ -35,8 +33,6 @@ public unsafe class HelloTriangleApplication_16 : HelloTriangleApplication_15
     {
         frameBufferResized = true;
     }
-
-    
 
     protected void CleanUpSwapChain()
     {
@@ -114,8 +110,6 @@ public unsafe class HelloTriangleApplication_16 : HelloTriangleApplication_15
         imagesInFlight = new Fence[swapChainImages!.Length];
     }
 
-    
-
     protected override void CreateSwapChain()
     {
         var swapChainSupport = QuerySwapChainSupport(physicalDevice);
@@ -192,21 +186,7 @@ public unsafe class HelloTriangleApplication_16 : HelloTriangleApplication_15
         swapChainExtent = extent;
     }
 
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    protected void DrawFrame(double delta)
+    protected override void DrawFrame(double delta)
     {
         vk!.WaitForFences(device, 1, inFlightFences![currentFrame], true, ulong.MaxValue);
 
@@ -292,14 +272,4 @@ public unsafe class HelloTriangleApplication_16 : HelloTriangleApplication_15
         currentFrame = (currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
 
     }
-
-    
-
-    
-
-    
-
-    
-
-    
 }

@@ -10,54 +10,7 @@ using Silk.NET.Assimp;
 var app = new HelloTriangleApplication_28();
 app.Run();
 
-public struct Vertex
-{
-    public Vector3D<float> pos;
-    public Vector3D<float> color;
-    public Vector2D<float> textCoord;
 
-    public static VertexInputBindingDescription GetBindingDescription()
-    {
-        VertexInputBindingDescription bindingDescription = new()
-        {
-            Binding = 0,
-            Stride = (uint)Unsafe.SizeOf<Vertex>(),
-            InputRate = VertexInputRate.Vertex,
-        };
-
-        return bindingDescription;
-    }
-
-    public static VertexInputAttributeDescription[] GetAttributeDescriptions()
-    {
-        var attributeDescriptions = new[]
-        {
-            new VertexInputAttributeDescription()
-            {
-                Binding = 0,
-                Location = 0,
-                Format = Format.R32G32B32Sfloat,
-                Offset = (uint)Marshal.OffsetOf<Vertex>(nameof(pos)),
-            },
-            new VertexInputAttributeDescription()
-            {
-                Binding = 0,
-                Location = 1,
-                Format = Format.R32G32B32Sfloat,
-                Offset = (uint)Marshal.OffsetOf<Vertex>(nameof(color)),
-            },
-            new VertexInputAttributeDescription()
-            {
-                Binding = 0,
-                Location = 2,
-                Format = Format.R32G32Sfloat,
-                Offset = (uint)Marshal.OffsetOf<Vertex>(nameof(textCoord)),
-            }
-        };
-
-        return attributeDescriptions;
-    }
-}
 
 public struct UniformBufferObject
 {
@@ -83,10 +36,10 @@ public unsafe class HelloTriangleApplication_28 : HelloTriangleApplication_27
     protected ImageView textureImageView;
     protected Sampler textureSampler;
 
-    protected Buffer vertexBuffer;
-    protected DeviceMemory vertexBufferMemory;
-    protected Buffer indexBuffer;
-    protected DeviceMemory indexBufferMemory;
+
+
+
+
 
     protected Buffer[]? uniformBuffers;
     protected DeviceMemory[]? uniformBuffersMemory;
@@ -94,14 +47,11 @@ public unsafe class HelloTriangleApplication_28 : HelloTriangleApplication_27
     protected DescriptorPool descriptorPool;
     protected DescriptorSet[]? descriptorSets;
 
-    protected Vertex[]? vertices;
+    protected Vertex_26[]? vertices;
 
     protected uint[]? indices;
 
-    protected void FramebufferResizeCallback(Vector2D<int> obj)
-    {
-        frameBufferResized = true;
-    }
+    
 
     protected override void InitVulkan()
     {
@@ -396,8 +346,8 @@ public unsafe class HelloTriangleApplication_28 : HelloTriangleApplication_27
             fragShaderStageInfo
         };
 
-        var bindingDescription = Vertex.GetBindingDescription();
-        var attributeDescriptions = Vertex.GetAttributeDescriptions();
+        var bindingDescription = Vertex_26.GetBindingDescription();
+        var attributeDescriptions = Vertex_26.GetAttributeDescriptions();
 
         fixed (VertexInputAttributeDescription* attributeDescriptionsPtr = attributeDescriptions)
         fixed (DescriptorSetLayout* descriptorSetLayoutPtr = &descriptorSetLayout)
@@ -943,8 +893,8 @@ public unsafe class HelloTriangleApplication_28 : HelloTriangleApplication_27
         using var assimp = Assimp.GetApi();
         var scene = assimp.ImportFile(MODEL_PATH, (uint)PostProcessPreset.TargetRealTimeMaximumQuality);
 
-        var vertexMap = new Dictionary<Vertex, uint>();
-        var localVertices = new List<Vertex>();
+        var vertexMap = new Dictionary<Vertex_26, uint>();
+        var localVertices = new List<Vertex_26>();
         var localIndices = new List<uint>();
 
         VisitSceneNode(scene->MRootNode);
@@ -971,7 +921,7 @@ public unsafe class HelloTriangleApplication_28 : HelloTriangleApplication_27
                         var position = mesh->MVertices[index];
                         var texture = mesh->MTextureCoords[0][(int)index];
 
-                        Vertex vertex = new Vertex
+                        Vertex_26 vertex = new Vertex_26
                         {
                             pos = new Vector3D<float>(position.X, position.Y, position.Z),
                             color = new Vector3D<float>(1, 1, 1),
@@ -1003,7 +953,7 @@ public unsafe class HelloTriangleApplication_28 : HelloTriangleApplication_27
 
     protected void CreateVertexBuffer()
     {
-        ulong bufferSize = (ulong)(Unsafe.SizeOf<Vertex>() * vertices!.Length);
+        ulong bufferSize = (ulong)(Unsafe.SizeOf<Vertex_26>() * vertices!.Length);
 
         Buffer stagingBuffer = default;
         DeviceMemory stagingBufferMemory = default;
@@ -1011,7 +961,7 @@ public unsafe class HelloTriangleApplication_28 : HelloTriangleApplication_27
         
         void* data;
         vk!.MapMemory(device, stagingBufferMemory, 0, bufferSize, 0, &data);
-            vertices.AsSpan().CopyTo(new Span<Vertex>(data, vertices.Length));
+            vertices.AsSpan().CopyTo(new Span<Vertex_26>(data, vertices.Length));
         vk!.UnmapMemory(device, stagingBufferMemory);
 
         CreateBuffer(bufferSize, BufferUsageFlags.TransferDstBit | BufferUsageFlags.VertexBufferBit, MemoryPropertyFlags.DeviceLocalBit, ref vertexBuffer, ref vertexBufferMemory);
@@ -1168,44 +1118,7 @@ public unsafe class HelloTriangleApplication_28 : HelloTriangleApplication_27
 
     }
 
-    protected void CreateBuffer(ulong size, BufferUsageFlags usage, MemoryPropertyFlags properties, ref Buffer buffer, ref DeviceMemory bufferMemory)
-    {
-        BufferCreateInfo bufferInfo = new()
-        {
-            SType = StructureType.BufferCreateInfo,
-            Size = size,
-            Usage = usage,
-            SharingMode = SharingMode.Exclusive,
-        };
-
-        fixed (Buffer* bufferPtr = &buffer)
-        {
-            if (vk!.CreateBuffer(device, bufferInfo, null, bufferPtr) != Result.Success)
-            {
-                throw new Exception("failed to create vertex buffer!");
-            }
-        }
-
-        MemoryRequirements memRequirements;
-        vk!.GetBufferMemoryRequirements(device, buffer, out memRequirements);
-
-        MemoryAllocateInfo allocateInfo = new()
-        {
-            SType = StructureType.MemoryAllocateInfo,
-            AllocationSize = memRequirements.Size,
-            MemoryTypeIndex = FindMemoryType(memRequirements.MemoryTypeBits, properties),
-        };
-
-        fixed (DeviceMemory* bufferMemoryPtr = &bufferMemory)
-        {
-            if (vk!.AllocateMemory(device, allocateInfo, null, bufferMemoryPtr) != Result.Success)
-            {
-                throw new Exception("failed to allocate vertex buffer memory!");
-            }
-        }
-
-        vk!.BindBufferMemory(device, buffer, bufferMemory, 0);
-    }
+    
 
     protected CommandBuffer BeginSingleTimeCommands()
     {
@@ -1262,21 +1175,7 @@ public unsafe class HelloTriangleApplication_28 : HelloTriangleApplication_27
         EndSingleTimeCommands(commandBuffer);
     }
 
-    protected uint FindMemoryType(uint typeFilter, MemoryPropertyFlags properties)
-    {
-        PhysicalDeviceMemoryProperties memProperties;
-        vk!.GetPhysicalDeviceMemoryProperties(physicalDevice, out memProperties);
-
-        for (int i = 0; i < memProperties.MemoryTypeCount; i++)
-        {
-            if ((typeFilter & (1 << i)) != 0 && (memProperties.MemoryTypes[i].PropertyFlags & properties) == properties)
-            {
-                return (uint)i;
-            }
-        }
-
-        throw new Exception("failed to find suitable memory type!");
-    }
+    
 
     protected void CreateCommandBuffers()
     {

@@ -163,7 +163,7 @@ public unsafe class HelloTriangleApplication_15 : HelloTriangleApplication_14
         }
     }
 
-    protected void DrawFrame(double delta)
+    protected virtual void DrawFrame(double delta)
     {
         vk!.WaitForFences(device, 1, inFlightFences![currentFrame], true, ulong.MaxValue);
 

@@ -75,7 +75,7 @@ public unsafe class HelloTriangleApplication_14 : HelloTriangleApplication_13
         }
     }
 
-    protected void CreateCommandBuffers()
+    protected virtual void CreateCommandBuffers()
     {
         commandBuffers = new CommandBuffer[swapChainFramebuffers!.Length];
 

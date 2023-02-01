@@ -3,12 +3,11 @@ using System.Runtime.InteropServices;
 using Silk.NET.Core.Native;
 using Silk.NET.Maths;
 using Silk.NET.Vulkan;
-using Semaphore = Silk.NET.Vulkan.Semaphore;
 
 var app = new HelloTriangleApplication_17();
 app.Run();
 
-public struct Vertex
+public struct Vertex_17
 {
     public Vector2D<float> pos;
     public Vector3D<float> color;
@@ -18,7 +17,7 @@ public struct Vertex
         VertexInputBindingDescription bindingDescription = new()
         {
             Binding = 0,
-            Stride = (uint)Unsafe.SizeOf<Vertex>(),
+            Stride = (uint)Unsafe.SizeOf<Vertex_17>(),
             InputRate = VertexInputRate.Vertex,
         };
 
@@ -34,14 +33,14 @@ public struct Vertex
                 Binding = 0,
                 Location = 0,
                 Format = Format.R32G32Sfloat,
-                Offset = (uint)Marshal.OffsetOf<Vertex>(nameof(pos)),
+                Offset = (uint)Marshal.OffsetOf<Vertex_17>(nameof(pos)),
             },
             new VertexInputAttributeDescription()
             {
                 Binding = 0,
                 Location = 1,
                 Format = Format.R32G32B32Sfloat,
-                Offset = (uint)Marshal.OffsetOf<Vertex>(nameof(color)),
+                Offset = (uint)Marshal.OffsetOf<Vertex_17>(nameof(color)),
             }
         };
 
@@ -51,108 +50,14 @@ public struct Vertex
 
 public unsafe class HelloTriangleApplication_17 : HelloTriangleApplication_16
 {
-    // ReSharper disable once UnusedMember.Local
-    protected Vertex[] vertices = new Vertex[]
+    protected Vertex_17[] vertices_17 = new Vertex_17[]
     {
-        new Vertex { pos = new Vector2D<float>(0.0f,-0.5f), color = new Vector3D<float>(1.0f, 0.0f, 0.0f) },
-        new Vertex { pos = new Vector2D<float>(0.5f,0.5f), color = new Vector3D<float>(0.0f, 1.0f, 0.0f) },
-        new Vertex { pos = new Vector2D<float>(-0.5f,0.5f), color = new Vector3D<float>(0.0f, 0.0f, 1.0f) },
+        new Vertex_17 { pos = new Vector2D<float>(0.0f,-0.5f), color = new Vector3D<float>(1.0f, 0.0f, 0.0f) },
+        new Vertex_17 { pos = new Vector2D<float>(0.5f,0.5f), color = new Vector3D<float>(0.0f, 1.0f, 0.0f) },
+        new Vertex_17 { pos = new Vector2D<float>(-0.5f,0.5f), color = new Vector3D<float>(0.0f, 0.0f, 1.0f) },
     };
 
-    protected void FramebufferResizeCallback(Vector2D<int> obj)
-    {
-        frameBufferResized = true;
-    }
-
-    
-
-    
-
-    protected void CleanUpSwapChain()
-    {
-        foreach (var framebuffer in swapChainFramebuffers!)
-        {
-            vk!.DestroyFramebuffer(device, framebuffer, null);
-        }
-
-        fixed (CommandBuffer* commandBuffersPtr = commandBuffers)
-        {
-            vk!.FreeCommandBuffers(device, commandPool, (uint)commandBuffers!.Length, commandBuffersPtr);
-        }
-
-        vk!.DestroyPipeline(device, graphicsPipeline, null);
-        vk!.DestroyPipelineLayout(device, pipelineLayout, null);
-        vk!.DestroyRenderPass(device, renderPass, null);
-
-        foreach (var imageView in swapChainImageViews!)
-        {
-            vk!.DestroyImageView(device, imageView, null);
-        }
-
-        khrSwapChain!.DestroySwapchain(device, swapChain, null);
-    }
-
-    protected override void CleanUp()
-    {
-        CleanUpSwapChain();
-
-        for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
-        {
-            vk!.DestroySemaphore(device, renderFinishedSemaphores![i], null);
-            vk!.DestroySemaphore(device, imageAvailableSemaphores![i], null);
-            vk!.DestroyFence(device, inFlightFences![i], null);
-        }
-
-        vk!.DestroyCommandPool(device, commandPool, null);
-
-        vk!.DestroyDevice(device, null);
-
-        if (EnableValidationLayers)
-        {
-            //DestroyDebugUtilsMessenger equivalent to method DestroyDebugUtilsMessengerEXT from original tutorial.
-            debugUtils!.DestroyDebugUtilsMessenger(instance, debugMessenger, null);
-        }
-
-        khrSurface!.DestroySurface(instance, surface, null);
-        vk!.DestroyInstance(instance, null);
-        vk!.Dispose();
-
-        window?.Dispose();
-    }
-
-    protected void RecreateSwapChain()
-    {
-        Vector2D<int> framebufferSize = window!.FramebufferSize;
-
-        while (framebufferSize.X == 0 || framebufferSize.Y == 0)
-        {
-            framebufferSize = window.FramebufferSize;
-            window.DoEvents();
-        }
-
-        vk!.DeviceWaitIdle(device);
-
-        CleanUpSwapChain();
-
-        CreateSwapChain();
-        CreateImageViews();
-        CreateRenderPass();
-        CreateGraphicsPipeline();
-        CreateFramebuffers();
-        CreateCommandBuffers();
-
-        imagesInFlight = new Fence[swapChainImages!.Length];
-    }
-
-    
-
-    
-
-    
-
-    
-
-    protected void CreateGraphicsPipeline()
+    protected override void CreateGraphicsPipeline()
     {
         var vertShaderCode = File.ReadAllBytes("shaders/vert.spv");
         var fragShaderCode = File.ReadAllBytes("shaders/frag.spv");
@@ -182,8 +87,8 @@ public unsafe class HelloTriangleApplication_17 : HelloTriangleApplication_16
             fragShaderStageInfo
         };
 
-        var bindingDescription = Vertex.GetBindingDescription();
-        var attributeDescriptions = Vertex.GetAttributeDescriptions();
+        var bindingDescription = Vertex_17.GetBindingDescription();
+        var attributeDescriptions = Vertex_17.GetAttributeDescriptions();
 
         fixed (VertexInputAttributeDescription* attributeDescriptionsPtr = attributeDescriptions)
         {
@@ -309,113 +214,4 @@ public unsafe class HelloTriangleApplication_17 : HelloTriangleApplication_16
         SilkMarshal.Free((nint)vertShaderStageInfo.PName);
         SilkMarshal.Free((nint)fragShaderStageInfo.PName);
     }
-
-    
-
-    
-
-    
-
-    
-
-    protected void DrawFrame(double delta)
-    {
-        vk!.WaitForFences(device, 1, inFlightFences![currentFrame], true, ulong.MaxValue);
-
-        uint imageIndex = 0;
-        var result = khrSwapChain!.AcquireNextImage(device, swapChain, ulong.MaxValue, imageAvailableSemaphores![currentFrame], default, ref imageIndex);
-
-        if(result == Result.ErrorOutOfDateKhr)
-        {
-            RecreateSwapChain();
-            return;
-        }
-        else if(result != Result.Success && result != Result.SuboptimalKhr)
-        {
-            throw new Exception("failed to acquire swap chain image!");
-        }
-
-        if(imagesInFlight![imageIndex].Handle != default)
-        {
-            vk!.WaitForFences(device, 1, imagesInFlight[imageIndex], true, ulong.MaxValue);
-        }
-        imagesInFlight[imageIndex] = inFlightFences[currentFrame];
-
-        SubmitInfo submitInfo = new()
-        {
-            SType = StructureType.SubmitInfo,
-        };
-
-        var waitSemaphores = stackalloc [] {imageAvailableSemaphores[currentFrame]};
-        var waitStages = stackalloc [] { PipelineStageFlags.ColorAttachmentOutputBit };
-
-        var buffer = commandBuffers![imageIndex];
-
-        submitInfo = submitInfo with 
-        { 
-            WaitSemaphoreCount = 1,
-            PWaitSemaphores = waitSemaphores,
-            PWaitDstStageMask = waitStages,
-            
-            CommandBufferCount = 1,
-            PCommandBuffers = &buffer
-        };
-
-        var signalSemaphores = stackalloc[] { renderFinishedSemaphores![currentFrame] };
-        submitInfo = submitInfo with
-        {
-            SignalSemaphoreCount = 1,
-            PSignalSemaphores = signalSemaphores,
-        };
-
-        vk!.ResetFences(device, 1,inFlightFences[currentFrame]);
-
-        if(vk!.QueueSubmit(graphicsQueue, 1, submitInfo, inFlightFences[currentFrame]) != Result.Success)
-        {
-            throw new Exception("failed to submit draw command buffer!");
-        }
-
-        var swapChains = stackalloc[] { swapChain };
-        PresentInfoKHR presentInfo = new()
-        {
-            SType = StructureType.PresentInfoKhr,
-
-            WaitSemaphoreCount = 1,
-            PWaitSemaphores = signalSemaphores,
-
-            SwapchainCount = 1,
-            PSwapchains = swapChains,
-
-            PImageIndices = &imageIndex
-        };
-
-        result = khrSwapChain.QueuePresent(presentQueue, presentInfo);
-
-        if(result == Result.ErrorOutOfDateKhr || result == Result.SuboptimalKhr || frameBufferResized)
-        {
-            frameBufferResized = false;
-            RecreateSwapChain();
-        }
-        else if(result != Result.Success)
-        {
-            throw new Exception("failed to present swap chain image!");
-        }
-
-        currentFrame = (currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
-
-    }
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
 }
