@@ -58,7 +58,7 @@ public unsafe class HelloTriangleApplication_06 : HelloTriangleApplication_05
     
     protected override void CreateLogicalDevice()
     {
-        var indices = FindQueueFamilies_05(physicalDevice);
+        var indices = FindQueueFamilies_05(physicalDevice!);
 
         var uniqueQueueFamilies = new[] { indices.GraphicsFamily!.Value, indices.PresentFamily!.Value };
         uniqueQueueFamilies = uniqueQueueFamilies.Distinct().ToArray();

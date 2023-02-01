@@ -1,5 +1,4 @@
 ﻿using Silk.NET.Vulkan;
-using Silk.NET.Vulkan.Extensions.KHR;
 using SilkNetConvenience.CreateInfo;
 using SilkNetConvenience.Wrappers;
 
@@ -17,10 +16,10 @@ public struct QueueFamilyIndices_05
     }
 }
 
-public unsafe class HelloTriangleApplication_05 : HelloTriangleApplication_04
+public class HelloTriangleApplication_05 : HelloTriangleApplication_04
 {
-    protected KhrSurface? khrSurface;
-    protected SurfaceKHR surface;
+    protected VulkanKhrSurface? khrSurface;
+    protected VulkanSurface? surface;
     protected VulkanQueue? presentQueue;
 
     protected override void InitVulkan()
@@ -41,8 +40,8 @@ public unsafe class HelloTriangleApplication_05 : HelloTriangleApplication_04
             //DestroyDebugUtilsMessenger equivalent to method DestroyDebugUtilsMessengerEXT from original tutorial.
             debugMessenger!.Dispose();
         }
-        
-        khrSurface!.DestroySurface(instance, surface, null);
+
+        surface!.Dispose();
         instance!.Dispose();
         vk!.Dispose();
 
@@ -51,8 +50,7 @@ public unsafe class HelloTriangleApplication_05 : HelloTriangleApplication_04
 
     protected void CreateSurface() {
         khrSurface = instance!.GetKhrSurfaceExtension();
-
-        surface = window!.VkSurface!.Create<AllocationCallbacks>(instance!.Instance.ToHandle(), null).ToSurface();
+        surface = khrSurface.CreateSurface(window!.VkSurface!);
     }
 
     protected override void CreateLogicalDevice()
@@ -106,7 +104,7 @@ public unsafe class HelloTriangleApplication_05 : HelloTriangleApplication_04
                 indices.GraphicsFamily = i;
             }
 
-            khrSurface!.GetPhysicalDeviceSurfaceSupport(physDevice, i, surface, out var presentSupport);
+            var presentSupport = khrSurface!.GetPhysicalDeviceSurfaceSupport(physDevice, i, surface!);
 
             if (presentSupport)
             {
