@@ -1,11 +1,15 @@
 ﻿using Silk.NET.Maths;
 using Silk.NET.Vulkan;
 using Silk.NET.Windowing;
+using SilkNetConvenience.CreateInfo;
+using SilkNetConvenience.CreateInfo.KHR;
+using SilkNetConvenience.Exceptions.ResultExceptions;
+using SilkNetConvenience.Wrappers;
 
 var app = new HelloTriangleApplication_16();
 app.Run();
 
-public unsafe class HelloTriangleApplication_16 : HelloTriangleApplication_15
+public class HelloTriangleApplication_16 : HelloTriangleApplication_15
 {
     protected bool frameBufferResized;
     
@@ -41,9 +45,8 @@ public unsafe class HelloTriangleApplication_16 : HelloTriangleApplication_15
             framebuffer.Dispose();
         }
 
-        fixed (CommandBuffer* commandBuffersPtr = commandBuffers)
-        {
-            vk!.FreeCommandBuffers(device, commandPool, (uint)commandBuffers!.Length, commandBuffersPtr);
+        foreach (var commandBuffer in commandBuffers!) {
+            commandBuffer.Dispose();
         }
 
         graphicsPipeline!.Dispose();
@@ -107,12 +110,12 @@ public unsafe class HelloTriangleApplication_16 : HelloTriangleApplication_15
         CreateFramebuffers();
         CreateCommandBuffers();
 
-        imagesInFlight = new Fence[swapchainImages!.Length];
+        imagesInFlight = new VulkanFence[swapchainImages!.Length];
     }
 
     protected override void CreateSwapchain()
     {
-        var swapchainSupport = QuerySwapchainSupport(physicalDevice);
+        var swapchainSupport = QuerySwapchainSupport(physicalDevice!);
 
         var surfaceFormat = ChooseSwapSurfaceFormat(swapchainSupport.Formats);
         var presentMode = ChoosePresentMode(swapchainSupport.PresentModes);
@@ -124,10 +127,9 @@ public unsafe class HelloTriangleApplication_16 : HelloTriangleApplication_15
             imageCount = swapchainSupport.Capabilities.MaxImageCount;
         }
 
-        SwapchainCreateInfoKHR creatInfo = new()
+        SwapchainCreateInformation creatInfo = new()
         {
-            SType = StructureType.SwapchainCreateInfoKhr,
-            Surface = surface,
+            Surface = surface!,
 
             MinImageCount = imageCount,
             ImageFormat = surfaceFormat.Format,
@@ -137,47 +139,28 @@ public unsafe class HelloTriangleApplication_16 : HelloTriangleApplication_15
             ImageUsage = ImageUsageFlags.ColorAttachmentBit,
         };
 
-        var indices = FindQueueFamilies_05(physicalDevice);
-        var queueFamilyIndices = stackalloc[] { indices.GraphicsFamily!.Value, indices.PresentFamily!.Value };
+        var indices = FindQueueFamilies_05(physicalDevice!);
+        var queueFamilyIndices = new[] { indices.GraphicsFamily!.Value, indices.PresentFamily!.Value };
 
-        if (indices.GraphicsFamily != indices.PresentFamily)
-        {
-            creatInfo = creatInfo with
-            {
-                ImageSharingMode = SharingMode.Concurrent,
-                QueueFamilyIndexCount = 2,
-                PQueueFamilyIndices = queueFamilyIndices,
-            };
+        if (indices.GraphicsFamily != indices.PresentFamily) {
+            creatInfo.ImageSharingMode = SharingMode.Concurrent;
+            creatInfo.QueueFamilyIndices = queueFamilyIndices;
         }
         else
         {
             creatInfo.ImageSharingMode = SharingMode.Exclusive;
         }
 
-        creatInfo = creatInfo with
-        {
-            PreTransform = swapchainSupport.Capabilities.CurrentTransform,
-            CompositeAlpha = CompositeAlphaFlagsKHR.OpaqueBitKhr,
-            PresentMode = presentMode,
-            Clipped = true,
-        };
+        creatInfo.PreTransform = swapchainSupport.Capabilities.CurrentTransform;
+        creatInfo.CompositeAlpha = CompositeAlphaFlagsKHR.OpaqueBitKhr;
+        creatInfo.PresentMode = presentMode;
+        creatInfo.Clipped = true;
 
-        if (khrSwapchain is null)
-        {
-            if (!vk!.TryGetDeviceExtension(instance, device, out khrSwapchain))
-            {
-                throw new NotSupportedException("VK_KHR_swapchain extension not found.");
-            } 
-        }
+        khrSwapchain ??= device!.GetKhrSwapchainExtension();
 
-        swapchain = khrSwapchain!.CreateSwapchain(creatInfo);
+        swapchain = khrSwapchain.CreateSwapchain(creatInfo);
 
-        khrSwapchain.GetSwapchainImages(device, swapchain, ref imageCount, null);
-        swapchainImages = new Image[imageCount];
-        fixed (Image* swapchainImagesPtr = swapchainImages)
-        {
-            khrSwapchain.GetSwapchainImages(device, swapchain, ref imageCount, swapchainImagesPtr);
-        }
+        swapchainImages = swapchain!.GetImages();
 
         swapchainImageFormat = surfaceFormat.Format;
         swapchainExtent = extent;
@@ -188,85 +171,68 @@ public unsafe class HelloTriangleApplication_16 : HelloTriangleApplication_15
         inFlightFences![currentFrame].Wait();
 
         uint imageIndex = 0;
-        var result = khrSwapchain!.AcquireNextImage(device, swapchain, ulong.MaxValue, imageAvailableSemaphores![currentFrame], default, ref imageIndex);
-
-        if(result == Result.ErrorOutOfDateKhr)
-        {
+        var result = khrSwapchain!.KhrSwapchain.AcquireNextImage(device!, swapchain!, long.MaxValue,
+                                                    imageAvailableSemaphores![currentFrame], default,
+                                                    ref imageIndex);
+        if (result == Result.ErrorOutOfDateKhr) {
             RecreateSwapchain();
             return;
         }
-        else if(result != Result.Success && result != Result.SuboptimalKhr)
-        {
-            throw new Exception("failed to acquire swap chain image!");
+
+        if (result != Result.SuboptimalKhr && result != Result.Success) {
+            throw new Exception(result.ToString());
         }
 
-        if(imagesInFlight![imageIndex].Handle != default)
-        {
-            vk!.WaitForFences(device, 1, imagesInFlight[imageIndex], true, ulong.MaxValue);
+        if (imagesInFlight![imageIndex] != null) {
+            imagesInFlight[imageIndex]!.Wait();
         }
         imagesInFlight[imageIndex] = inFlightFences[currentFrame];
 
-        SubmitInfo submitInfo = new()
-        {
-            SType = StructureType.SubmitInfo,
-        };
+        SubmitInformation submitInfo = new();
 
-        var waitSemaphores = stackalloc [] {imageAvailableSemaphores[currentFrame]};
-        var waitStages = stackalloc [] { PipelineStageFlags.ColorAttachmentOutputBit };
+        var waitSemaphores = new [] {imageAvailableSemaphores![currentFrame].Semaphore};
+        var waitStages = new [] { PipelineStageFlags.ColorAttachmentOutputBit };
 
         var buffer = commandBuffers![imageIndex];
 
-        submitInfo = submitInfo with 
-        { 
-            WaitSemaphoreCount = 1,
-            PWaitSemaphores = waitSemaphores,
-            PWaitDstStageMask = waitStages,
-            
-            CommandBufferCount = 1,
-            PCommandBuffers = &buffer
+        submitInfo.WaitSemaphores = waitSemaphores;
+        submitInfo.WaitDstStageMask = waitStages;
+        submitInfo.CommandBuffers = new[]{buffer.CommandBuffer};
+
+        var signalSemaphores = new[] { renderFinishedSemaphores![currentFrame].Semaphore };
+        submitInfo.SignalSemaphores = signalSemaphores;
+
+        inFlightFences[currentFrame].Reset();
+
+        graphicsQueue!.Submit(submitInfo, inFlightFences[currentFrame]);
+
+        var swapchains = new[] { swapchain!.Swapchain };
+        PresentInformation presentInfo = new()
+        {
+            WaitSemaphores = signalSemaphores,
+            Swapchains = swapchains,
+            ImageIndices = new[]{imageIndex}
         };
 
-        var signalSemaphores = stackalloc[] { renderFinishedSemaphores![currentFrame] };
-        submitInfo = submitInfo with
-        {
-            SignalSemaphoreCount = 1,
-            PSignalSemaphores = signalSemaphores,
-        };
-
-        vk!.ResetFences(device, 1,inFlightFences[currentFrame]);
-
-        if(vk!.QueueSubmit(graphicsQueue, 1, submitInfo, inFlightFences[currentFrame]) != Result.Success)
-        {
-            throw new Exception("failed to submit draw command buffer!");
+        try {
+            khrSwapchain!.QueuePresent(presentQueue!, presentInfo);
+        }
+        catch (VulkanResultException ex) {
+            if (ex.Result == Result.ErrorOutOfDateKhr || ex.Result == Result.SuboptimalKhr || frameBufferResized)
+            {
+                frameBufferResized = true;
+            }
+            else {
+                throw;
+            }
         }
 
-        var swapchains = stackalloc[] { swapchain };
-        PresentInfoKHR presentInfo = new()
-        {
-            SType = StructureType.PresentInfoKhr,
-
-            WaitSemaphoreCount = 1,
-            PWaitSemaphores = signalSemaphores,
-
-            SwapchainCount = 1,
-            PSwapchains = swapchains,
-
-            PImageIndices = &imageIndex
-        };
-
-        result = khrSwapchain.QueuePresent(presentQueue, presentInfo);
-
-        if(result == Result.ErrorOutOfDateKhr || result == Result.SuboptimalKhr || frameBufferResized)
-        {
+        if (frameBufferResized) {
             frameBufferResized = false;
             RecreateSwapchain();
-        }
-        else if(result != Result.Success)
-        {
-            throw new Exception("failed to present swap chain image!");
+            return;
         }
 
         currentFrame = (currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
-
     }
 }

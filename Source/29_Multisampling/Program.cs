@@ -58,9 +58,8 @@ public unsafe class HelloTriangleApplication_29 : HelloTriangleApplication_28
             framebuffer.Dispose();
         }
 
-        fixed (CommandBuffer* commandBuffersPtr = commandBuffers)
-        {
-            vk!.FreeCommandBuffers(device, commandPool, (uint)commandBuffers!.Length, commandBuffersPtr);
+        foreach (var commandBuffer in commandBuffers!) {
+            commandBuffer.Dispose();
         }
 
         graphicsPipeline!.Dispose();
@@ -109,7 +108,7 @@ public unsafe class HelloTriangleApplication_29 : HelloTriangleApplication_28
         CreateDescriptorSets();
         CreateCommandBuffers();
 
-        imagesInFlight = new Fence[swapchainImages!.Length];
+        imagesInFlight = new VulkanFence[swapchainImages!.Length];
     }
 
     protected override void PickPhysicalDevice()

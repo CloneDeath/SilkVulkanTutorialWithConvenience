@@ -146,7 +146,7 @@ public class HelloTriangleApplication_15 : HelloTriangleApplication_14
     protected virtual void DrawFrame(double delta) {
         inFlightFences![currentFrame].Wait();
 
-        var imageIndex = swapchain!.AcquireNextImage(null, imageAvailableSemaphores![currentFrame]);
+        var imageIndex = swapchain!.AcquireNextImage(imageAvailableSemaphores![currentFrame]);
 
         if(imagesInFlight![imageIndex] != null)
         {

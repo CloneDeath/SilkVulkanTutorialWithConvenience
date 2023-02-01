@@ -49,9 +49,8 @@ public unsafe class HelloTriangleApplication_21 : HelloTriangleApplication_20
             framebuffer.Dispose();
         }
 
-        fixed (CommandBuffer* commandBuffersPtr = commandBuffers)
-        {
-            vk!.FreeCommandBuffers(device, commandPool, (uint)commandBuffers!.Length, commandBuffersPtr);
+        foreach (var commandBuffer in commandBuffers!) {
+            commandBuffer.Dispose();
         }
 
         graphicsPipeline!.Dispose();
@@ -130,7 +129,7 @@ public unsafe class HelloTriangleApplication_21 : HelloTriangleApplication_20
         CreateUniformBuffers();
         CreateCommandBuffers();
 
-        imagesInFlight = new Fence[swapchainImages!.Length];
+        imagesInFlight = new VulkanFence[swapchainImages!.Length];
     }
 
     protected virtual void CreateDescriptorSetLayout()
@@ -378,8 +377,8 @@ public unsafe class HelloTriangleApplication_21 : HelloTriangleApplication_20
             SType = StructureType.SubmitInfo,
         };
 
-        var waitSemaphores = stackalloc [] {imageAvailableSemaphores[currentFrame]};
-        var waitStages = stackalloc [] { PipelineStageFlags.ColorAttachmentOutputBit };
+        var waitSemaphores = new [] {imageAvailableSemaphores[currentFrame]};
+        var waitStages = new [] { PipelineStageFlags.ColorAttachmentOutputBit };
 
         var buffer = commandBuffers![imageIndex];
 
@@ -393,7 +392,7 @@ public unsafe class HelloTriangleApplication_21 : HelloTriangleApplication_20
             PCommandBuffers = &buffer
         };
 
-        var signalSemaphores = stackalloc[] { renderFinishedSemaphores![currentFrame] };
+        var signalSemaphores = new[] { renderFinishedSemaphores![currentFrame] };
         submitInfo = submitInfo with
         {
             SignalSemaphoreCount = 1,
@@ -407,7 +406,7 @@ public unsafe class HelloTriangleApplication_21 : HelloTriangleApplication_20
             throw new Exception("failed to submit draw command buffer!");
         }
 
-        var swapchains = stackalloc[] { swapchain };
+        var swapchains = new[] { swapchain };
         PresentInfoKHR presentInfo = new()
         {
             SType = StructureType.PresentInfoKhr,
