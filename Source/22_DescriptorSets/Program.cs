@@ -1,43 +1,16 @@
 ﻿using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using Silk.NET.Core.Native;
 using Silk.NET.Maths;
 using Silk.NET.Vulkan;
-using Semaphore = Silk.NET.Vulkan.Semaphore;
 using Buffer = Silk.NET.Vulkan.Buffer;
 
 var app = new HelloTriangleApplication_22();
 app.Run();
 
-
-
-public struct UniformBufferObject
-{
-    public Matrix4X4<float> model;
-    public Matrix4X4<float> view;
-    public Matrix4X4<float> proj;
-}
-
 public unsafe class HelloTriangleApplication_22 : HelloTriangleApplication_21
 {
-    protected DescriptorSetLayout descriptorSetLayout;
-
-
-
-
-
-
-    protected Buffer[]? uniformBuffers;
-    protected DeviceMemory[]? uniformBuffersMemory;
-
     protected DescriptorPool descriptorPool;
     protected DescriptorSet[]? descriptorSets;
-
-    
-
-    
-
-    
 
     protected override void InitVulkan()
     {
@@ -62,9 +35,7 @@ public unsafe class HelloTriangleApplication_22 : HelloTriangleApplication_21
         CreateSyncObjects();
     }
 
-    
-
-    protected void CleanUpSwapChain()
+    protected override void CleanUpSwapChain()
     {
         foreach (var framebuffer in swapChainFramebuffers!)
         {
@@ -96,43 +67,7 @@ public unsafe class HelloTriangleApplication_22 : HelloTriangleApplication_21
         vk!.DestroyDescriptorPool(device, descriptorPool, null);
     }
 
-    protected override void CleanUp()
-    {
-        CleanUpSwapChain();
-
-        vk!.DestroyDescriptorSetLayout(device, descriptorSetLayout, null);
-
-        vk!.DestroyBuffer(device, indexBuffer, null);
-        vk!.FreeMemory(device, indexBufferMemory, null);
-
-        vk!.DestroyBuffer(device, vertexBuffer, null);
-        vk!.FreeMemory(device,vertexBufferMemory, null);
-
-        for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
-        {
-            vk!.DestroySemaphore(device, renderFinishedSemaphores![i], null);
-            vk!.DestroySemaphore(device, imageAvailableSemaphores![i], null);
-            vk!.DestroyFence(device, inFlightFences![i], null);
-        }
-
-        vk!.DestroyCommandPool(device, commandPool, null);
-
-        vk!.DestroyDevice(device, null);
-
-        if (EnableValidationLayers)
-        {
-            //DestroyDebugUtilsMessenger equivalent to method DestroyDebugUtilsMessengerEXT from original tutorial.
-            debugUtils!.DestroyDebugUtilsMessenger(instance, debugMessenger, null);
-        }
-
-        khrSurface!.DestroySurface(instance, surface, null);
-        vk!.DestroyInstance(instance, null);
-        vk!.Dispose();
-
-        window?.Dispose();
-    }
-
-    protected void RecreateSwapChain()
+    protected override void RecreateSwapChain()
     {
         Vector2D<int> framebufferSize = window!.FramebufferSize;
 
@@ -159,44 +94,7 @@ public unsafe class HelloTriangleApplication_22 : HelloTriangleApplication_21
         imagesInFlight = new Fence[swapChainImages!.Length];
     }
 
-    
-
-    
-
-    
-
-    
-
-    
-
-    protected void CreateDescriptorSetLayout()
-    {
-        DescriptorSetLayoutBinding uboLayoutBinding = new()
-        {
-            Binding = 0,
-            DescriptorCount = 1,
-            DescriptorType = DescriptorType.UniformBuffer,
-            PImmutableSamplers = null,
-            StageFlags = ShaderStageFlags.VertexBit,
-        };
-
-        DescriptorSetLayoutCreateInfo layoutInfo = new()
-        {
-            SType = StructureType.DescriptorSetLayoutCreateInfo,
-            BindingCount = 1,
-            PBindings = &uboLayoutBinding,
-        };
-
-        fixed(DescriptorSetLayout* descriptorSetLayoutPtr = &descriptorSetLayout)
-        {
-            if(vk!.CreateDescriptorSetLayout(device, layoutInfo, null, descriptorSetLayoutPtr) != Result.Success)
-            {
-                throw new Exception("failed to create descriptor set layout!");
-            }
-        }
-    }
-
-    protected void CreateGraphicsPipeline()
+    protected override void CreateGraphicsPipeline()
     {
         var vertShaderCode = File.ReadAllBytes("shaders/vert.spv");
         var fragShaderCode = File.ReadAllBytes("shaders/frag.spv");
@@ -356,28 +254,6 @@ public unsafe class HelloTriangleApplication_22 : HelloTriangleApplication_21
         SilkMarshal.Free((nint)fragShaderStageInfo.PName);
     }
 
-    
-
-    
-
-    
-
-    
-
-    protected void CreateUniformBuffers()
-    {
-        ulong bufferSize = (ulong)Unsafe.SizeOf<UniformBufferObject>();
-
-        uniformBuffers = new Buffer[swapChainImages!.Length];
-        uniformBuffersMemory = new DeviceMemory[swapChainImages!.Length];
-
-        for (int i = 0; i < swapChainImages.Length; i++)
-        {
-            CreateBuffer(bufferSize, BufferUsageFlags.UniformBufferBit, MemoryPropertyFlags.HostVisibleBit | MemoryPropertyFlags.HostCoherentBit, ref uniformBuffers[i], ref uniformBuffersMemory[i]);   
-        }
-
-    }
-
     protected void CreateDescriptorPool()
     {
         DescriptorPoolSize poolSize = new()
@@ -457,13 +333,7 @@ public unsafe class HelloTriangleApplication_22 : HelloTriangleApplication_21
 
     }
 
-    
-
-    
-
-    
-
-    protected void CreateCommandBuffers()
+    protected override void CreateCommandBuffers()
     {
         commandBuffers = new CommandBuffer[swapChainFramebuffers!.Length];
 
@@ -544,138 +414,4 @@ public unsafe class HelloTriangleApplication_22 : HelloTriangleApplication_21
 
         }
     }
-
-    
-
-    protected void UpdateUniformBuffer(uint currentImage)
-    {
-        //Silk Window has timing information so we are skipping the time code.
-        var time = (float)window!.Time;
-
-        UniformBufferObject ubo = new()
-        {
-            model = Matrix4X4<float>.Identity * Matrix4X4.CreateFromAxisAngle(new Vector3D<float>(0,0,1), time * Scalar.DegreesToRadians(90.0f)),
-            view = Matrix4X4.CreateLookAt(new Vector3D<float>(2, 2, 2), new Vector3D<float>(0, 0, 0), new Vector3D<float>(0, 0, 1)),
-            proj = Matrix4X4.CreatePerspectiveFieldOfView(Scalar.DegreesToRadians(45.0f), swapChainExtent.Width * 1f / swapChainExtent.Height, 0.1f, 10.0f),
-        };
-        ubo.proj.M22 *= -1;
-
-
-        void* data;
-        vk!.MapMemory(device, uniformBuffersMemory![currentImage], 0, (ulong)Unsafe.SizeOf<UniformBufferObject>(), 0, &data);
-            new Span<UniformBufferObject>(data, 1)[0] = ubo;
-        vk!.UnmapMemory(device, uniformBuffersMemory![currentImage]);
-
-    }
-
-    protected void DrawFrame(double delta)
-    {
-        vk!.WaitForFences(device, 1, inFlightFences![currentFrame], true, ulong.MaxValue);
-
-        uint imageIndex = 0;
-        var result = khrSwapChain!.AcquireNextImage(device, swapChain, ulong.MaxValue, imageAvailableSemaphores![currentFrame], default, ref imageIndex);
-
-        if(result == Result.ErrorOutOfDateKhr)
-        {
-            RecreateSwapChain();
-            return;
-        }
-        else if(result != Result.Success && result != Result.SuboptimalKhr)
-        {
-            throw new Exception("failed to acquire swap chain image!");
-        }
-
-        UpdateUniformBuffer(imageIndex);
-
-        if(imagesInFlight![imageIndex].Handle != default)
-        {
-            vk!.WaitForFences(device, 1, imagesInFlight[imageIndex], true, ulong.MaxValue);
-        }
-        imagesInFlight[imageIndex] = inFlightFences[currentFrame];
-
-        SubmitInfo submitInfo = new()
-        {
-            SType = StructureType.SubmitInfo,
-        };
-
-        var waitSemaphores = stackalloc [] {imageAvailableSemaphores[currentFrame]};
-        var waitStages = stackalloc [] { PipelineStageFlags.ColorAttachmentOutputBit };
-
-        var buffer = commandBuffers![imageIndex];
-
-        submitInfo = submitInfo with 
-        { 
-            WaitSemaphoreCount = 1,
-            PWaitSemaphores = waitSemaphores,
-            PWaitDstStageMask = waitStages,
-            
-            CommandBufferCount = 1,
-            PCommandBuffers = &buffer
-        };
-
-        var signalSemaphores = stackalloc[] { renderFinishedSemaphores![currentFrame] };
-        submitInfo = submitInfo with
-        {
-            SignalSemaphoreCount = 1,
-            PSignalSemaphores = signalSemaphores,
-        };
-
-        vk!.ResetFences(device, 1,inFlightFences[currentFrame]);
-
-        if(vk!.QueueSubmit(graphicsQueue, 1, submitInfo, inFlightFences[currentFrame]) != Result.Success)
-        {
-            throw new Exception("failed to submit draw command buffer!");
-        }
-
-        var swapChains = stackalloc[] { swapChain };
-        PresentInfoKHR presentInfo = new()
-        {
-            SType = StructureType.PresentInfoKhr,
-
-            WaitSemaphoreCount = 1,
-            PWaitSemaphores = signalSemaphores,
-
-            SwapchainCount = 1,
-            PSwapchains = swapChains,
-
-            PImageIndices = &imageIndex
-        };
-
-        result = khrSwapChain.QueuePresent(presentQueue, presentInfo);
-
-        if(result == Result.ErrorOutOfDateKhr || result == Result.SuboptimalKhr || frameBufferResized)
-        {
-            frameBufferResized = false;
-            RecreateSwapChain();
-        }
-        else if(result != Result.Success)
-        {
-            throw new Exception("failed to present swap chain image!");
-        }
-
-        currentFrame = (currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
-
-    }
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
 }

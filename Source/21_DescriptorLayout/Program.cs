@@ -1,15 +1,11 @@
 ﻿using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using Silk.NET.Core.Native;
 using Silk.NET.Maths;
 using Silk.NET.Vulkan;
-using Semaphore = Silk.NET.Vulkan.Semaphore;
 using Buffer = Silk.NET.Vulkan.Buffer;
 
 var app = new HelloTriangleApplication_21();
 app.Run();
-
-
 
 public struct UniformBufferObject
 {
@@ -22,19 +18,8 @@ public unsafe class HelloTriangleApplication_21 : HelloTriangleApplication_20
 {
     protected DescriptorSetLayout descriptorSetLayout;
 
-
-
-
-
-
     protected Buffer[]? uniformBuffers;
     protected DeviceMemory[]? uniformBuffersMemory;
-
-    
-
-    
-
-    
 
     protected override void InitVulkan()
     {
@@ -57,9 +42,7 @@ public unsafe class HelloTriangleApplication_21 : HelloTriangleApplication_20
         CreateSyncObjects();
     }
 
-    
-
-    protected void CleanUpSwapChain()
+    protected override void CleanUpSwapChain()
     {
         foreach (var framebuffer in swapChainFramebuffers!)
         {
@@ -125,7 +108,7 @@ public unsafe class HelloTriangleApplication_21 : HelloTriangleApplication_20
         window?.Dispose();
     }
 
-    protected void RecreateSwapChain()
+    protected override void RecreateSwapChain()
     {
         Vector2D<int> framebufferSize = window!.FramebufferSize;
 
@@ -149,16 +132,6 @@ public unsafe class HelloTriangleApplication_21 : HelloTriangleApplication_20
 
         imagesInFlight = new Fence[swapChainImages!.Length];
     }
-
-    
-
-    
-
-    
-
-    
-
-    
 
     protected void CreateDescriptorSetLayout()
     {
@@ -187,7 +160,7 @@ public unsafe class HelloTriangleApplication_21 : HelloTriangleApplication_20
         }
     }
 
-    protected void CreateGraphicsPipeline()
+    protected override void CreateGraphicsPipeline()
     {
         var vertShaderCode = File.ReadAllBytes("shaders/vert.spv");
         var fragShaderCode = File.ReadAllBytes("shaders/frag.spv");
@@ -347,14 +320,6 @@ public unsafe class HelloTriangleApplication_21 : HelloTriangleApplication_20
         SilkMarshal.Free((nint)fragShaderStageInfo.PName);
     }
 
-    
-
-    
-
-    
-
-    
-
     protected void CreateUniformBuffers()
     {
         ulong bufferSize = (ulong)Unsafe.SizeOf<UniformBufferObject>();
@@ -368,17 +333,7 @@ public unsafe class HelloTriangleApplication_21 : HelloTriangleApplication_20
         }
 
     }
-
     
-
-    
-
-    
-
-    
-
-    
-
     protected void UpdateUniformBuffer(uint currentImage)
     {
         //Silk Window has timing information so we are skipping the time code.
@@ -386,9 +341,9 @@ public unsafe class HelloTriangleApplication_21 : HelloTriangleApplication_20
 
         UniformBufferObject ubo = new()
         {
-            model = Matrix4X4<float>.Identity * Matrix4X4.CreateFromAxisAngle(new Vector3D<float>(0,0,1), time * Radians(90.0f)),
+            model = Matrix4X4<float>.Identity * Matrix4X4.CreateFromAxisAngle(new Vector3D<float>(0,0,1), time * Scalar.DegreesToRadians(90.0f)),
             view = Matrix4X4.CreateLookAt(new Vector3D<float>(2, 2, 2), new Vector3D<float>(0, 0, 0), new Vector3D<float>(0, 0, 1)),
-            proj = Matrix4X4.CreatePerspectiveFieldOfView(Radians(45.0f), swapChainExtent.Width * 1f / swapChainExtent.Height, 0.1f, 10.0f),
+            proj = Matrix4X4.CreatePerspectiveFieldOfView(Scalar.DegreesToRadians(45.0f), swapChainExtent.Width * 1f / swapChainExtent.Height, 0.1f, 10.0f),
         };
         ubo.proj.M22 *= -1;
 
@@ -397,12 +352,9 @@ public unsafe class HelloTriangleApplication_21 : HelloTriangleApplication_20
         vk!.MapMemory(device, uniformBuffersMemory![currentImage], 0, (ulong)Unsafe.SizeOf<UniformBufferObject>(), 0, &data);
             new Span<UniformBufferObject>(data, 1)[0] = ubo;
         vk!.UnmapMemory(device, uniformBuffersMemory![currentImage]);
-
-
-        static float Radians(float angle) => angle * MathF.PI / 180f;
     }
 
-    protected void DrawFrame(double delta)
+    protected override void DrawFrame(double delta)
     {
         vk!.WaitForFences(device, 1, inFlightFences![currentFrame], true, ulong.MaxValue);
 
@@ -490,14 +442,4 @@ public unsafe class HelloTriangleApplication_21 : HelloTriangleApplication_20
         currentFrame = (currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
 
     }
-
-    
-
-    
-
-    
-
-    
-
-    
 }

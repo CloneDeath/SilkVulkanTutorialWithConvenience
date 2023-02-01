@@ -34,7 +34,7 @@ public unsafe class HelloTriangleApplication_16 : HelloTriangleApplication_15
         frameBufferResized = true;
     }
 
-    protected void CleanUpSwapChain()
+    protected virtual void CleanUpSwapChain()
     {
         foreach (var framebuffer in swapChainFramebuffers!)
         {
@@ -86,7 +86,7 @@ public unsafe class HelloTriangleApplication_16 : HelloTriangleApplication_15
         window?.Dispose();
     }
 
-    protected void RecreateSwapChain()
+    protected virtual void RecreateSwapChain()
     {
         Vector2D<int> framebufferSize = window!.FramebufferSize;
 

@@ -50,7 +50,7 @@ public struct Vertex_17
 
 public unsafe class HelloTriangleApplication_17 : HelloTriangleApplication_16
 {
-    protected Vertex_17[] vertices_17 = new Vertex_17[]
+    protected virtual Vertex_17[] vertices { get; } = new Vertex_17[]
     {
         new Vertex_17 { pos = new Vector2D<float>(0.0f,-0.5f), color = new Vector3D<float>(1.0f, 0.0f, 0.0f) },
         new Vertex_17 { pos = new Vector2D<float>(0.5f,0.5f), color = new Vector3D<float>(0.0f, 1.0f, 0.0f) },

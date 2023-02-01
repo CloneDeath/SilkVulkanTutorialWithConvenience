@@ -9,7 +9,7 @@ public unsafe class HelloTriangleApplication_19 : HelloTriangleApplication_18
 {
     protected override void CreateVertexBuffer()
     {
-        ulong bufferSize = (ulong)(Unsafe.SizeOf<Vertex_17>() * vertices_17.Length);
+        ulong bufferSize = (ulong)(Unsafe.SizeOf<Vertex_17>() * vertices.Length);
 
         Buffer stagingBuffer = default;
         DeviceMemory stagingBufferMemory = default;
@@ -17,7 +17,7 @@ public unsafe class HelloTriangleApplication_19 : HelloTriangleApplication_18
         
         void* data;
         vk!.MapMemory(device, stagingBufferMemory, 0, bufferSize, 0, &data);
-            vertices_17.AsSpan().CopyTo(new Span<Vertex_17>(data, vertices_17.Length));
+            vertices.AsSpan().CopyTo(new Span<Vertex_17>(data, vertices.Length));
         vk!.UnmapMemory(device, stagingBufferMemory);
 
         CreateBuffer(bufferSize, BufferUsageFlags.TransferDstBit | BufferUsageFlags.VertexBufferBit, MemoryPropertyFlags.DeviceLocalBit, ref vertexBuffer, ref vertexBufferMemory);
@@ -67,7 +67,7 @@ public unsafe class HelloTriangleApplication_19 : HelloTriangleApplication_18
         vk!.BindBufferMemory(device, buffer, bufferMemory, 0);
     }
 
-    protected void CopyBuffer(Buffer srcBuffer, Buffer dstBuffer, ulong size)
+    protected virtual void CopyBuffer(Buffer srcBuffer, Buffer dstBuffer, ulong size)
     {
         CommandBufferAllocateInfo allocateInfo = new()
         {

@@ -11,7 +11,7 @@ public unsafe class HelloTriangleApplication_20 : HelloTriangleApplication_19
     protected Buffer indexBuffer;
     protected DeviceMemory indexBufferMemory;
 
-    protected Vertex_17[] vertices_20 = new Vertex_17[]
+    protected override Vertex_17[] vertices { get; } = new Vertex_17[]
     {
         new Vertex_17 { pos = new Vector2D<float>(-0.5f,-0.5f), color = new Vector3D<float>(1.0f, 0.0f, 0.0f) },
         new Vertex_17 { pos = new Vector2D<float>(0.5f,-0.5f), color = new Vector3D<float>(0.0f, 1.0f, 0.0f) },

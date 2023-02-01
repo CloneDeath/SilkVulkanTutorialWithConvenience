@@ -12,12 +12,7 @@ app.Run();
 
 
 
-public struct UniformBufferObject
-{
-    public Matrix4X4<float> model;
-    public Matrix4X4<float> view;
-    public Matrix4X4<float> proj;
-}
+
 
 public unsafe class HelloTriangleApplication_29 : HelloTriangleApplication_28
 {
@@ -26,7 +21,7 @@ public unsafe class HelloTriangleApplication_29 : HelloTriangleApplication_28
 
     protected SampleCountFlags msaaSamples = SampleCountFlags.Count1Bit;
 
-    protected DescriptorSetLayout descriptorSetLayout;
+
 
     protected Image colorImage;
     protected DeviceMemory colorImageMemory;
@@ -37,21 +32,21 @@ public unsafe class HelloTriangleApplication_29 : HelloTriangleApplication_28
     protected ImageView depthImageView;
 
     protected uint mipLevels;
-    protected Image textureImage;
-    protected DeviceMemory textureImageMemory;
-    protected ImageView textureImageView;
-    protected Sampler textureSampler;
 
 
 
 
 
 
-    protected Buffer[]? uniformBuffers;
-    protected DeviceMemory[]? uniformBuffersMemory;
 
-    protected DescriptorPool descriptorPool;
-    protected DescriptorSet[]? descriptorSets;
+
+
+
+
+
+
+
+
 
     protected Vertex_26[]? vertices;
 
@@ -130,47 +125,7 @@ public unsafe class HelloTriangleApplication_29 : HelloTriangleApplication_28
         vk!.DestroyDescriptorPool(device, descriptorPool, null);
     }
 
-    protected override void CleanUp()
-    {
-        CleanUpSwapChain();
-
-        vk!.DestroySampler(device, textureSampler, null);
-        vk!.DestroyImageView(device, textureImageView, null);
-
-        vk!.DestroyImage(device, textureImage, null);
-        vk!.FreeMemory(device, textureImageMemory, null);
-
-        vk!.DestroyDescriptorSetLayout(device, descriptorSetLayout, null);
-
-        vk!.DestroyBuffer(device, indexBuffer, null);
-        vk!.FreeMemory(device, indexBufferMemory, null);
-
-        vk!.DestroyBuffer(device, vertexBuffer, null);
-        vk!.FreeMemory(device,vertexBufferMemory, null);
-
-        for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
-        {
-            vk!.DestroySemaphore(device, renderFinishedSemaphores![i], null);
-            vk!.DestroySemaphore(device, imageAvailableSemaphores![i], null);
-            vk!.DestroyFence(device, inFlightFences![i], null);
-        }
-
-        vk!.DestroyCommandPool(device, commandPool, null);
-
-        vk!.DestroyDevice(device, null);
-
-        if (EnableValidationLayers)
-        {
-            //DestroyDebugUtilsMessenger equivalent to method DestroyDebugUtilsMessengerEXT from original tutorial.
-            debugUtils!.DestroyDebugUtilsMessenger(instance, debugMessenger, null);
-        }
-
-        khrSurface!.DestroySurface(instance, surface, null);
-        vk!.DestroyInstance(instance, null);
-        vk!.Dispose();
-
-        window?.Dispose();
-    }
+    
 
     protected void RecreateSwapChain()
     {
@@ -947,31 +902,7 @@ public unsafe class HelloTriangleApplication_29 : HelloTriangleApplication_28
 
     }
 
-    protected void CopyBufferToImage(Buffer buffer, Image image, uint width, uint height)
-    {
-        CommandBuffer commandBuffer = BeginSingleTimeCommands();
-
-        BufferImageCopy region = new()
-        {
-            BufferOffset = 0,
-            BufferRowLength = 0,
-            BufferImageHeight = 0,
-            ImageSubresource =
-            {
-                AspectMask = ImageAspectFlags.ColorBit,
-                MipLevel = 0,
-                BaseArrayLayer = 0,
-                LayerCount = 1,                
-            },
-            ImageOffset = new Offset3D(0,0,0),
-            ImageExtent = new Extent3D(width, height, 1),
-            
-        };
-
-        vk!.CmdCopyBufferToImage(commandBuffer, buffer, image, ImageLayout.TransferDstOptimal, 1, region);
-
-        EndSingleTimeCommands(commandBuffer);
-    }
+    
 
     protected void LoadModel()
     {
@@ -1078,19 +1009,7 @@ public unsafe class HelloTriangleApplication_29 : HelloTriangleApplication_28
         vk!.FreeMemory(device, stagingBufferMemory, null);
     }
 
-    protected void CreateUniformBuffers()
-    {
-        ulong bufferSize = (ulong)Unsafe.SizeOf<UniformBufferObject>();
-
-        uniformBuffers = new Buffer[swapChainImages!.Length];
-        uniformBuffersMemory = new DeviceMemory[swapChainImages!.Length];
-
-        for (int i = 0; i < swapChainImages.Length; i++)
-        {
-            CreateBuffer(bufferSize, BufferUsageFlags.UniformBufferBit, MemoryPropertyFlags.HostVisibleBit | MemoryPropertyFlags.HostCoherentBit, ref uniformBuffers[i], ref uniformBuffersMemory[i]);   
-        }
-
-    }
+    
 
     protected void CreateDescriptorPool()
     {
@@ -1205,60 +1124,11 @@ public unsafe class HelloTriangleApplication_29 : HelloTriangleApplication_28
 
     
 
-    protected CommandBuffer BeginSingleTimeCommands()
-    {
-        CommandBufferAllocateInfo allocateInfo = new()
-        {
-            SType = StructureType.CommandBufferAllocateInfo,
-            Level = CommandBufferLevel.Primary,
-            CommandPool = commandPool,
-            CommandBufferCount = 1,
-        };
+    
 
-        CommandBuffer commandBuffer;
-        vk!.AllocateCommandBuffers(device, allocateInfo, out commandBuffer);
+    
 
-        CommandBufferBeginInfo beginInfo = new()
-        {
-            SType = StructureType.CommandBufferBeginInfo,
-            Flags = CommandBufferUsageFlags.OneTimeSubmitBit,
-        };
-
-        vk!.BeginCommandBuffer(commandBuffer, beginInfo);
-
-        return commandBuffer;
-    }
-
-    protected void EndSingleTimeCommands(CommandBuffer commandBuffer)
-    {
-        vk!.EndCommandBuffer(commandBuffer);
-
-        SubmitInfo submitInfo = new()
-        {
-            SType = StructureType.SubmitInfo,
-            CommandBufferCount = 1,
-            PCommandBuffers = &commandBuffer,
-        };
-
-        vk!.QueueSubmit(graphicsQueue, 1, submitInfo, default);
-        vk!.QueueWaitIdle(graphicsQueue);
-
-        vk!.FreeCommandBuffers(device, commandPool, 1, commandBuffer);
-    }
-
-    protected void CopyBuffer(Buffer srcBuffer, Buffer dstBuffer, ulong size)
-    {
-        CommandBuffer commandBuffer = BeginSingleTimeCommands();
-
-        BufferCopy copyRegion = new()
-        {
-            Size = size,                
-        };
-
-        vk!.CmdCopyBuffer(commandBuffer, srcBuffer, dstBuffer, 1, copyRegion);
-
-        EndSingleTimeCommands(commandBuffer);
-    }
+    
 
     
 
@@ -1357,115 +1227,9 @@ public unsafe class HelloTriangleApplication_29 : HelloTriangleApplication_28
 
     
 
-    protected void UpdateUniformBuffer(uint currentImage)
-    {
-        //Silk Window has timing information so we are skipping the time code.
-        var time = (float)window!.Time;
+    
 
-        UniformBufferObject ubo = new()
-        {
-            model = Matrix4X4<float>.Identity * Matrix4X4.CreateFromAxisAngle(new Vector3D<float>(0,0,1), time * Scalar.DegreesToRadians(90.0f)),
-            view = Matrix4X4.CreateLookAt(new Vector3D<float>(2, 2, 2), new Vector3D<float>(0, 0, 0), new Vector3D<float>(0, 0, 1)),
-            proj = Matrix4X4.CreatePerspectiveFieldOfView(Scalar.DegreesToRadians(45.0f), swapChainExtent.Width * 1f / swapChainExtent.Height, 0.1f, 10.0f),
-        };
-        ubo.proj.M22 *= -1;
-
-
-        void* data;
-        vk!.MapMemory(device, uniformBuffersMemory![currentImage], 0, (ulong)Unsafe.SizeOf<UniformBufferObject>(), 0, &data);
-            new Span<UniformBufferObject>(data, 1)[0] = ubo;
-        vk!.UnmapMemory(device, uniformBuffersMemory![currentImage]);
-
-    }
-
-    protected void DrawFrame(double delta)
-    {
-        vk!.WaitForFences(device, 1, inFlightFences![currentFrame], true, ulong.MaxValue);
-
-        uint imageIndex = 0;
-        var result = khrSwapChain!.AcquireNextImage(device, swapChain, ulong.MaxValue, imageAvailableSemaphores![currentFrame], default, ref imageIndex);
-
-        if(result == Result.ErrorOutOfDateKhr)
-        {
-            RecreateSwapChain();
-            return;
-        }
-        else if(result != Result.Success && result != Result.SuboptimalKhr)
-        {
-            throw new Exception("failed to acquire swap chain image!");
-        }
-
-        UpdateUniformBuffer(imageIndex);
-
-        if(imagesInFlight![imageIndex].Handle != default)
-        {
-            vk!.WaitForFences(device, 1, imagesInFlight[imageIndex], true, ulong.MaxValue);
-        }
-        imagesInFlight[imageIndex] = inFlightFences[currentFrame];
-
-        SubmitInfo submitInfo = new()
-        {
-            SType = StructureType.SubmitInfo,
-        };
-
-        var waitSemaphores = stackalloc [] {imageAvailableSemaphores[currentFrame]};
-        var waitStages = stackalloc [] { PipelineStageFlags.ColorAttachmentOutputBit };
-
-        var buffer = commandBuffers![imageIndex];
-
-        submitInfo = submitInfo with 
-        { 
-            WaitSemaphoreCount = 1,
-            PWaitSemaphores = waitSemaphores,
-            PWaitDstStageMask = waitStages,
-            
-            CommandBufferCount = 1,
-            PCommandBuffers = &buffer
-        };
-
-        var signalSemaphores = stackalloc[] { renderFinishedSemaphores![currentFrame] };
-        submitInfo = submitInfo with
-        {
-            SignalSemaphoreCount = 1,
-            PSignalSemaphores = signalSemaphores,
-        };
-
-        vk!.ResetFences(device, 1,inFlightFences[currentFrame]);
-
-        if(vk!.QueueSubmit(graphicsQueue, 1, submitInfo, inFlightFences[currentFrame]) != Result.Success)
-        {
-            throw new Exception("failed to submit draw command buffer!");
-        }
-
-        var swapChains = stackalloc[] { swapChain };
-        PresentInfoKHR presentInfo = new()
-        {
-            SType = StructureType.PresentInfoKhr,
-
-            WaitSemaphoreCount = 1,
-            PWaitSemaphores = signalSemaphores,
-
-            SwapchainCount = 1,
-            PSwapchains = swapChains,
-
-            PImageIndices = &imageIndex
-        };
-
-        result = khrSwapChain.QueuePresent(presentQueue, presentInfo);
-
-        if(result == Result.ErrorOutOfDateKhr || result == Result.SuboptimalKhr || frameBufferResized)
-        {
-            frameBufferResized = false;
-            RecreateSwapChain();
-        }
-        else if(result != Result.Success)
-        {
-            throw new Exception("failed to present swap chain image!");
-        }
-
-        currentFrame = (currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
-
-    }
+    
 
     
 

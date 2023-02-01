@@ -63,7 +63,7 @@ public unsafe class HelloTriangleApplication_18 : HelloTriangleApplication_17
         BufferCreateInfo bufferInfo = new()
         {
             SType = StructureType.BufferCreateInfo,
-            Size = (ulong)(sizeof(Vertex_17) * vertices_17.Length),
+            Size = (ulong)(sizeof(Vertex_17) * vertices.Length),
             Usage = BufferUsageFlags.VertexBufferBit,
             SharingMode = SharingMode.Exclusive,
         };
@@ -98,7 +98,7 @@ public unsafe class HelloTriangleApplication_18 : HelloTriangleApplication_17
 
         void* data;
         vk!.MapMemory(device, vertexBufferMemory, 0, bufferInfo.Size, 0, &data);
-            vertices_17.AsSpan().CopyTo(new Span<Vertex_17>(data, vertices_17.Length));
+            vertices.AsSpan().CopyTo(new Span<Vertex_17>(data, vertices.Length));
         vk!.UnmapMemory(device, vertexBufferMemory);
     }
 
@@ -184,7 +184,7 @@ public unsafe class HelloTriangleApplication_18 : HelloTriangleApplication_17
                     vk!.CmdBindVertexBuffers(commandBuffers[i], 0, 1, vertexBuffersPtr, offsetsPtr);
                 }
 
-                vk!.CmdDraw(commandBuffers[i], (uint)vertices_17.Length, 1, 0, 0);
+                vk!.CmdDraw(commandBuffers[i], (uint)vertices.Length, 1, 0, 0);
 
             vk!.CmdEndRenderPass(commandBuffers[i]);
 
