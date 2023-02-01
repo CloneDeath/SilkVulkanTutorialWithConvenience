@@ -1,4 +1,5 @@
 ﻿using Silk.NET.Vulkan;
+using SilkNetConvenience.Wrappers;
 
 var app = new HelloTriangleApplication_03();
 app.Run();
@@ -12,9 +13,9 @@ public struct QueueFamilyIndices_03
     }
 }
 
-public unsafe class HelloTriangleApplication_03 : HelloTriangleApplication_02
+public class HelloTriangleApplication_03 : HelloTriangleApplication_02
 {
-    protected PhysicalDevice physicalDevice;
+    protected VulkanPhysicalDevice? physicalDevice;
 
     protected override void InitVulkan()
     {
@@ -23,21 +24,8 @@ public unsafe class HelloTriangleApplication_03 : HelloTriangleApplication_02
         PickPhysicalDevice();
     }
     
-    protected virtual void PickPhysicalDevice()
-    {
-        uint devicedCount = 0;
-        vk!.EnumeratePhysicalDevices(instance, ref devicedCount, null);
-
-        if (devicedCount == 0)
-        {
-            throw new Exception("failed to find GPUs with Vulkan support!");
-        }
-
-        var devices = new PhysicalDevice[devicedCount];
-        fixed (PhysicalDevice* devicesPtr = devices)
-        {
-            vk!.EnumeratePhysicalDevices(instance, ref devicedCount, devicesPtr);
-        }
+    protected virtual void PickPhysicalDevice() {
+        var devices = instance!.EnumeratePhysicalDevices();
 
         foreach (var physDevice in devices)
         {
@@ -48,32 +36,24 @@ public unsafe class HelloTriangleApplication_03 : HelloTriangleApplication_02
             }
         }
 
-        if (physicalDevice.Handle == 0)
+        if (physicalDevice == null)
         {
             throw new Exception("failed to find a suitable GPU!");
         }
     }
 
-    protected virtual bool IsDeviceSuitable(PhysicalDevice candidateDevice)
+    protected virtual bool IsDeviceSuitable(VulkanPhysicalDevice candidateDevice)
     {
         var indices = FindQueueFamilies_03(candidateDevice);
 
         return indices.IsComplete();
     }
 
-    protected QueueFamilyIndices_03 FindQueueFamilies_03(PhysicalDevice device)
+    protected QueueFamilyIndices_03 FindQueueFamilies_03(VulkanPhysicalDevice device)
     {
         var indices = new QueueFamilyIndices_03();
 
-        uint queueFamilityCount = 0;
-        vk!.GetPhysicalDeviceQueueFamilyProperties(device, ref queueFamilityCount, null);
-
-        var queueFamilies = new QueueFamilyProperties[queueFamilityCount];
-        fixed (QueueFamilyProperties* queueFamiliesPtr = queueFamilies)
-        {
-            vk!.GetPhysicalDeviceQueueFamilyProperties(device, ref queueFamilityCount, queueFamiliesPtr);
-        }
-
+        var queueFamilies = device.GetQueueFamilyProperties();
 
         uint i = 0;
         foreach (var queueFamily in queueFamilies)

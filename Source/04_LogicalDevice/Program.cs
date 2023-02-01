@@ -1,15 +1,14 @@
-﻿using Silk.NET.Core.Native;
-using Silk.NET.Vulkan;
+﻿using Silk.NET.Vulkan;
+using SilkNetConvenience.CreateInfo;
+using SilkNetConvenience.Wrappers;
 
 var app = new HelloTriangleApplication_04();
 app.Run();
 
-public unsafe class HelloTriangleApplication_04 : HelloTriangleApplication_03
+public class HelloTriangleApplication_04 : HelloTriangleApplication_03
 {
-    protected Device device;
-
-    // ReSharper disable once NotAccessedField.Local
-    protected Queue graphicsQueue;
+    protected VulkanDevice? device;
+    protected VulkanQueue? graphicsQueue;
 
     protected override void InitVulkan()
     {
@@ -21,15 +20,15 @@ public unsafe class HelloTriangleApplication_04 : HelloTriangleApplication_03
     
     protected override void CleanUp()
     {
-        vk!.DestroyDevice(device, null);
-
+        device!.Dispose();
+        
         if (EnableValidationLayers)
         {
             //DestroyDebugUtilsMessenger equivalent to method DestroyDebugUtilsMessengerEXT from original tutorial.
-            debugUtils!.DestroyDebugUtilsMessenger(instance, debugMessenger, null);
+            debugMessenger!.Dispose();
         }
 
-        vk!.DestroyInstance(instance, null);
+        instance!.Dispose();
         vk!.Dispose();
 
         window?.Dispose();
@@ -37,51 +36,29 @@ public unsafe class HelloTriangleApplication_04 : HelloTriangleApplication_03
 
     protected virtual void CreateLogicalDevice()
     {
-        var indices = FindQueueFamilies_03(physicalDevice);
+        var indices = FindQueueFamilies_03(physicalDevice!);
 
-        DeviceQueueCreateInfo queueCreateInfo = new()
+        DeviceQueueCreateInformation queueCreateInfo = new()
         {
-            SType = StructureType.DeviceQueueCreateInfo,
             QueueFamilyIndex = indices.GraphicsFamily!.Value,
-            QueueCount = 1
+            QueuePriorities = new[]{1f}
         };
-
-        float queuePriority = 1.0f;
-        queueCreateInfo.PQueuePriorities = &queuePriority;
 
         PhysicalDeviceFeatures deviceFeatures = new();
 
-        DeviceCreateInfo createInfo = new()
+        DeviceCreateInformation createInfo = new()
         {
-            SType = StructureType.DeviceCreateInfo,
-            QueueCreateInfoCount = 1,
-            PQueueCreateInfos = &queueCreateInfo,
-
-            PEnabledFeatures = &deviceFeatures,
-
-            EnabledExtensionCount = 0
+            QueueCreateInfos = new []{queueCreateInfo},
+            EnabledFeatures = deviceFeatures
         };
 
         if (EnableValidationLayers)
         {
-            createInfo.EnabledLayerCount = (uint)validationLayers.Length;
-            createInfo.PpEnabledLayerNames = (byte**)SilkMarshal.StringArrayToPtr(validationLayers);
-        }
-        else
-        {
-            createInfo.EnabledLayerCount = 0;
+            createInfo.EnabledLayers = validationLayers;
         }
 
-        if (vk!.CreateDevice(physicalDevice, in createInfo, null, out device) != Result.Success)
-        {
-            throw new Exception("failed to create logical device!");
-        }
+        device = physicalDevice!.CreateDevice(createInfo);
 
-        vk!.GetDeviceQueue(device, indices.GraphicsFamily!.Value, 0, out graphicsQueue);
-
-        if (EnableValidationLayers)
-        {
-            SilkMarshal.Free((nint)createInfo.PpEnabledLayerNames);
-        }
+        graphicsQueue = device.GetDeviceQueue(indices.GraphicsFamily!.Value, 0);
     }
 }

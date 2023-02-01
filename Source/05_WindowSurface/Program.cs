@@ -21,8 +21,6 @@ public unsafe class HelloTriangleApplication_05 : HelloTriangleApplication_04
 {
     protected KhrSurface? khrSurface;
     protected SurfaceKHR surface;
-    
-    // ReSharper disable once NotAccessedField.Local
     protected Queue presentQueue;
 
     protected override void InitVulkan()
@@ -45,7 +43,7 @@ public unsafe class HelloTriangleApplication_05 : HelloTriangleApplication_04
         }
 
         khrSurface!.DestroySurface(instance, surface, null);
-        vk!.DestroyInstance(instance, null);
+        instance!.Dispose()
         vk!.Dispose();
 
         window?.Dispose();
@@ -126,13 +124,13 @@ public unsafe class HelloTriangleApplication_05 : HelloTriangleApplication_04
     {
         var indices = new QueueFamilyIndices_05();
 
-        uint queueFamilityCount = 0;
-        vk!.GetPhysicalDeviceQueueFamilyProperties(physDevice, ref queueFamilityCount, null);
+        uint queueFamilyCount = 0;
+        vk!.GetPhysicalDeviceQueueFamilyProperties(physDevice, ref queueFamilyCount, null);
 
-        var queueFamilies = new QueueFamilyProperties[queueFamilityCount];
+        var queueFamilies = new QueueFamilyProperties[queueFamilyCount];
         fixed (QueueFamilyProperties* queueFamiliesPtr = queueFamilies)
         {
-            vk!.GetPhysicalDeviceQueueFamilyProperties(physDevice, ref queueFamilityCount, queueFamiliesPtr);
+            vk!.GetPhysicalDeviceQueueFamilyProperties(physDevice, ref queueFamilyCount, queueFamiliesPtr);
         }
 
 

@@ -1,15 +1,17 @@
-﻿using System.Runtime.InteropServices;
-using Silk.NET.Core;
+﻿using Silk.NET.Core;
+using Silk.NET.Core.Native;
 using Silk.NET.Vulkan;
+using SilkNetConvenience.CreateInfo;
+using SilkNetConvenience.Wrappers;
 
 var app = new HelloTriangleApplication_01();
 app.Run();
 
 public unsafe class HelloTriangleApplication_01 : HelloTriangleApplication_00
 {
-    protected Vk? vk;
+    protected VulkanContext? vk;
 
-    protected Instance instance;
+    protected VulkanInstance? instance;
 
     protected override void InitVulkan()
     {
@@ -18,7 +20,7 @@ public unsafe class HelloTriangleApplication_01 : HelloTriangleApplication_00
 
     protected override void CleanUp()
     {
-        vk!.DestroyInstance(instance, null);
+        instance!.Dispose();
         vk!.Dispose();
 
         window?.Dispose();
@@ -26,36 +28,27 @@ public unsafe class HelloTriangleApplication_01 : HelloTriangleApplication_00
 
     protected virtual void CreateInstance()
     {
-        vk = Vk.GetApi();
+        vk = new VulkanContext();
 
-        ApplicationInfo appInfo = new()
+        ApplicationInformation appInfo = new()
         {
-            SType = StructureType.ApplicationInfo,
-            PApplicationName = (byte*)Marshal.StringToHGlobalAnsi("Hello Triangle"),
+            ApplicationName = "Hello Triangle",
             ApplicationVersion = new Version32(1, 0, 0),
-            PEngineName = (byte*)Marshal.StringToHGlobalAnsi("No Engine"),
+            EngineName = "No Engine",
             EngineVersion = new Version32(1, 0, 0),
             ApiVersion = Vk.Version11
         };
 
-        InstanceCreateInfo createInfo = new()
+        InstanceCreateInformation createInfo = new()
         {
-            SType = StructureType.InstanceCreateInfo,
-            PApplicationInfo = &appInfo
+            ApplicationInfo = appInfo
         };
 
         var glfwExtensions = window!.VkSurface!.GetRequiredExtensions(out var glfwExtensionCount);
+        
+        createInfo.EnabledExtensions = SilkMarshal.PtrToStringArray((nint)glfwExtensions, (int)glfwExtensionCount);
+        createInfo.EnabledLayers = Array.Empty<string>();
 
-        createInfo.EnabledExtensionCount = glfwExtensionCount;
-        createInfo.PpEnabledExtensionNames = glfwExtensions;
-        createInfo.EnabledLayerCount = 0;
-
-        if (vk.CreateInstance(createInfo, null, out instance) != Result.Success)
-        {
-            throw new Exception("failed to create instance!");
-        }
-
-        Marshal.FreeHGlobal((IntPtr)appInfo.PApplicationName);
-        Marshal.FreeHGlobal((IntPtr)appInfo.PEngineName);
+        instance = vk.CreateInstance(createInfo);
     }
 }

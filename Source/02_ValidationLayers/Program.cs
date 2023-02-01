@@ -3,6 +3,10 @@ using Silk.NET.Core;
 using Silk.NET.Core.Native;
 using Silk.NET.Vulkan;
 using Silk.NET.Vulkan.Extensions.EXT;
+using SilkNetConvenience;
+using SilkNetConvenience.CreateInfo;
+using SilkNetConvenience.CreateInfo.EXT;
+using SilkNetConvenience.Wrappers;
 
 var app = new HelloTriangleApplication_02();
 app.Run();
@@ -16,8 +20,8 @@ public unsafe class HelloTriangleApplication_02 : HelloTriangleApplication_01
         "VK_LAYER_KHRONOS_validation"
     };
 
-    protected ExtDebugUtils? debugUtils;
-    protected DebugUtilsMessengerEXT debugMessenger;
+    protected VulkanDebugUtils? debugUtils;
+    protected VulkanDebugUtilsMessenger? debugMessenger;
     
     protected override void InitVulkan()
     {
@@ -30,10 +34,10 @@ public unsafe class HelloTriangleApplication_02 : HelloTriangleApplication_01
         if (EnableValidationLayers)
         {
             //DestroyDebugUtilsMessenger equivalent to method DestroyDebugUtilsMessengerEXT from original tutorial.
-            debugUtils!.DestroyDebugUtilsMessenger(instance, debugMessenger, null);
+            debugMessenger!.Dispose();
         }
 
-        vk!.DestroyInstance(instance, null);
+        instance!.Dispose();
         vk!.Dispose();
 
         window?.Dispose();
@@ -41,66 +45,48 @@ public unsafe class HelloTriangleApplication_02 : HelloTriangleApplication_01
 
     protected override void CreateInstance()
     {
-        vk = Vk.GetApi();
+        vk = new VulkanContext();
 
         if (EnableValidationLayers && !CheckValidationLayerSupport())
         {
             throw new Exception("validation layers requested, but not available!");
         }
 
-        ApplicationInfo appInfo = new()
+        ApplicationInformation appInfo = new()
         {
-            SType = StructureType.ApplicationInfo,
-            PApplicationName = (byte*)Marshal.StringToHGlobalAnsi("Hello Triangle"),
+            ApplicationName = "Hello Triangle",
             ApplicationVersion = new Version32(1, 0, 0),
-            PEngineName = (byte*)Marshal.StringToHGlobalAnsi("No Engine"),
+            EngineName = "No Engine",
             EngineVersion = new Version32(1, 0, 0),
             ApiVersion = Vk.Version12
         };
 
-        InstanceCreateInfo createInfo = new()
+        InstanceCreateInformation createInfo = new()
         {
-            SType = StructureType.InstanceCreateInfo,
-            PApplicationInfo = &appInfo
+            ApplicationInfo = appInfo
         };
 
         var extensions = GetRequiredExtensions();
-        createInfo.EnabledExtensionCount = (uint)extensions.Length;
-        createInfo.PpEnabledExtensionNames = (byte**)SilkMarshal.StringArrayToPtr(extensions);
+        createInfo.EnabledExtensions = extensions;
         
         if (EnableValidationLayers)
         {
-            createInfo.EnabledLayerCount = (uint)validationLayers.Length;
-            createInfo.PpEnabledLayerNames = (byte**)SilkMarshal.StringArrayToPtr(validationLayers);
+            createInfo.EnabledLayers = validationLayers;
 
-            DebugUtilsMessengerCreateInfoEXT debugCreateInfo = new ();
+            DebugUtilsMessengerCreateInformation debugCreateInfo = new ();
             PopulateDebugMessengerCreateInfo(ref debugCreateInfo);
-            createInfo.PNext = &debugCreateInfo;
+            createInfo.DebugUtilsMessengerCreateInfo = debugCreateInfo;
         }
         else 
         {
-            createInfo.EnabledLayerCount = 0;
-            createInfo.PNext = null;
+            createInfo.EnabledLayers = Array.Empty<string>();
         }
 
-        if (vk.CreateInstance(createInfo, null, out instance) != Result.Success)
-        {
-            throw new Exception("failed to create instance!");
-        }
-
-        Marshal.FreeHGlobal((IntPtr)appInfo.PApplicationName);
-        Marshal.FreeHGlobal((IntPtr)appInfo.PEngineName);
-        SilkMarshal.Free((nint)createInfo.PpEnabledExtensionNames);
-
-        if (EnableValidationLayers)
-        {
-            SilkMarshal.Free((nint)createInfo.PpEnabledLayerNames);
-        }
+        instance = vk.CreateInstance(createInfo);
     }
 
-    protected void PopulateDebugMessengerCreateInfo(ref DebugUtilsMessengerCreateInfoEXT createInfo)
+    protected void PopulateDebugMessengerCreateInfo(ref DebugUtilsMessengerCreateInformation createInfo)
     {
-        createInfo.SType = StructureType.DebugUtilsMessengerCreateInfoExt;
         createInfo.MessageSeverity = DebugUtilsMessageSeverityFlagsEXT.VerboseBitExt |
                                      DebugUtilsMessageSeverityFlagsEXT.WarningBitExt |
                                      DebugUtilsMessageSeverityFlagsEXT.ErrorBitExt;
@@ -115,15 +101,12 @@ public unsafe class HelloTriangleApplication_02 : HelloTriangleApplication_01
         if (!EnableValidationLayers) return;
 
         //TryGetInstanceExtension equivalent to method CreateDebugUtilsMessengerEXT from original tutorial.
-        if (!vk!.TryGetInstanceExtension(instance, out debugUtils)) return;
+        debugUtils = instance!.GetDebugUtilsExtension();
 
-        DebugUtilsMessengerCreateInfoEXT createInfo = new();
+        DebugUtilsMessengerCreateInformation createInfo = new();
         PopulateDebugMessengerCreateInfo(ref createInfo);
 
-        if (debugUtils!.CreateDebugUtilsMessenger(instance, in createInfo, null, out debugMessenger) != Result.Success)
-        {
-            throw new Exception("failed to set up debug messenger!");
-        }
+        debugMessenger = debugUtils.CreateDebugUtilsMessenger(createInfo);
     }
 
     protected string[] GetRequiredExtensions()
@@ -139,17 +122,10 @@ public unsafe class HelloTriangleApplication_02 : HelloTriangleApplication_01
         return extensions;
     }
 
-    protected bool CheckValidationLayerSupport()
-    {
-        uint layerCount = 0;
-        vk!.EnumerateInstanceLayerProperties(ref layerCount, null);
-        var availableLayers = new LayerProperties[layerCount];
-        fixed (LayerProperties* availableLayersPtr = availableLayers)
-        {
-            vk!.EnumerateInstanceLayerProperties(ref layerCount, availableLayersPtr);
-        }
+    protected bool CheckValidationLayerSupport() {
+        var availableLayers = vk!.EnumerateInstanceLayerProperties();
 
-        var availableLayerNames = availableLayers.Select(layer => Marshal.PtrToStringAnsi((IntPtr)layer.LayerName)).ToHashSet();
+        var availableLayerNames = availableLayers.Select(layer => layer.GetLayerName()).ToHashSet();
 
         return validationLayers.All(availableLayerNames.Contains);
     }

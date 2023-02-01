@@ -30,7 +30,7 @@ public unsafe class HelloTriangleApplication_12 : HelloTriangleApplication_11
         }
 
         khrSurface!.DestroySurface(instance, surface, null);
-        vk!.DestroyInstance(instance, null);
+        instance!.Dispose()
         vk!.Dispose();
 
         window?.Dispose();
