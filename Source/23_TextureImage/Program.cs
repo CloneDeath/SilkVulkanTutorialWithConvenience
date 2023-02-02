@@ -42,8 +42,8 @@ public unsafe class HelloTriangleApplication_23 : HelloTriangleApplication_22
 
         vk!.DestroyDescriptorSetLayout(device, descriptorSetLayout, null);
 
-        vk!.DestroyBuffer(device, indexBuffer, null);
-        vk!.FreeMemory(device, indexBufferMemory, null);
+        indexBuffer?.Dispose();
+        indexBufferMemory?.Dispose();
 
         vertexBuffer!.Dispose();
         vertexBufferMemory!.Dispose();
@@ -85,7 +85,7 @@ public unsafe class HelloTriangleApplication_23 : HelloTriangleApplication_22
         void* data;
         vk!.MapMemory(device, stagingBufferMemory, 0, imageSize, 0, &data);
         img.CopyPixelDataTo(new Span<byte>(data, (int)imageSize));
-        vk!.UnmapMemory(device, stagingBufferMemory);
+        stagingBufferMemory.UnmapMemory();
 
         CreateImage((uint)img.Width, (uint)img.Height, Format.R8G8B8A8Srgb, ImageTiling.Optimal, ImageUsageFlags.TransferDstBit | ImageUsageFlags.SampledBit, MemoryPropertyFlags.DeviceLocalBit, ref textureImage, ref textureImageMemory);
 
@@ -93,8 +93,8 @@ public unsafe class HelloTriangleApplication_23 : HelloTriangleApplication_22
         CopyBufferToImage(stagingBuffer, textureImage, (uint)img.Width, (uint)img.Height);
         TransitionImageLayout(textureImage, Format.R8G8B8A8Srgb, ImageLayout.TransferDstOptimal, ImageLayout.ShaderReadOnlyOptimal);
 
-        vk!.DestroyBuffer(device, stagingBuffer, null);
-        vk!.FreeMemory(device, stagingBufferMemory, null);
+        stagingBuffer.Dispose();
+        stagingBufferMemory.Dispose();
     }
 
     protected void CreateImage(uint width, uint height, Format format, ImageTiling tiling, ImageUsageFlags usage, MemoryPropertyFlags properties, ref Image image, ref DeviceMemory imageMemory)
@@ -253,7 +253,7 @@ public unsafe class HelloTriangleApplication_23 : HelloTriangleApplication_22
 
     protected void EndSingleTimeCommands(CommandBuffer commandBuffer)
     {
-        vk!.EndCommandBuffer(commandBuffer);
+        commandBuffer.End();
 
         SubmitInfo submitInfo = new()
         {

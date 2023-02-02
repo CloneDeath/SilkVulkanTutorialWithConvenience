@@ -531,55 +531,27 @@ public unsafe class HelloTriangleApplication_26 : HelloTriangleApplication_25
     {
         ulong bufferSize = (ulong)(Unsafe.SizeOf<Vertex_26>() * vertices_26.Length);
 
-        Buffer stagingBuffer = default;
-        DeviceMemory stagingBufferMemory = default;
-        CreateBuffer(bufferSize, BufferUsageFlags.TransferSrcBit, MemoryPropertyFlags.HostVisibleBit | MemoryPropertyFlags.HostCoherentBit, ref stagingBuffer, ref stagingBufferMemory);
+        var (stagingBuffer, stagingBufferMemory) = CreateBuffer(bufferSize, BufferUsageFlags.TransferSrcBit, MemoryPropertyFlags.HostVisibleBit | MemoryPropertyFlags.HostCoherentBit);
         
-        void* data;
-        vk!.MapMemory(device, stagingBufferMemory, 0, bufferSize, 0, &data);
+        var data = stagingBufferMemory.MapMemory<Vertex_17>();
             vertices_26.AsSpan().CopyTo(new Span<Vertex_26>(data, vertices_26.Length));
-        vk!.UnmapMemory(device, stagingBufferMemory);
+        stagingBufferMemory.UnmapMemory();
 
-        CreateBuffer(bufferSize, BufferUsageFlags.TransferDstBit | BufferUsageFlags.VertexBufferBit, MemoryPropertyFlags.DeviceLocalBit, ref vertexBuffer, ref vertexBufferMemory);
+        (vertexBuffer, vertexBufferMemory) = CreateBuffer(bufferSize, BufferUsageFlags.TransferDstBit | BufferUsageFlags.VertexBufferBit, MemoryPropertyFlags.DeviceLocalBit);
 
         CopyBuffer(stagingBuffer, vertexBuffer, bufferSize);
 
-        vk!.DestroyBuffer(device, stagingBuffer, null);
-        vk!.FreeMemory(device, stagingBufferMemory, null);
+        stagingBuffer.Dispose();
+        stagingBufferMemory.Dispose();
     }
 
     protected override void CreateCommandBuffers()
     {
-        commandBuffers = new CommandBuffer[swapchainFramebuffers!.Length];
-
-        CommandBufferAllocateInfo allocInfo = new()
-        {
-            SType = StructureType.CommandBufferAllocateInfo,
-            CommandPool = commandPool,
-            Level = CommandBufferLevel.Primary,
-            CommandBufferCount = (uint)commandBuffers.Length,
-        };
-
-        fixed(CommandBuffer* commandBuffersPtr = commandBuffers)
-        {
-            if (vk!.AllocateCommandBuffers(device, allocInfo, commandBuffersPtr) != Result.Success)
-            {
-                throw new Exception("failed to allocate command buffers!");
-            }
-        }
-        
+        commandBuffers = commandPool!.AllocateCommandBuffers((uint)swapchainFramebuffers!.Length);
 
         for (int i = 0; i < commandBuffers.Length; i++)
         {
-            CommandBufferBeginInfo beginInfo = new()
-            {
-                SType = StructureType.CommandBufferBeginInfo,
-            };
-
-            if(vk!.BeginCommandBuffer(commandBuffers[i], beginInfo ) != Result.Success)
-            {
-                throw new Exception("failed to begin recording command buffer!");
-            }
+            commandBuffers[i].Begin();
 
             RenderPassBeginInfo renderPassInfo = new()
             {
@@ -611,25 +583,18 @@ public unsafe class HelloTriangleApplication_26 : HelloTriangleApplication_25
                 renderPassInfo.ClearValueCount = (uint)clearValues.Length;
                 renderPassInfo.PClearValues = clearValuesPtr;
 
-                vk!.CmdBeginRenderPass(commandBuffers[i], &renderPassInfo, SubpassContents.Inline);
+                commandBuffers[i].BeginRenderPass(renderPassInfo, SubpassContents.Inline);
             }
 
-            vk!.CmdBindPipeline(commandBuffers[i], PipelineBindPoint.Graphics, graphicsPipeline);
+            commandBuffers[i].BindPipeline(PipelineBindPoint.Graphics, graphicsPipeline!);
 
-                var vertexBuffers = new[] { vertexBuffer };
-                var offsets = new ulong[] { 0 };
+                commandBuffers[i].BindVertexBuffer(0, vertexBuffer!);
 
-                fixed (ulong* offsetsPtr = offsets)
-                fixed (Buffer* vertexBuffersPtr = vertexBuffers)
-                {
-                    vk!.CmdBindVertexBuffers(commandBuffers[i], 0, 1, vertexBuffersPtr, offsetsPtr);
-                }
-
-                vk!.CmdBindIndexBuffer(commandBuffers[i], indexBuffer, 0, IndexType.Uint16);
+                commandBuffers[i].BindIndexBuffer(indexBuffer!, 0, IndexType.Uint16);
 
                 vk!.CmdBindDescriptorSets(commandBuffers[i], PipelineBindPoint.Graphics, pipelineLayout, 0, 1, descriptorSets![i], 0, null);
 
-                vk!.CmdDrawIndexed(commandBuffers[i], (uint)indices.Length, 1, 0, 0, 0);
+                commandBuffers[i].DrawIndexed((uint)indices.Length);
 
             commandBuffers[i].EndRenderPass();
             

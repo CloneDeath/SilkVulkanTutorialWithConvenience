@@ -328,36 +328,11 @@ public unsafe class HelloTriangleApplication_22 : HelloTriangleApplication_21
 
     protected override void CreateCommandBuffers()
     {
-        commandBuffers = new CommandBuffer[swapchainFramebuffers!.Length];
-
-        CommandBufferAllocateInfo allocInfo = new()
-        {
-            SType = StructureType.CommandBufferAllocateInfo,
-            CommandPool = commandPool,
-            Level = CommandBufferLevel.Primary,
-            CommandBufferCount = (uint)commandBuffers.Length,
-        };
-
-        fixed(CommandBuffer* commandBuffersPtr = commandBuffers)
-        {
-            if (vk!.AllocateCommandBuffers(device, allocInfo, commandBuffersPtr) != Result.Success)
-            {
-                throw new Exception("failed to allocate command buffers!");
-            }
-        }
-        
+        commandBuffers = commandPool!.AllocateCommandBuffers((uint)swapchainFramebuffers!.Length);
 
         for (int i = 0; i < commandBuffers.Length; i++)
         {
-            CommandBufferBeginInfo beginInfo = new()
-            {
-                SType = StructureType.CommandBufferBeginInfo,
-            };
-
-            if(vk!.BeginCommandBuffer(commandBuffers[i], beginInfo ) != Result.Success)
-            {
-                throw new Exception("failed to begin recording command buffer!");
-            }
+            commandBuffers[i].Begin();
 
             RenderPassBeginInfo renderPassInfo = new()
             {
@@ -379,24 +354,17 @@ public unsafe class HelloTriangleApplication_22 : HelloTriangleApplication_21
             renderPassInfo.ClearValueCount = 1;
             renderPassInfo.PClearValues = &clearColor;
 
-            vk!.CmdBeginRenderPass(commandBuffers[i], &renderPassInfo, SubpassContents.Inline);
+            commandBuffers[i].BeginRenderPass(renderPassInfo, SubpassContents.Inline);
 
-                vk!.CmdBindPipeline(commandBuffers[i], PipelineBindPoint.Graphics, graphicsPipeline);
+                commandBuffers[i].BindPipeline(PipelineBindPoint.Graphics, graphicsPipeline!);
 
-                var vertexBuffers = new[] { vertexBuffer };
-                var offsets = new ulong[] { 0 };
+                commandBuffers[i].BindVertexBuffer(0, vertexBuffer!);
 
-                fixed (ulong* offsetsPtr = offsets)
-                fixed (Buffer* vertexBuffersPtr = vertexBuffers)
-                {
-                    vk!.CmdBindVertexBuffers(commandBuffers[i], 0, 1, vertexBuffersPtr, offsetsPtr);
-                }
-
-                vk!.CmdBindIndexBuffer(commandBuffers[i], indexBuffer, 0, IndexType.Uint16);
+                commandBuffers[i].BindIndexBuffer(indexBuffer!, 0, IndexType.Uint16);
 
                 vk!.CmdBindDescriptorSets(commandBuffers[i], PipelineBindPoint.Graphics, pipelineLayout, 0, 1, descriptorSets![i], 0, null);
 
-                vk!.CmdDrawIndexed(commandBuffers[i], (uint)indices.Length, 1, 0, 0, 0);
+                commandBuffers[i].DrawIndexed((uint)indices.Length);
 
             commandBuffers[i].EndRenderPass();
 

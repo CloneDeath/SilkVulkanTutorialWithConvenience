@@ -77,8 +77,8 @@ public unsafe class HelloTriangleApplication_21 : HelloTriangleApplication_20
 
         vk!.DestroyDescriptorSetLayout(device, descriptorSetLayout, null);
 
-        vk!.DestroyBuffer(device, indexBuffer, null);
-        vk!.FreeMemory(device, indexBufferMemory, null);
+        indexBuffer?.Dispose();
+        indexBufferMemory?.Dispose();
 
         vertexBuffer!.Dispose();
         vertexBufferMemory!.Dispose();
@@ -322,7 +322,7 @@ public unsafe class HelloTriangleApplication_21 : HelloTriangleApplication_20
 
         for (int i = 0; i < swapchainImages.Length; i++)
         {
-            CreateBuffer(bufferSize, BufferUsageFlags.UniformBufferBit, MemoryPropertyFlags.HostVisibleBit | MemoryPropertyFlags.HostCoherentBit, ref uniformBuffers[i], ref uniformBuffersMemory[i]);   
+            (uniformBuffers[i], uniformBuffersMemory[i]) = CreateBuffer(bufferSize, BufferUsageFlags.UniformBufferBit, MemoryPropertyFlags.HostVisibleBit | MemoryPropertyFlags.HostCoherentBit);   
         }
 
     }

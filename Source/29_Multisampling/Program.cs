@@ -456,14 +456,12 @@ public unsafe class HelloTriangleApplication_29 : HelloTriangleApplication_28
         ulong imageSize = (ulong)(img.Width * img.Height * img.PixelType.BitsPerPixel / 8);
         mipLevels = (uint)(Math.Floor(Math.Log2(Math.Max(img.Width, img.Height))) + 1);
 
-        Buffer stagingBuffer = default;
-        DeviceMemory stagingBufferMemory = default;
-        CreateBuffer(imageSize, BufferUsageFlags.TransferSrcBit, MemoryPropertyFlags.HostVisibleBit | MemoryPropertyFlags.HostCoherentBit, ref stagingBuffer, ref stagingBufferMemory);
+        var (stagingBuffer, stagingBufferMemory) = CreateBuffer(imageSize, BufferUsageFlags.TransferSrcBit, MemoryPropertyFlags.HostVisibleBit | MemoryPropertyFlags.HostCoherentBit);
 
         void* data;
         vk!.MapMemory(device, stagingBufferMemory, 0, imageSize, 0, &data);
         img.CopyPixelDataTo(new Span<byte>(data, (int)imageSize));
-        vk!.UnmapMemory(device, stagingBufferMemory);
+        stagingBufferMemory.UnmapMemory();
 
         CreateImage((uint)img.Width, (uint)img.Height, mipLevels, SampleCountFlags.Count1Bit, Format.R8G8B8A8Srgb, ImageTiling.Optimal, ImageUsageFlags.TransferSrcBit | ImageUsageFlags.TransferDstBit | ImageUsageFlags.SampledBit, MemoryPropertyFlags.DeviceLocalBit, ref textureImage, ref textureImageMemory);
 
@@ -471,8 +469,8 @@ public unsafe class HelloTriangleApplication_29 : HelloTriangleApplication_28
         CopyBufferToImage(stagingBuffer, textureImage, (uint)img.Width, (uint)img.Height);
         //Transitioned to VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL while generating mipmaps
 
-        vk!.DestroyBuffer(device, stagingBuffer, null);
-        vk!.FreeMemory(device, stagingBufferMemory, null);
+        stagingBuffer.Dispose();
+        stagingBufferMemory.Dispose();
 
         GenerateMipMaps(textureImage, Format.R8G8B8A8Srgb, (uint)img.Width, (uint)img.Height, mipLevels);
     }

@@ -48,8 +48,8 @@ public unsafe class HelloTriangleApplication_24 : HelloTriangleApplication_23
 
         vk!.DestroyDescriptorSetLayout(device, descriptorSetLayout, null);
 
-        vk!.DestroyBuffer(device, indexBuffer, null);
-        vk!.FreeMemory(device, indexBufferMemory, null);
+        indexBuffer?.Dispose();
+        indexBufferMemory?.Dispose();
 
         vertexBuffer!.Dispose();
         vertexBufferMemory!.Dispose();

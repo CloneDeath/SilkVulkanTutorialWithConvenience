@@ -264,21 +264,18 @@ public unsafe class HelloTriangleApplication_25 : HelloTriangleApplication_24
     {
         ulong bufferSize = (ulong)(Unsafe.SizeOf<Vertex_25>() * vertices_25.Length);
 
-        Buffer stagingBuffer = default;
-        DeviceMemory stagingBufferMemory = default;
-        CreateBuffer(bufferSize, BufferUsageFlags.TransferSrcBit, MemoryPropertyFlags.HostVisibleBit | MemoryPropertyFlags.HostCoherentBit, ref stagingBuffer, ref stagingBufferMemory);
+        var (stagingBuffer, stagingBufferMemory) = CreateBuffer(bufferSize, BufferUsageFlags.TransferSrcBit, MemoryPropertyFlags.HostVisibleBit | MemoryPropertyFlags.HostCoherentBit);
         
-        void* data;
-        vk!.MapMemory(device, stagingBufferMemory, 0, bufferSize, 0, &data);
+        var data = stagingBufferMemory.MapMemory<Vertex_17>();
             vertices_25.AsSpan().CopyTo(new Span<Vertex_25>(data, vertices_25.Length));
-        vk!.UnmapMemory(device, stagingBufferMemory);
+        stagingBufferMemory.UnmapMemory();
 
-        CreateBuffer(bufferSize, BufferUsageFlags.TransferDstBit | BufferUsageFlags.VertexBufferBit, MemoryPropertyFlags.DeviceLocalBit, ref vertexBuffer, ref vertexBufferMemory);
+        (vertexBuffer, vertexBufferMemory) = CreateBuffer(bufferSize, BufferUsageFlags.TransferDstBit | BufferUsageFlags.VertexBufferBit, MemoryPropertyFlags.DeviceLocalBit);
 
         CopyBuffer(stagingBuffer, vertexBuffer, bufferSize);
 
-        vk!.DestroyBuffer(device, stagingBuffer, null);
-        vk!.FreeMemory(device, stagingBufferMemory, null);
+        stagingBuffer.Dispose();
+        stagingBufferMemory.Dispose();
     }
 
     protected override void CreateDescriptorPool()

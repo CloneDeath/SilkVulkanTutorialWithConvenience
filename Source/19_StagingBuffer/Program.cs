@@ -1,112 +1,57 @@
 ﻿using System.Runtime.CompilerServices;
 using Silk.NET.Vulkan;
+using SilkNetConvenience.Buffers;
+using SilkNetConvenience.Memory;
 using Buffer = Silk.NET.Vulkan.Buffer;
 
 var app = new HelloTriangleApplication_19();
 app.Run();
 
-public unsafe class HelloTriangleApplication_19 : HelloTriangleApplication_18
+public class HelloTriangleApplication_19 : HelloTriangleApplication_18
 {
     protected override void CreateVertexBuffer()
     {
         ulong bufferSize = (ulong)(Unsafe.SizeOf<Vertex_17>() * vertices.Length);
 
-        Buffer stagingBuffer = default;
-        DeviceMemory stagingBufferMemory = default;
-        CreateBuffer(bufferSize, BufferUsageFlags.TransferSrcBit, MemoryPropertyFlags.HostVisibleBit | MemoryPropertyFlags.HostCoherentBit, ref stagingBuffer, ref stagingBufferMemory);
-        
-        void* data;
-        vk!.MapMemory(device, stagingBufferMemory, 0, bufferSize, 0, &data);
-            vertices.AsSpan().CopyTo(new Span<Vertex_17>(data, vertices.Length));
-        vk!.UnmapMemory(device, stagingBufferMemory);
+        var (stagingBuffer, stagingBufferMemory) = CreateBuffer(bufferSize, BufferUsageFlags.TransferSrcBit, 
+            MemoryPropertyFlags.HostVisibleBit | MemoryPropertyFlags.HostCoherentBit);
 
-        CreateBuffer(bufferSize, BufferUsageFlags.TransferDstBit | BufferUsageFlags.VertexBufferBit, MemoryPropertyFlags.DeviceLocalBit, ref vertexBuffer, ref vertexBufferMemory);
+        var data = stagingBufferMemory.MapMemory<Vertex_17>();
+            vertices.AsSpan().CopyTo(data);
+        stagingBufferMemory.UnmapMemory();
+
+        (vertexBuffer, vertexBufferMemory) = CreateBuffer(bufferSize, BufferUsageFlags.TransferDstBit | BufferUsageFlags.VertexBufferBit, MemoryPropertyFlags.DeviceLocalBit);
 
         CopyBuffer(stagingBuffer, vertexBuffer, bufferSize);
 
-        vk!.DestroyBuffer(device, stagingBuffer, null);
-        vk!.FreeMemory(device, stagingBufferMemory, null);
+        stagingBuffer.Dispose();
+        stagingBufferMemory.Dispose();
     }
 
-    protected void CreateBuffer(ulong size, BufferUsageFlags usage, MemoryPropertyFlags properties, ref Buffer buffer, ref DeviceMemory bufferMemory)
+    protected (VulkanBuffer, VulkanDeviceMemory) CreateBuffer(ulong size, BufferUsageFlags usage, MemoryPropertyFlags properties)
     {
-        BufferCreateInfo bufferInfo = new()
-        {
-            SType = StructureType.BufferCreateInfo,
+        BufferCreateInformation bufferInfo = new()
+        { 
             Size = size,
             Usage = usage,
             SharingMode = SharingMode.Exclusive,
         };
 
-        fixed (Buffer* bufferPtr = &buffer)
-        {
-            if (vk!.CreateBuffer(device, bufferInfo, null, bufferPtr) != Result.Success)
-            {
-                throw new Exception("failed to create vertex buffer!");
-            }
-        }
-
-        MemoryRequirements memRequirements;
-        vk!.GetBufferMemoryRequirements(device, buffer, out memRequirements);
-
-        MemoryAllocateInfo allocateInfo = new()
-        {
-            SType = StructureType.MemoryAllocateInfo,
-            AllocationSize = memRequirements.Size,
-            MemoryTypeIndex = FindMemoryType(memRequirements.MemoryTypeBits, properties),
-        };
-
-        fixed (DeviceMemory* bufferMemoryPtr = &bufferMemory)
-        {
-            if (vk!.AllocateMemory(device, allocateInfo, null, bufferMemoryPtr) != Result.Success)
-            {
-                throw new Exception("failed to allocate vertex buffer memory!");
-            }
-        }
-
-        vk!.BindBufferMemory(device, buffer, bufferMemory, 0);
+        var buffer = device!.CreateBuffer(bufferInfo);
+        var bufferMemory = device!.AllocateMemoryFor(buffer, properties);
+        buffer.BindMemory(bufferMemory);
+        return (buffer, bufferMemory);
     }
 
     protected virtual void CopyBuffer(Buffer srcBuffer, Buffer dstBuffer, ulong size)
     {
-        CommandBufferAllocateInfo allocateInfo = new()
-        {
-            SType = StructureType.CommandBufferAllocateInfo,
-            Level = CommandBufferLevel.Primary,
-            CommandPool = commandPool,
-            CommandBufferCount = 1,
-        };
+        using var commandBuffer = commandPool!.AllocateCommandBuffer();
 
-        CommandBuffer commandBuffer;
-        vk!.AllocateCommandBuffers(device, allocateInfo, out commandBuffer);
+        commandBuffer.Begin(CommandBufferUsageFlags.OneTimeSubmitBit);
+            commandBuffer.CopyBuffer(srcBuffer, dstBuffer, size);
+        commandBuffer.End();
 
-        CommandBufferBeginInfo beginInfo = new()
-        {
-            SType = StructureType.CommandBufferBeginInfo,
-            Flags = CommandBufferUsageFlags.OneTimeSubmitBit,
-        };
-
-        vk!.BeginCommandBuffer(commandBuffer, beginInfo);
-
-            BufferCopy copyRegion = new()
-            {
-                Size = size,                
-            };
-
-            vk!.CmdCopyBuffer(commandBuffer, srcBuffer, dstBuffer, 1, copyRegion);
-
-        vk!.EndCommandBuffer(commandBuffer);
-
-        SubmitInfo submitInfo = new()
-        {
-            SType = StructureType.SubmitInfo,
-            CommandBufferCount = 1,
-            PCommandBuffers = &commandBuffer,
-        };
-
-        vk!.QueueSubmit(graphicsQueue, 1, submitInfo, default);
-        vk!.QueueWaitIdle(graphicsQueue);
-
-        vk!.FreeCommandBuffers(device, commandPool, 1, commandBuffer);
+        graphicsQueue!.Submit(commandBuffer);
+        graphicsQueue!.WaitIdle();
     }
 }
