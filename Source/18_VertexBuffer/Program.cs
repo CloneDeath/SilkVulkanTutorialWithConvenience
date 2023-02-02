@@ -1,13 +1,15 @@
 ﻿using Silk.NET.Vulkan;
-using Buffer = Silk.NET.Vulkan.Buffer;
+using SilkNetConvenience.Buffers;
+using SilkNetConvenience.Memory;
+using SilkNetConvenience.RenderPasses;
 
 var app = new HelloTriangleApplication_18();
 app.Run();
 
 public unsafe class HelloTriangleApplication_18 : HelloTriangleApplication_17
 {
-    protected Buffer vertexBuffer;
-    protected DeviceMemory vertexBufferMemory;
+    protected VulkanBuffer? vertexBuffer;
+    protected VulkanDeviceMemory? vertexBufferMemory;
 
     protected override void InitVulkan()
     {
@@ -31,8 +33,8 @@ public unsafe class HelloTriangleApplication_18 : HelloTriangleApplication_17
     {
         CleanUpSwapchain();
 
-        vk!.DestroyBuffer(device, vertexBuffer, null);
-        vk!.FreeMemory(device,vertexBufferMemory, null);
+        vertexBuffer!.Dispose();
+        vertexBufferMemory!.Dispose();
 
         for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
         {
@@ -60,101 +62,36 @@ public unsafe class HelloTriangleApplication_18 : HelloTriangleApplication_17
 
     protected virtual void CreateVertexBuffer()
     {
-        BufferCreateInfo bufferInfo = new()
+        BufferCreateInformation bufferInfo = new()
         {
-            SType = StructureType.BufferCreateInfo,
             Size = (ulong)(sizeof(Vertex_17) * vertices.Length),
             Usage = BufferUsageFlags.VertexBufferBit,
             SharingMode = SharingMode.Exclusive,
         };
 
-        fixed(Buffer* vertexBufferPtr = &vertexBuffer)
-        {
-            if (vk!.CreateBuffer(device, bufferInfo, null, vertexBufferPtr) != Result.Success)
-            {
-                throw new Exception("failed to create vertex buffer!");
-            }
-        }
+        vertexBuffer = device!.CreateBuffer(bufferInfo);
 
-        MemoryRequirements memRequirements;
-        vk!.GetBufferMemoryRequirements(device, vertexBuffer, out memRequirements);
+        vertexBufferMemory = device!.AllocateMemoryFor(vertexBuffer,
+                                                       MemoryPropertyFlags.HostVisibleBit |
+                                                       MemoryPropertyFlags.HostCoherentBit);
 
-        MemoryAllocateInfo allocateInfo = new()
-        {
-            SType = StructureType.MemoryAllocateInfo,
-            AllocationSize = memRequirements.Size,
-            MemoryTypeIndex = FindMemoryType(memRequirements.MemoryTypeBits, MemoryPropertyFlags.HostVisibleBit | MemoryPropertyFlags.HostCoherentBit),
-        };
+        vertexBuffer.BindMemory(vertexBufferMemory);
 
-        fixed (DeviceMemory* vertexBufferMemoryPtr = &vertexBufferMemory)
-        {
-            if (vk!.AllocateMemory(device, allocateInfo, null, vertexBufferMemoryPtr) != Result.Success)
-            {
-                throw new Exception("failed to allocate vertex buffer memory!");
-            }
-        }
-
-        vk!.BindBufferMemory(device, vertexBuffer, vertexBufferMemory, 0);
-
-        void* data;
-        vk!.MapMemory(device, vertexBufferMemory, 0, bufferInfo.Size, 0, &data);
-            vertices.AsSpan().CopyTo(new Span<Vertex_17>(data, vertices.Length));
-        vk!.UnmapMemory(device, vertexBufferMemory);
-    }
-
-    protected uint FindMemoryType(uint typeFilter, MemoryPropertyFlags properties)
-    {
-        PhysicalDeviceMemoryProperties memProperties;
-        vk!.GetPhysicalDeviceMemoryProperties(physicalDevice, out memProperties);
-
-        for (int i = 0; i < memProperties.MemoryTypeCount; i++)
-        {
-            if ((typeFilter & (1 << i)) != 0 && (memProperties.MemoryTypes[i].PropertyFlags & properties) == properties)
-            {
-                return (uint)i;
-            }
-        }
-
-        throw new Exception("failed to find suitable memory type!");
+        var data = vertexBufferMemory.MapMemory<Vertex_17>();
+        vertices.AsSpan().CopyTo(data);
+        vertexBufferMemory.UnmapMemory();
     }
 
     protected override void CreateCommandBuffers()
     {
-        commandBuffers = new CommandBuffer[swapchainFramebuffers!.Length];
+        commandBuffers = commandPool!.AllocateCommandBuffers((uint)swapchainFramebuffers!.Length);
 
-        CommandBufferAllocateInfo allocInfo = new()
-        {
-            SType = StructureType.CommandBufferAllocateInfo,
-            CommandPool = commandPool,
-            Level = CommandBufferLevel.Primary,
-            CommandBufferCount = (uint)commandBuffers.Length,
-        };
+        for (int i = 0; i < commandBuffers.Length; i++) {
+            commandBuffers[i].Begin();
 
-        fixed(CommandBuffer* commandBuffersPtr = commandBuffers)
-        {
-            if (vk!.AllocateCommandBuffers(device, allocInfo, commandBuffersPtr) != Result.Success)
+            RenderPassBeginInformation renderPassInfo = new()
             {
-                throw new Exception("failed to allocate command buffers!");
-            }
-        }
-        
-
-        for (int i = 0; i < commandBuffers.Length; i++)
-        {
-            CommandBufferBeginInfo beginInfo = new()
-            {
-                SType = StructureType.CommandBufferBeginInfo,
-            };
-
-            if(vk!.BeginCommandBuffer(commandBuffers[i], beginInfo ) != Result.Success)
-            {
-                throw new Exception("failed to begin recording command buffer!");
-            }
-
-            RenderPassBeginInfo renderPassInfo = new()
-            {
-                SType= StructureType.RenderPassBeginInfo,
-                RenderPass = renderPass,
+                RenderPass = renderPass!,
                 Framebuffer = swapchainFramebuffers[i],
                 RenderArea =
                 {
@@ -168,24 +105,12 @@ public unsafe class HelloTriangleApplication_18 : HelloTriangleApplication_17
                 Color = new (){ Float32_0 = 0, Float32_1 = 0, Float32_2 = 0, Float32_3 = 1 },                
             };
 
-            renderPassInfo.ClearValueCount = 1;
-            renderPassInfo.PClearValues = &clearColor;
+            renderPassInfo.ClearValues = new[]{clearColor};
 
-            vk!.CmdBeginRenderPass(commandBuffers[i], &renderPassInfo, SubpassContents.Inline);
-
-                vk!.CmdBindPipeline(commandBuffers[i], PipelineBindPoint.Graphics, graphicsPipeline);
-
-                var vertexBuffers = new[] { vertexBuffer };
-                var offsets = new ulong[] { 0 };
-
-                fixed (ulong* offsetsPtr = offsets)
-                fixed (Buffer* vertexBuffersPtr = vertexBuffers)
-                {
-                    vk!.CmdBindVertexBuffers(commandBuffers[i], 0, 1, vertexBuffersPtr, offsetsPtr);
-                }
-
-                vk!.CmdDraw(commandBuffers[i], (uint)vertices.Length, 1, 0, 0);
-
+            commandBuffers[i].BeginRenderPass(renderPassInfo, SubpassContents.Inline);
+                commandBuffers[i].BindPipeline(PipelineBindPoint.Graphics, graphicsPipeline!);
+                commandBuffers[i].BindVertexBuffer(0, vertexBuffer!);
+                commandBuffers[i].Draw((uint)vertices.Length);
             commandBuffers[i].EndRenderPass();
 
             commandBuffers[i].End();

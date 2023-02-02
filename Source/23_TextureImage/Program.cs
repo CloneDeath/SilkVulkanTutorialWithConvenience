@@ -45,8 +45,8 @@ public unsafe class HelloTriangleApplication_23 : HelloTriangleApplication_22
         vk!.DestroyBuffer(device, indexBuffer, null);
         vk!.FreeMemory(device, indexBufferMemory, null);
 
-        vk!.DestroyBuffer(device, vertexBuffer, null);
-        vk!.FreeMemory(device,vertexBufferMemory, null);
+        vertexBuffer!.Dispose();
+        vertexBufferMemory!.Dispose();
 
         for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
         {
