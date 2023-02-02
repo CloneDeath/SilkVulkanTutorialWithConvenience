@@ -170,17 +170,13 @@ public class HelloTriangleApplication_16 : HelloTriangleApplication_15
     {
         inFlightFences![currentFrame].Wait();
 
-        uint imageIndex = 0;
-        var result = khrSwapchain!.KhrSwapchain.AcquireNextImage(device!, swapchain!, long.MaxValue,
-                                                    imageAvailableSemaphores![currentFrame], default,
-                                                    ref imageIndex);
-        if (result == Result.ErrorOutOfDateKhr) {
+        uint imageIndex;
+        try {
+            imageIndex = swapchain!.AcquireNextImage(imageAvailableSemaphores![currentFrame]);
+        }
+        catch (ErrorOutOfDateKhrException) {
             RecreateSwapchain();
             return;
-        }
-
-        if (result != Result.SuboptimalKhr && result != Result.Success) {
-            throw new Exception(result.ToString());
         }
 
         if (imagesInFlight![imageIndex] != null) {
@@ -218,7 +214,7 @@ public class HelloTriangleApplication_16 : HelloTriangleApplication_15
             khrSwapchain!.QueuePresent(presentQueue!, presentInfo);
         }
         catch (VulkanResultException ex) {
-            if (ex.Result == Result.ErrorOutOfDateKhr || ex.Result == Result.SuboptimalKhr || frameBufferResized)
+            if (ex.Result is Result.ErrorOutOfDateKhr or Result.SuboptimalKhr || frameBufferResized)
             {
                 frameBufferResized = true;
             }
