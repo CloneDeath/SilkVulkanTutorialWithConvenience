@@ -1,5 +1,4 @@
-﻿using SilkNetConvenience.CreateInfo;
-using SilkNetConvenience.Wrappers;
+﻿using SilkNetConvenience.Buffers;
 
 var app = new HelloTriangleApplication_13();
 app.Run();

@@ -1,6 +1,5 @@
 ﻿using Silk.NET.Vulkan;
-using SilkNetConvenience.CreateInfo.Images;
-using SilkNetConvenience.Wrappers;
+using SilkNetConvenience.Images;
 
 var app = new HelloTriangleApplication_07();
 app.Run();

@@ -4,10 +4,8 @@ using Silk.NET.Core.Native;
 using Silk.NET.Vulkan;
 using Silk.NET.Vulkan.Extensions.EXT;
 using SilkNetConvenience;
-using SilkNetConvenience.CreateInfo;
-using SilkNetConvenience.CreateInfo.EXT;
-using SilkNetConvenience.Wrappers;
-using SilkNetConvenience.Wrappers.EXT;
+using SilkNetConvenience.EXT;
+using SilkNetConvenience.Instances;
 
 var app = new HelloTriangleApplication_02();
 app.Run();

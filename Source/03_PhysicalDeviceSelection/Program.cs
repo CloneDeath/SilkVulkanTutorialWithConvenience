@@ -1,5 +1,5 @@
 ﻿using Silk.NET.Vulkan;
-using SilkNetConvenience.Wrappers;
+using SilkNetConvenience.Devices;
 
 var app = new HelloTriangleApplication_03();
 app.Run();

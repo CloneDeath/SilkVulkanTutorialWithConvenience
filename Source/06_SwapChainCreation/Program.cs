@@ -1,10 +1,8 @@
 ﻿using Silk.NET.Vulkan;
 using Silk.NET.Vulkan.Extensions.KHR;
 using SilkNetConvenience;
-using SilkNetConvenience.CreateInfo;
-using SilkNetConvenience.CreateInfo.KHR;
-using SilkNetConvenience.Wrappers;
-using SilkNetConvenience.Wrappers.KHR;
+using SilkNetConvenience.Devices;
+using SilkNetConvenience.KHR;
 
 var app = new HelloTriangleApplication_06();
 app.Run();
@@ -104,7 +102,7 @@ public class HelloTriangleApplication_06 : HelloTriangleApplication_05
         var extent = ChooseSwapExtent(swapchainSupport.Capabilities);
 
         var imageCount = swapchainSupport.Capabilities.MinImageCount + 1;
-        if(swapchainSupport.Capabilities.MaxImageCount > 0 && imageCount > swapchainSupport.Capabilities.MaxImageCount)
+        if (swapchainSupport.Capabilities.MaxImageCount > 0 && imageCount > swapchainSupport.Capabilities.MaxImageCount)
         {
             imageCount = swapchainSupport.Capabilities.MaxImageCount;
         }

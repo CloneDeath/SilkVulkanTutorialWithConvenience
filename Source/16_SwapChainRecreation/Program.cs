@@ -1,10 +1,10 @@
 ﻿using Silk.NET.Maths;
 using Silk.NET.Vulkan;
 using Silk.NET.Windowing;
-using SilkNetConvenience.CreateInfo;
-using SilkNetConvenience.CreateInfo.KHR;
+using SilkNetConvenience.Barriers;
 using SilkNetConvenience.Exceptions.ResultExceptions;
-using SilkNetConvenience.Wrappers;
+using SilkNetConvenience.KHR;
+using SilkNetConvenience.Queues;
 
 var app = new HelloTriangleApplication_16();
 app.Run();

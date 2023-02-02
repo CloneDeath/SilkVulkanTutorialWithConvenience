@@ -1,6 +1,6 @@
 ﻿using Silk.NET.Vulkan;
-using SilkNetConvenience.CreateInfo;
-using SilkNetConvenience.Wrappers;
+using SilkNetConvenience.Devices;
+using SilkNetConvenience.Queues;
 
 var app = new HelloTriangleApplication_04();
 app.Run();

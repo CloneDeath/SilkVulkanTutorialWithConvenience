@@ -1,6 +1,5 @@
 ﻿using Silk.NET.Vulkan;
-using SilkNetConvenience.CreateInfo.Pipelines;
-using SilkNetConvenience.Wrappers.Pipelines;
+using SilkNetConvenience.Pipelines;
 
 var app = new HelloTriangleApplication_10();
 app.Run();

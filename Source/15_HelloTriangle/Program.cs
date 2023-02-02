@@ -1,9 +1,10 @@
 ﻿using Silk.NET.Vulkan;
 using Silk.NET.Windowing;
-using SilkNetConvenience.CreateInfo;
-using SilkNetConvenience.CreateInfo.KHR;
-using SilkNetConvenience.CreateInfo.Pipelines;
-using SilkNetConvenience.Wrappers;
+using SilkNetConvenience.Barriers;
+using SilkNetConvenience.KHR;
+using SilkNetConvenience.Pipelines;
+using SilkNetConvenience.Queues;
+using SilkNetConvenience.RenderPasses;
 
 var app = new HelloTriangleApplication_15();
 app.Run();
@@ -148,7 +149,7 @@ public class HelloTriangleApplication_15 : HelloTriangleApplication_14
 
         var imageIndex = swapchain!.AcquireNextImage(imageAvailableSemaphores![currentFrame]);
 
-        if(imagesInFlight![imageIndex] != null)
+        if (imagesInFlight![imageIndex] != null)
         {
             imagesInFlight![imageIndex]!.Wait();
         }
