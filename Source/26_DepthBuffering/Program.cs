@@ -1,9 +1,13 @@
 ﻿using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using Silk.NET.Core.Native;
 using Silk.NET.Maths;
 using Silk.NET.Vulkan;
-using Buffer = Silk.NET.Vulkan.Buffer;
+using SilkNetConvenience.Barriers;
+using SilkNetConvenience.Buffers;
+using SilkNetConvenience.Images;
+using SilkNetConvenience.Memory;
+using SilkNetConvenience.Pipelines;
+using SilkNetConvenience.RenderPasses;
 
 var app = new HelloTriangleApplication_26();
 app.Run();
@@ -57,11 +61,11 @@ public struct Vertex_26
     }
 }
 
-public unsafe class HelloTriangleApplication_26 : HelloTriangleApplication_25
+public class HelloTriangleApplication_26 : HelloTriangleApplication_25
 {
-    protected Image depthImage;
-    protected DeviceMemory depthImageMemory;
-    protected ImageView depthImageView;
+    protected VulkanImage? depthImage;
+    protected VulkanDeviceMemory? depthImageMemory;
+    protected VulkanImageView? depthImageView;
 
     protected virtual Vertex_26[] vertices_26 { get; } = new Vertex_26[]
     {
@@ -111,9 +115,9 @@ public unsafe class HelloTriangleApplication_26 : HelloTriangleApplication_25
 
     protected override void CleanUpSwapchain()
     {
-        vk!.DestroyImageView(device, depthImageView, null);
-        vk!.DestroyImage(device, depthImage, null);
-        vk!.FreeMemory(device, depthImageMemory, null);
+        depthImageView!.Dispose();
+        depthImage!.Dispose();
+        depthImageMemory!.Dispose();
 
         foreach (var framebuffer in swapchainFramebuffers!)
         {
@@ -174,7 +178,7 @@ public unsafe class HelloTriangleApplication_26 : HelloTriangleApplication_25
     
     protected override void CreateImageViews()
     {
-        swapchainImageViews = new ImageView[swapchainImages!.Length];
+        swapchainImageViews = new VulkanImageView[swapchainImages!.Length];
 
         for (int i = 0; i < swapchainImages.Length; i++)
         {
@@ -220,12 +224,11 @@ public unsafe class HelloTriangleApplication_26 : HelloTriangleApplication_25
             Layout = ImageLayout.DepthStencilAttachmentOptimal,
         };
 
-        SubpassDescription subpass = new()
+        SubpassDescriptionInformation subpass = new()
         {
             PipelineBindPoint = PipelineBindPoint.Graphics,
-            ColorAttachmentCount = 1,
-            PColorAttachments = &colorAttachmentRef,
-            PDepthStencilAttachment = &depthAttachmentRef,
+            ColorAttachments = new[] {colorAttachmentRef},
+            DepthStencilAttachment = depthAttachmentRef
         };
 
         SubpassDependency dependency = new()
@@ -240,24 +243,13 @@ public unsafe class HelloTriangleApplication_26 : HelloTriangleApplication_25
 
         var attachments = new[] { colorAttachment, depthAttachment };
 
-        fixed (AttachmentDescription* attachmentsPtr = attachments)
-        {
-            RenderPassCreateInfo renderPassInfo = new()
-            {
-                SType = StructureType.RenderPassCreateInfo,
-                AttachmentCount = (uint)attachments.Length,
-                PAttachments = attachmentsPtr,
-                SubpassCount = 1,
-                PSubpasses = &subpass,
-                DependencyCount = 1,
-                PDependencies = &dependency,
-            };
+        RenderPassCreateInformation renderPassInfo = new() {
+            Attachments = attachments,
+            Subpasses = new[] { subpass },
+            Dependencies = new[] { dependency },
+        };
 
-            if (vk!.CreateRenderPass(device, renderPassInfo, null, out renderPass) != Result.Success)
-            {
-                throw new Exception("failed to create render pass!");
-            } 
-        }
+        renderPass = device!.CreateRenderPass(renderPassInfo);
     }
 
     protected override void CreateGraphicsPipeline()
@@ -291,146 +283,117 @@ public unsafe class HelloTriangleApplication_26 : HelloTriangleApplication_25
         var bindingDescription = Vertex_26.GetBindingDescription();
         var attributeDescriptions = Vertex_26.GetAttributeDescriptions();
 
-        fixed (VertexInputAttributeDescription* attributeDescriptionsPtr = attributeDescriptions)
-        fixed (DescriptorSetLayout* descriptorSetLayoutPtr = &descriptorSetLayout)
-        {
+        PipelineVertexInputStateCreateInformation vertexInputInfo = new() {
+            VertexBindingDescriptions = new[] { bindingDescription },
+            VertexAttributeDescriptions = attributeDescriptions,
+        };
 
-            PipelineVertexInputStateCreateInformation vertexInputInfo = new()
-            {
-                VertexBindingDescriptions = new[]{bindingDescription},
-                VertexAttributeDescriptions = attributeDescriptions,
-            };
+        PipelineInputAssemblyStateCreateInformation inputAssembly = new() {
+            Topology = PrimitiveTopology.TriangleList,
+            PrimitiveRestartEnable = false,
+        };
 
-            PipelineInputAssemblyStateCreateInformation inputAssembly = new()
-            {
-                Topology = PrimitiveTopology.TriangleList,
-                PrimitiveRestartEnable = false,
-            };
+        Viewport viewport = new() {
+            X = 0,
+            Y = 0,
+            Width = swapchainExtent.Width,
+            Height = swapchainExtent.Height,
+            MinDepth = 0,
+            MaxDepth = 1,
+        };
 
-            Viewport viewport = new()
-            {
-                X = 0,
-                Y = 0,
-                Width = swapchainExtent.Width,
-                Height = swapchainExtent.Height,
-                MinDepth = 0,
-                MaxDepth = 1,
-            };
+        Rect2D scissor = new() {
+            Offset = { X = 0, Y = 0 },
+            Extent = swapchainExtent,
+        };
 
-            Rect2D scissor = new()
-            {
-                Offset = { X = 0, Y = 0 },
-                Extent = swapchainExtent,
-            };
+        PipelineViewportStateCreateInformation viewportState = new() {
+            Viewports = new[] { viewport },
+            Scissors = new[] { scissor }
+        };
 
-            PipelineViewportStateCreateInformation viewportState = new()
-            {
-                Viewports = new[]{viewport},
-                Scissors = new[]{scissor}
-            };
+        PipelineRasterizationStateCreateInformation rasterizer = new() {
+            DepthClampEnable = false,
+            RasterizerDiscardEnable = false,
+            PolygonMode = PolygonMode.Fill,
+            LineWidth = 1,
+            CullMode = CullModeFlags.BackBit,
+            FrontFace = FrontFace.CounterClockwise,
+            DepthBiasEnable = false,
+        };
 
-            PipelineRasterizationStateCreateInformation rasterizer = new()
-            {
-                DepthClampEnable = false,
-                RasterizerDiscardEnable = false,
-                PolygonMode = PolygonMode.Fill,
-                LineWidth = 1,
-                CullMode = CullModeFlags.BackBit,
-                FrontFace = FrontFace.CounterClockwise,
-                DepthBiasEnable = false,
-            };
+        PipelineMultisampleStateCreateInformation multisampling = new() {
+            SampleShadingEnable = false,
+            RasterizationSamples = SampleCountFlags.Count1Bit,
+        };
 
-            PipelineMultisampleStateCreateInformation multisampling = new()
-            {
-                SampleShadingEnable = false,
-                RasterizationSamples = SampleCountFlags.Count1Bit,
-            };
+        PipelineDepthStencilStateCreateInformation depthStencil = new() {
+            DepthTestEnable = true,
+            DepthWriteEnable = true,
+            DepthCompareOp = CompareOp.Less,
+            DepthBoundsTestEnable = false,
+            StencilTestEnable = false,
+        };
 
-            PipelineDepthStencilStateCreateInfo depthStencil = new()
-            {
-                SType= StructureType.PipelineDepthStencilStateCreateInfo,
-                DepthTestEnable = true,
-                DepthWriteEnable = true,
-                DepthCompareOp = CompareOp.Less,
-                DepthBoundsTestEnable = false,
-                StencilTestEnable = false,
-            };
+        PipelineColorBlendAttachmentState colorBlendAttachment = new() {
+            ColorWriteMask = ColorComponentFlags.RBit | ColorComponentFlags.GBit | ColorComponentFlags.BBit |
+                             ColorComponentFlags.ABit,
+            BlendEnable = false,
+        };
 
-            PipelineColorBlendAttachmentState colorBlendAttachment = new()
-            {
-                ColorWriteMask = ColorComponentFlags.RBit | ColorComponentFlags.GBit | ColorComponentFlags.BBit | ColorComponentFlags.ABit,
-                BlendEnable = false,
-            };
+        PipelineColorBlendStateCreateInformation colorBlending = new() {
+            LogicOpEnable = false,
+            LogicOp = LogicOp.Copy,
+            Attachments = new[] { colorBlendAttachment }
+        };
 
-            PipelineColorBlendStateCreateInformation colorBlending = new()
-            {
-                LogicOpEnable = false,
-                LogicOp = LogicOp.Copy,
-                Attachments = new[]{colorBlendAttachment}
-            };
+        colorBlending.BlendConstants.X = 0;
+        colorBlending.BlendConstants.Y = 0;
+        colorBlending.BlendConstants.Z = 0;
+        colorBlending.BlendConstants.W = 0;
 
-            colorBlending.BlendConstants.X = 0;
-            colorBlending.BlendConstants.Y = 0;
-            colorBlending.BlendConstants.Z = 0;
-            colorBlending.BlendConstants.W = 0;
+        PipelineLayoutCreateInformation pipelineLayoutInfo = new() {
+            SetLayouts = new[] { descriptorSetLayout!.DescriptorSetLayout }
+        };
 
-            PipelineLayoutCreateInformation pipelineLayoutInfo = new()
-            {
-                SetLayouts = new[]{descriptorSetLayout!.DescriptorSetLayout}
-            };
+        pipelineLayout = device!.CreatePipelineLayout(pipelineLayoutInfo);
 
-            pipelineLayout = device!.CreatePipelineLayout(pipelineLayoutInfo);
+        GraphicsPipelineCreateInformation pipelineInfo = new() {
+            Stages = shaderStages,
+            VertexInputState = vertexInputInfo,
+            InputAssemblyState = inputAssembly,
+            ViewportState = viewportState,
+            RasterizationState = rasterizer,
+            MultisampleState = multisampling,
+            DepthStencilState = depthStencil,
+            ColorBlendState = colorBlending,
+            Layout = pipelineLayout,
+            RenderPass = renderPass!,
+            Subpass = 0
+        };
 
-            GraphicsPipelineCreateInfo pipelineInfo = new()
-            {
-                SType = StructureType.GraphicsPipelineCreateInfo,
-                StageCount = 2,
-                PStages = shaderStages,
-                PVertexInputState = &vertexInputInfo,
-                PInputAssemblyState = &inputAssembly,
-                PViewportState = &viewportState,
-                PRasterizationState = &rasterizer,
-                PMultisampleState = &multisampling,
-                PDepthStencilState = &depthStencil,
-                PColorBlendState = &colorBlending,
-                Layout = pipelineLayout,
-                RenderPass = renderPass,
-                Subpass = 0,
-                BasePipelineHandle = default
-            };
+        graphicsPipeline = device.CreateGraphicsPipeline(pipelineInfo);
 
-            graphicsPipeline = device.CreateGraphicsPipeline(pipelineInfo);
-        }
 
-        
     }
 
     protected override void CreateFramebuffers()
     {
-        swapchainFramebuffers = new Framebuffer[swapchainImageViews!.Length];
+        swapchainFramebuffers = new VulkanFramebuffer[swapchainImageViews!.Length];
 
         for(int i = 0; i < swapchainImageViews.Length; i++)
         {
-            var attachments = new[] { swapchainImageViews[i], depthImageView };
+            var attachments = new[] { swapchainImageViews[i].ImageView, depthImageView!.ImageView };
 
-            fixed(ImageView* attachmentsPtr = attachments)
-            {
-                FramebufferCreateInfo framebufferInfo = new()
-                {
-                    SType = StructureType.FramebufferCreateInfo,
-                    RenderPass = renderPass,
-                    AttachmentCount = (uint)attachments.Length,
-                    PAttachments = attachmentsPtr,
-                    Width = swapchainExtent.Width,
-                    Height = swapchainExtent.Height,
-                    Layers = 1,
-                };
+            FramebufferCreateInformation framebufferInfo = new() {
+                RenderPass = renderPass!,
+                Attachments = attachments,
+                Width = swapchainExtent.Width,
+                Height = swapchainExtent.Height,
+                Layers = 1,
+            };
 
-                if (vk!.CreateFramebuffer(device, framebufferInfo, null, out swapchainFramebuffers[i]) != Result.Success)
-                {
-                    throw new Exception("failed to create framebuffer!");
-                } 
-            }
+            swapchainFramebuffers[i] = device!.CreateFramebuffer(framebufferInfo);
         }
     }
 
@@ -438,16 +401,14 @@ public unsafe class HelloTriangleApplication_26 : HelloTriangleApplication_25
     {
         Format depthFormat = FindDepthFormat();
 
-        CreateImage(swapchainExtent.Width, swapchainExtent.Height, depthFormat, ImageTiling.Optimal, ImageUsageFlags.DepthStencilAttachmentBit, MemoryPropertyFlags.DeviceLocalBit, ref depthImage, ref depthImageMemory);
+        (depthImage, depthImageMemory) = CreateImage(swapchainExtent.Width, swapchainExtent.Height, depthFormat, ImageTiling.Optimal, ImageUsageFlags.DepthStencilAttachmentBit, MemoryPropertyFlags.DeviceLocalBit);
         depthImageView = CreateImageView(depthImage, depthFormat, ImageAspectFlags.DepthBit);
     }
 
     protected Format FindSupportedFormat(IEnumerable<Format> candidates, ImageTiling tiling, FormatFeatureFlags features)
     {
-        foreach (var format in candidates)
-        {
-            vk!.GetPhysicalDeviceFormatProperties(physicalDevice, format, out var props);
-            
+        foreach (var format in candidates) {
+            var props = physicalDevice!.GetFormatProperties(format);
             if(tiling == ImageTiling.Linear && (props.LinearTilingFeatures & features) == features)
             {
                 return format;
@@ -468,14 +429,13 @@ public unsafe class HelloTriangleApplication_26 : HelloTriangleApplication_25
 
     protected override void CreateTextureImageView()
     {
-        textureImageView = CreateImageView(textureImage, Format.R8G8B8A8Srgb, ImageAspectFlags.ColorBit);
+        textureImageView = CreateImageView(textureImage!, Format.R8G8B8A8Srgb, ImageAspectFlags.ColorBit);
     }
 
-    protected ImageView CreateImageView(Image image, Format format, ImageAspectFlags aspectFlags)
+    protected VulkanImageView CreateImageView(Image image, Format format, ImageAspectFlags aspectFlags)
     {
-        ImageViewCreateInfo createInfo = new()
+        ImageViewCreateInformation createInfo = new()
         {
-            SType = StructureType.ImageViewCreateInfo,
             Image = image,
             ViewType = ImageViewType.Type2D,
             Format = format,
@@ -497,14 +457,7 @@ public unsafe class HelloTriangleApplication_26 : HelloTriangleApplication_25
 
         };
 
-        ImageView imageView;
-
-        if (vk!.CreateImageView(device, createInfo, null, out imageView) != Result.Success)
-        {
-            throw new Exception("failed to create image views!");
-        }
-
-        return imageView;
+        return device!.CreateImageView(createInfo);
     }
 
     protected override void CreateVertexBuffer()
@@ -513,8 +466,8 @@ public unsafe class HelloTriangleApplication_26 : HelloTriangleApplication_25
 
         var (stagingBuffer, stagingBufferMemory) = CreateBuffer(bufferSize, BufferUsageFlags.TransferSrcBit, MemoryPropertyFlags.HostVisibleBit | MemoryPropertyFlags.HostCoherentBit);
         
-        var data = stagingBufferMemory.MapMemory<Vertex_17>();
-            vertices_26.AsSpan().CopyTo(new Span<Vertex_26>(data, vertices_26.Length));
+        var data = stagingBufferMemory.MapMemory<Vertex_26>();
+            vertices_26.AsSpan().CopyTo(data);
         stagingBufferMemory.UnmapMemory();
 
         (vertexBuffer, vertexBufferMemory) = CreateBuffer(bufferSize, BufferUsageFlags.TransferDstBit | BufferUsageFlags.VertexBufferBit, MemoryPropertyFlags.DeviceLocalBit);
@@ -533,10 +486,9 @@ public unsafe class HelloTriangleApplication_26 : HelloTriangleApplication_25
         {
             commandBuffers[i].Begin();
 
-            RenderPassBeginInfo renderPassInfo = new()
+            RenderPassBeginInformation renderPassInfo = new()
             {
-                SType= StructureType.RenderPassBeginInfo,
-                RenderPass = renderPass,
+                RenderPass = renderPass!,
                 Framebuffer = swapchainFramebuffers[i],
                 RenderArea =
                 {
@@ -557,14 +509,9 @@ public unsafe class HelloTriangleApplication_26 : HelloTriangleApplication_25
                 }
             };
 
+            renderPassInfo.ClearValues = clearValues;
 
-            fixed(ClearValue* clearValuesPtr = clearValues)
-            {
-                renderPassInfo.ClearValueCount = (uint)clearValues.Length;
-                renderPassInfo.PClearValues = clearValuesPtr;
-
-                commandBuffers[i].BeginRenderPass(renderPassInfo, SubpassContents.Inline);
-            }
+            commandBuffers[i].BeginRenderPass(renderPassInfo, SubpassContents.Inline);
 
             commandBuffers[i].BindPipeline(PipelineBindPoint.Graphics, graphicsPipeline!);
 
@@ -572,16 +519,13 @@ public unsafe class HelloTriangleApplication_26 : HelloTriangleApplication_25
 
                 commandBuffers[i].BindIndexBuffer(indexBuffer!, 0, IndexType.Uint16);
 
-                vk!.CmdBindDescriptorSets(commandBuffers[i], PipelineBindPoint.Graphics, pipelineLayout, 0, 1, descriptorSets![i], 0, null);
+                commandBuffers[i].BindDescriptorSet(PipelineBindPoint.Graphics, pipelineLayout!, 0, descriptorSets![i]);
 
                 commandBuffers[i].DrawIndexed((uint)indices.Length);
 
             commandBuffers[i].EndRenderPass();
             
-            if (vk!.EndCommandBuffer(commandBuffers[i]) != Result.Success)
-            {
-                throw new Exception("failed to record command buffer!");
-            }
+            commandBuffers[i].End();
 
         }
     }

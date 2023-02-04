@@ -155,10 +155,8 @@ public class HelloTriangleApplication_16 : HelloTriangleApplication_15
         creatInfo.CompositeAlpha = CompositeAlphaFlagsKHR.OpaqueBitKhr;
         creatInfo.PresentMode = presentMode;
         creatInfo.Clipped = true;
-
-        khrSwapchain ??= device!.GetKhrSwapchainExtension();
-
-        swapchain = khrSwapchain.CreateSwapchain(creatInfo);
+        
+        swapchain = device!.KhrSwapchain.CreateSwapchain(creatInfo);
 
         swapchainImages = swapchain!.GetImages();
 
@@ -211,7 +209,7 @@ public class HelloTriangleApplication_16 : HelloTriangleApplication_15
         };
 
         try {
-            khrSwapchain!.QueuePresent(presentQueue!, presentInfo);
+            device!.KhrSwapchain.QueuePresent(presentQueue!, presentInfo);
         }
         catch (VulkanResultException ex) {
             if (ex.Result is Result.ErrorOutOfDateKhr or Result.SuboptimalKhr || frameBufferResized)

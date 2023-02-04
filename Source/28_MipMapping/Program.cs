@@ -1,16 +1,18 @@
 ﻿using Silk.NET.Vulkan;
-using Buffer = Silk.NET.Vulkan.Buffer;
+using SilkNetConvenience.Barriers;
+using SilkNetConvenience.Images;
+using SilkNetConvenience.Memory;
 
 var app = new HelloTriangleApplication_28();
 app.Run();
 
-public unsafe class HelloTriangleApplication_28 : HelloTriangleApplication_27
+public class HelloTriangleApplication_28 : HelloTriangleApplication_27
 {
     protected uint mipLevels;
     
     protected override void CreateImageViews()
     {
-        swapchainImageViews = new ImageView[swapchainImages!.Length];
+        swapchainImageViews = new VulkanImageView[swapchainImages!.Length];
 
         for (int i = 0; i < swapchainImages.Length; i++)
         {
@@ -23,7 +25,7 @@ public unsafe class HelloTriangleApplication_28 : HelloTriangleApplication_27
     {
         Format depthFormat = FindDepthFormat();
 
-        CreateImage(swapchainExtent.Width, swapchainExtent.Height, 1, depthFormat, ImageTiling.Optimal, ImageUsageFlags.DepthStencilAttachmentBit, MemoryPropertyFlags.DeviceLocalBit, ref depthImage, ref depthImageMemory);
+        (depthImage, depthImageMemory) = CreateImage(swapchainExtent.Width, swapchainExtent.Height, 1, depthFormat, ImageTiling.Optimal, ImageUsageFlags.DepthStencilAttachmentBit, MemoryPropertyFlags.DeviceLocalBit);
         depthImageView = CreateImageView(depthImage, depthFormat, ImageAspectFlags.DepthBit, 1);
     }
 
@@ -34,15 +36,13 @@ public unsafe class HelloTriangleApplication_28 : HelloTriangleApplication_27
         ulong imageSize = (ulong)(img.Width * img.Height * img.PixelType.BitsPerPixel / 8);
         mipLevels = (uint)(Math.Floor(Math.Log2(Math.Max(img.Width, img.Height))) + 1);
 
-        Buffer stagingBuffer = default;
-        DeviceMemory stagingBufferMemory = default;
-        CreateBuffer(imageSize, BufferUsageFlags.TransferSrcBit, MemoryPropertyFlags.HostVisibleBit | MemoryPropertyFlags.HostCoherentBit,ref stagingBuffer, ref stagingBufferMemory );
+        var (stagingBuffer, stagingBufferMemory) = CreateBuffer(imageSize, BufferUsageFlags.TransferSrcBit, MemoryPropertyFlags.HostVisibleBit | MemoryPropertyFlags.HostCoherentBit);
 
         var data = stagingBufferMemory.MapMemory();
-        img.CopyPixelDataTo(new Span<byte>(data, (int)imageSize));
+        img.CopyPixelDataTo(data);
         stagingBufferMemory.UnmapMemory();
 
-        CreateImage((uint)img.Width, (uint)img.Height, mipLevels, Format.R8G8B8A8Srgb, ImageTiling.Optimal, ImageUsageFlags.TransferSrcBit | ImageUsageFlags.TransferDstBit | ImageUsageFlags.SampledBit, MemoryPropertyFlags.DeviceLocalBit, ref textureImage, ref textureImageMemory);
+        (textureImage, textureImageMemory) = CreateImage((uint)img.Width, (uint)img.Height, mipLevels, Format.R8G8B8A8Srgb, ImageTiling.Optimal, ImageUsageFlags.TransferSrcBit | ImageUsageFlags.TransferDstBit | ImageUsageFlags.SampledBit, MemoryPropertyFlags.DeviceLocalBit);
 
         TransitionImageLayout(textureImage, Format.R8G8B8A8Srgb, ImageLayout.Undefined, ImageLayout.TransferDstOptimal, mipLevels);
         CopyBufferToImage(stagingBuffer, textureImage, (uint)img.Width, (uint)img.Height);
@@ -54,10 +54,9 @@ public unsafe class HelloTriangleApplication_28 : HelloTriangleApplication_27
         GenerateMipMaps(textureImage, Format.R8G8B8A8Srgb, (uint)img.Width, (uint)img.Height, mipLevels);
     }
 
-    protected void GenerateMipMaps(Image image, Format imageFormat, uint width, uint height, uint withMipLevels)
-    {
-        vk!.GetPhysicalDeviceFormatProperties(physicalDevice, imageFormat, out var formatProperties);
-
+    protected void GenerateMipMaps(Image image, Format imageFormat, uint width, uint height, uint withMipLevels) {
+        var formatProperties = physicalDevice!.GetFormatProperties(imageFormat);
+        
         if((formatProperties.OptimalTilingFeatures & FormatFeatureFlags.SampledImageFilterLinearBit) == 0)
         {
             throw new Exception("texture image format does not support linear blitting!");
@@ -65,9 +64,8 @@ public unsafe class HelloTriangleApplication_28 : HelloTriangleApplication_27
 
         var commandBuffer = BeginSingleTimeCommands();
 
-        ImageMemoryBarrier barrier = new()
+        ImageMemoryBarrierInformation barrier = new()
         {
-            SType = StructureType.ImageMemoryBarrier,
             Image = image,
             SrcQueueFamilyIndex = Vk.QueueFamilyIgnored,
             DstQueueFamilyIndex = Vk.QueueFamilyIgnored,
@@ -91,10 +89,7 @@ public unsafe class HelloTriangleApplication_28 : HelloTriangleApplication_27
             barrier.SrcAccessMask = AccessFlags.TransferWriteBit;
             barrier.DstAccessMask = AccessFlags.TransferReadBit;
 
-            vk!.CmdPipelineBarrier(commandBuffer, PipelineStageFlags.TransferBit, PipelineStageFlags.TransferBit, 0,
-                0, null,
-                0, null,
-                1, barrier);
+            commandBuffer.PipelineBarrier(PipelineStageFlags.TransferBit, PipelineStageFlags.TransferBit, DependencyFlags.None, barrier);
 
             ImageBlit blit = new()
             {
@@ -125,21 +120,16 @@ public unsafe class HelloTriangleApplication_28 : HelloTriangleApplication_27
 
             };
 
-            vk!.CmdBlitImage(commandBuffer,
-                image, ImageLayout.TransferSrcOptimal,
+            commandBuffer.BlitImage(image, ImageLayout.TransferSrcOptimal,
                 image, ImageLayout.TransferDstOptimal,
-                1, blit,
-                Filter.Linear);
+                new[] {blit}, Filter.Linear);
 
             barrier.OldLayout = ImageLayout.TransferSrcOptimal;
             barrier.NewLayout = ImageLayout.ShaderReadOnlyOptimal;
             barrier.SrcAccessMask = AccessFlags.TransferReadBit;
             barrier.DstAccessMask = AccessFlags.ShaderReadBit;
 
-            vk!.CmdPipelineBarrier(commandBuffer, PipelineStageFlags.TransferBit, PipelineStageFlags.FragmentShaderBit, 0,
-                0, null,
-                0, null,
-                1, barrier);
+            commandBuffer.PipelineBarrier(PipelineStageFlags.TransferBit, PipelineStageFlags.FragmentShaderBit, DependencyFlags.None, barrier);
 
             if (mipWidth > 1) mipWidth /= 2;
             if (mipHeight > 1) mipHeight /= 2;
@@ -151,27 +141,22 @@ public unsafe class HelloTriangleApplication_28 : HelloTriangleApplication_27
         barrier.SrcAccessMask = AccessFlags.TransferWriteBit;
         barrier.DstAccessMask = AccessFlags.ShaderReadBit;
 
-        vk!.CmdPipelineBarrier(commandBuffer, PipelineStageFlags.TransferBit, PipelineStageFlags.FragmentShaderBit, 0,
-            0, null,
-            0, null,
-            1, barrier);
+        commandBuffer.PipelineBarrier(PipelineStageFlags.TransferBit, PipelineStageFlags.FragmentShaderBit, DependencyFlags.None, barrier);
 
         EndSingleTimeCommands(commandBuffer);
     }
 
     protected override void CreateTextureImageView()
     {
-        textureImageView = CreateImageView(textureImage, Format.R8G8B8A8Srgb, ImageAspectFlags.ColorBit, mipLevels);
+        textureImageView = CreateImageView(textureImage!, Format.R8G8B8A8Srgb, ImageAspectFlags.ColorBit, mipLevels);
     }
 
     protected override void CreateTextureSampler()
     {
-        PhysicalDeviceProperties properties;
-        vk!.GetPhysicalDeviceProperties(physicalDevice, out properties);
+        PhysicalDeviceProperties properties = physicalDevice!.GetProperties();
 
-        SamplerCreateInfo samplerInfo = new()
+        SamplerCreateInformation samplerInfo = new()
         {
-            SType = StructureType.SamplerCreateInfo,
             MagFilter = Filter.Linear,
             MinFilter = Filter.Linear,
             AddressModeU = SamplerAddressMode.Repeat,
@@ -189,20 +174,13 @@ public unsafe class HelloTriangleApplication_28 : HelloTriangleApplication_27
             MipLodBias = 0,
         };
 
-        fixed(Sampler* textureSamplerPtr = &textureSampler)
-        {
-            if(vk!.CreateSampler(device, samplerInfo, null, textureSamplerPtr) != Result.Success)
-            {
-                throw new Exception("failed to create texture sampler!");
-            }
-        }
+        textureSampler = device!.CreateSampler(samplerInfo);
     }
 
-    protected ImageView CreateImageView(Image image, Format format, ImageAspectFlags aspectFlags, uint withMipLevels)
+    protected VulkanImageView CreateImageView(Image image, Format format, ImageAspectFlags aspectFlags, uint withMipLevels)
     {
-        ImageViewCreateInfo createInfo = new()
+        ImageViewCreateInformation createInfo = new()
         {
-            SType = StructureType.ImageViewCreateInfo,
             Image = image,
             ViewType = ImageViewType.Type2D,
             Format = format,
@@ -224,21 +202,14 @@ public unsafe class HelloTriangleApplication_28 : HelloTriangleApplication_27
 
         };
 
-        ImageView imageView;
-
-        if (vk!.CreateImageView(device, createInfo, null, out imageView) != Result.Success)
-        {
-            throw new Exception("failed to create image views!");
-        }
-
-        return imageView;
+        return device!.CreateImageView(createInfo);
     }
 
-    protected void CreateImage(uint width, uint height, uint withMipLevels, Format format, ImageTiling tiling, ImageUsageFlags usage, MemoryPropertyFlags properties, ref Image image, ref DeviceMemory imageMemory)
+    protected (VulkanImage, VulkanDeviceMemory) CreateImage(uint width, uint height, uint withMipLevels, Format format, 
+                                                            ImageTiling tiling, ImageUsageFlags usage, MemoryPropertyFlags properties)
     {
-        ImageCreateInfo imageInfo = new()
+        ImageCreateInformation imageInfo = new()
         {
-            SType = StructureType.ImageCreateInfo,
             ImageType = ImageType.Type2D,
             Extent =
             {
@@ -256,43 +227,20 @@ public unsafe class HelloTriangleApplication_28 : HelloTriangleApplication_27
             SharingMode = SharingMode.Exclusive,
         };
 
-        fixed (Image* imagePtr = &image)
-        {
-            if(vk!.CreateImage(device,imageInfo,null, imagePtr) != Result.Success)
-            {
-                throw new Exception("failed to create image!");
-            }
-        }
-
-        MemoryRequirements memRequirements;
-        vk!.GetImageMemoryRequirements(device, image, out memRequirements);
-
-        MemoryAllocateInfo allocInfo = new()
-        {
-            SType = StructureType.MemoryAllocateInfo,
-            AllocationSize = memRequirements.Size,
-            MemoryTypeIndex = FindMemoryType(memRequirements.MemoryTypeBits,properties),
-        };
-
-        fixed(DeviceMemory* imageMemoryPtr = &imageMemory) 
-        {
-            if (vk!.AllocateMemory(device, allocInfo, null, imageMemoryPtr) != Result.Success)
-            {
-                throw new Exception("failed to allocate image memory!");
-            }
-        }
+        var image = device!.CreateImage(imageInfo);
+        var imageMemory = device!.AllocateMemoryFor(image, properties);
 
         image.BindMemory(imageMemory);
+        return (image, imageMemory);
     }
 
     // ReSharper disable once UnusedParameter.Local
     protected void TransitionImageLayout(Image image, Format format, ImageLayout oldLayout, ImageLayout newLayout, uint withMipLevels)
     {
-        CommandBuffer commandBuffer = BeginSingleTimeCommands();
+        var commandBuffer = BeginSingleTimeCommands();
 
-        ImageMemoryBarrier barrier = new()
+        ImageMemoryBarrierInformation barrier = new()
         {
-            SType = StructureType.ImageMemoryBarrier,
             OldLayout = oldLayout,
             NewLayout = newLayout,
             SrcQueueFamilyIndex = Vk.QueueFamilyIgnored,
@@ -332,7 +280,7 @@ public unsafe class HelloTriangleApplication_28 : HelloTriangleApplication_27
             throw new Exception("unsupported layout transition!");
         }
 
-        vk!.CmdPipelineBarrier(commandBuffer,sourceStage,destinationStage,0,0,null,0,null,1,barrier);
+        commandBuffer.PipelineBarrier(sourceStage, destinationStage, DependencyFlags.None, barrier);
 
         EndSingleTimeCommands(commandBuffer);
 

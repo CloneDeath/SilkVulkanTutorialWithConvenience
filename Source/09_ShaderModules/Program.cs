@@ -1,12 +1,11 @@
-﻿using Silk.NET.Core.Native;
-using Silk.NET.Vulkan;
+﻿using Silk.NET.Vulkan;
 using SilkNetConvenience.Pipelines;
 using SilkNetConvenience.ShaderModules;
 
 var app = new HelloTriangleApplication_09();
 app.Run();
 
-public unsafe class HelloTriangleApplication_09 : HelloTriangleApplication_08
+public class HelloTriangleApplication_09 : HelloTriangleApplication_08
 {
     protected override void CreateGraphicsPipeline()
     {

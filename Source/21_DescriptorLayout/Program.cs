@@ -360,7 +360,7 @@ public class HelloTriangleApplication_21 : HelloTriangleApplication_20
         };
 
         try {
-            khrSwapchain!.QueuePresent(presentQueue!, presentInfo);
+            device!.KhrSwapchain.QueuePresent(presentQueue!, presentInfo);
         }
         catch (ErrorOutOfDateKhrException) {
             frameBufferResized = true;

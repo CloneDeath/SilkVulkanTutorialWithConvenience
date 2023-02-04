@@ -19,7 +19,6 @@ public struct QueueFamilyIndices_05
 
 public class HelloTriangleApplication_05 : HelloTriangleApplication_04
 {
-    protected VulkanKhrSurface? khrSurface;
     protected VulkanSurface? surface;
     protected VulkanQueue? presentQueue;
 
@@ -50,8 +49,7 @@ public class HelloTriangleApplication_05 : HelloTriangleApplication_04
     }
 
     protected void CreateSurface() {
-        khrSurface = instance!.GetKhrSurfaceExtension();
-        surface = khrSurface.CreateSurface(window!.VkSurface!);
+        surface = instance!.KhrSurface.CreateSurface(window!.VkSurface!);
     }
 
     protected override void CreateLogicalDevice()
@@ -105,7 +103,7 @@ public class HelloTriangleApplication_05 : HelloTriangleApplication_04
                 indices.GraphicsFamily = i;
             }
 
-            var presentSupport = khrSurface!.GetPhysicalDeviceSurfaceSupport(physDevice, i, surface!);
+            var presentSupport = instance!.KhrSurface.GetPhysicalDeviceSurfaceSupport(physDevice, i, surface!);
 
             if (presentSupport)
             {

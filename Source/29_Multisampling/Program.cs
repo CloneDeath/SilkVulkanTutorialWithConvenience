@@ -1,18 +1,22 @@
-﻿using Silk.NET.Core.Native;
-using Silk.NET.Maths;
+﻿using Silk.NET.Maths;
 using Silk.NET.Vulkan;
-using Buffer = Silk.NET.Vulkan.Buffer;
+using SilkNetConvenience.Barriers;
+using SilkNetConvenience.Buffers;
+using SilkNetConvenience.Images;
+using SilkNetConvenience.Memory;
+using SilkNetConvenience.Pipelines;
+using SilkNetConvenience.RenderPasses;
 
 var app = new HelloTriangleApplication_29();
 app.Run();
 
-public unsafe class HelloTriangleApplication_29 : HelloTriangleApplication_28
+public class HelloTriangleApplication_29 : HelloTriangleApplication_28
 {
     protected SampleCountFlags msaaSamples = SampleCountFlags.Count1Bit;
 
-    protected Image colorImage;
-    protected DeviceMemory colorImageMemory;
-    protected ImageView colorImageView;
+    protected VulkanImage? colorImage;
+    protected VulkanDeviceMemory? colorImageMemory;
+    protected VulkanImageView? colorImageView;
 
     protected override void InitVulkan()
     {
@@ -45,13 +49,13 @@ public unsafe class HelloTriangleApplication_29 : HelloTriangleApplication_28
 
     protected override void CleanUpSwapchain()
     {
-        vk!.DestroyImageView(device, depthImageView, null);
-        vk!.DestroyImage(device, depthImage, null);
-        vk!.FreeMemory(device, depthImageMemory, null);
+        depthImageView!.Dispose();
+        depthImage!.Dispose();
+        depthImageMemory!.Dispose();
 
-        vk!.DestroyImageView(device, colorImageView, null);
-        vk!.DestroyImage(device, colorImage, null);
-        vk!.FreeMemory(device, colorImageMemory, null);
+        colorImageView?.Dispose();
+        colorImage?.Dispose();
+        colorImageMemory?.Dispose();
 
         foreach (var framebuffer in swapchainFramebuffers!)
         {
@@ -111,21 +115,8 @@ public unsafe class HelloTriangleApplication_29 : HelloTriangleApplication_28
         imagesInFlight = new VulkanFence[swapchainImages!.Length];
     }
 
-    protected override void PickPhysicalDevice()
-    {
-        uint devicedCount = 0;
-        vk!.EnumeratePhysicalDevices(instance, ref devicedCount, null);
-
-        if (devicedCount == 0)
-        {
-            throw new Exception("failed to find GPUs with Vulkan support!");
-        }
-
-        var devices = new PhysicalDevice[devicedCount];
-        fixed (PhysicalDevice* devicesPtr = devices)
-        {
-            vk!.EnumeratePhysicalDevices(instance, ref devicedCount, devicesPtr);
-        }
+    protected override void PickPhysicalDevice() {
+        var devices = instance!.PhysicalDevices;
 
         foreach (var physDevice in devices)
         {
@@ -137,7 +128,7 @@ public unsafe class HelloTriangleApplication_29 : HelloTriangleApplication_28
             }
         }
 
-        if (physicalDevice.Handle == 0)
+        if (physicalDevice == null)
         {
             throw new Exception("failed to find a suitable GPU!");
         }
@@ -198,13 +189,12 @@ public unsafe class HelloTriangleApplication_29 : HelloTriangleApplication_28
             Layout = ImageLayout.ColorAttachmentOptimal,
         };
 
-        SubpassDescription subpass = new()
+        SubpassDescriptionInformation subpass = new()
         {
             PipelineBindPoint = PipelineBindPoint.Graphics,
-            ColorAttachmentCount = 1,
-            PColorAttachments = &colorAttachmentRef,
-            PDepthStencilAttachment = &depthAttachmentRef,
-            PResolveAttachments = &colorAttachmentResolveRef,
+            ColorAttachments = new []{colorAttachmentRef},
+            DepthStencilAttachment = depthAttachmentRef,
+            ResolveAttachments = new[]{colorAttachmentResolveRef},
         };
 
         SubpassDependency dependency = new()
@@ -219,24 +209,13 @@ public unsafe class HelloTriangleApplication_29 : HelloTriangleApplication_28
 
         var attachments = new[] { colorAttachment, depthAttachment, colorAttachmentResolve };
 
-        fixed (AttachmentDescription* attachmentsPtr = attachments)
-        {
-            RenderPassCreateInfo renderPassInfo = new()
-            {
-                SType = StructureType.RenderPassCreateInfo,
-                AttachmentCount = (uint)attachments.Length,
-                PAttachments = attachmentsPtr,
-                SubpassCount = 1,
-                PSubpasses = &subpass,
-                DependencyCount = 1,
-                PDependencies = &dependency,
-            };
+        RenderPassCreateInformation renderPassInfo = new() {
+            Attachments = attachments,
+            Subpasses = new[]{subpass},
+            Dependencies = new[]{dependency},
+        };
 
-            if (vk!.CreateRenderPass(device, renderPassInfo, null, out renderPass) != Result.Success)
-            {
-                throw new Exception("failed to create render pass!");
-            } 
-        }
+        renderPass = device!.CreateRenderPass(renderPassInfo);
     }
     
     protected override void CreateGraphicsPipeline()
@@ -270,147 +249,117 @@ public unsafe class HelloTriangleApplication_29 : HelloTriangleApplication_28
         var bindingDescription = Vertex_26.GetBindingDescription();
         var attributeDescriptions = Vertex_26.GetAttributeDescriptions();
 
-        fixed (VertexInputAttributeDescription* attributeDescriptionsPtr = attributeDescriptions)
-        fixed (DescriptorSetLayout* descriptorSetLayoutPtr = &descriptorSetLayout)
-        {
+        PipelineVertexInputStateCreateInformation vertexInputInfo = new() {
+            VertexBindingDescriptions = new[] { bindingDescription },
+            VertexAttributeDescriptions = attributeDescriptions,
+        };
 
-            PipelineVertexInputStateCreateInformation vertexInputInfo = new()
-            {
-                VertexBindingDescriptions = new[]{bindingDescription},
-                VertexAttributeDescriptions = attributeDescriptions,
-            };
+        PipelineInputAssemblyStateCreateInformation inputAssembly = new() {
+            Topology = PrimitiveTopology.TriangleList,
+            PrimitiveRestartEnable = false,
+        };
 
-            PipelineInputAssemblyStateCreateInformation inputAssembly = new()
-            {
-                Topology = PrimitiveTopology.TriangleList,
-                PrimitiveRestartEnable = false,
-            };
+        Viewport viewport = new() {
+            X = 0,
+            Y = 0,
+            Width = swapchainExtent.Width,
+            Height = swapchainExtent.Height,
+            MinDepth = 0,
+            MaxDepth = 1,
+        };
 
-            Viewport viewport = new()
-            {
-                X = 0,
-                Y = 0,
-                Width = swapchainExtent.Width,
-                Height = swapchainExtent.Height,
-                MinDepth = 0,
-                MaxDepth = 1,
-            };
+        Rect2D scissor = new() {
+            Offset = { X = 0, Y = 0 },
+            Extent = swapchainExtent,
+        };
 
-            Rect2D scissor = new()
-            {
-                Offset = { X = 0, Y = 0 },
-                Extent = swapchainExtent,
-            };
+        PipelineViewportStateCreateInformation viewportState = new() {
+            Viewports = new[] { viewport },
+            Scissors = new[] { scissor }
+        };
 
-            PipelineViewportStateCreateInformation viewportState = new()
-            {
-                Viewports = new[]{viewport},
-                Scissors = new[]{scissor}
-            };
+        PipelineRasterizationStateCreateInformation rasterizer = new() {
+            DepthClampEnable = false,
+            RasterizerDiscardEnable = false,
+            PolygonMode = PolygonMode.Fill,
+            LineWidth = 1,
+            CullMode = CullModeFlags.BackBit,
+            FrontFace = FrontFace.CounterClockwise,
+            DepthBiasEnable = false,
+        };
 
-            PipelineRasterizationStateCreateInformation rasterizer = new()
-            {
-                DepthClampEnable = false,
-                RasterizerDiscardEnable = false,
-                PolygonMode = PolygonMode.Fill,
-                LineWidth = 1,
-                CullMode = CullModeFlags.BackBit,
-                FrontFace = FrontFace.CounterClockwise,
-                DepthBiasEnable = false,
-            };
+        PipelineMultisampleStateCreateInformation multisampling = new() {
+            SampleShadingEnable = false,
+            RasterizationSamples = msaaSamples,
+        };
 
-            PipelineMultisampleStateCreateInfo multisampling = new()
-            {
-                SType = StructureType.PipelineMultisampleStateCreateInfo,
-                SampleShadingEnable = false,
-                RasterizationSamples = msaaSamples,
-            };
+        PipelineDepthStencilStateCreateInformation depthStencil = new() {
+            DepthTestEnable = true,
+            DepthWriteEnable = true,
+            DepthCompareOp = CompareOp.Less,
+            DepthBoundsTestEnable = false,
+            StencilTestEnable = false,
+        };
 
-            PipelineDepthStencilStateCreateInfo depthStencil = new()
-            {
-                SType= StructureType.PipelineDepthStencilStateCreateInfo,
-                DepthTestEnable = true,
-                DepthWriteEnable = true,
-                DepthCompareOp = CompareOp.Less,
-                DepthBoundsTestEnable = false,
-                StencilTestEnable = false,
-            };
+        PipelineColorBlendAttachmentState colorBlendAttachment = new() {
+            ColorWriteMask = ColorComponentFlags.RBit | ColorComponentFlags.GBit | ColorComponentFlags.BBit |
+                             ColorComponentFlags.ABit,
+            BlendEnable = false,
+        };
 
-            PipelineColorBlendAttachmentState colorBlendAttachment = new()
-            {
-                ColorWriteMask = ColorComponentFlags.RBit | ColorComponentFlags.GBit | ColorComponentFlags.BBit | ColorComponentFlags.ABit,
-                BlendEnable = false,
-            };
+        PipelineColorBlendStateCreateInformation colorBlending = new() {
+            LogicOpEnable = false,
+            LogicOp = LogicOp.Copy,
+            Attachments = new[] { colorBlendAttachment }
+        };
 
-            PipelineColorBlendStateCreateInformation colorBlending = new()
-            {
-                LogicOpEnable = false,
-                LogicOp = LogicOp.Copy,
-                Attachments = new[]{colorBlendAttachment}
-            };
+        colorBlending.BlendConstants.X = 0;
+        colorBlending.BlendConstants.Y = 0;
+        colorBlending.BlendConstants.Z = 0;
+        colorBlending.BlendConstants.W = 0;
 
-            colorBlending.BlendConstants.X = 0;
-            colorBlending.BlendConstants.Y = 0;
-            colorBlending.BlendConstants.Z = 0;
-            colorBlending.BlendConstants.W = 0;
+        PipelineLayoutCreateInformation pipelineLayoutInfo = new() {
+            SetLayouts = new[] { descriptorSetLayout!.DescriptorSetLayout }
+        };
 
-            PipelineLayoutCreateInformation pipelineLayoutInfo = new()
-            {
-                SetLayouts = new[]{descriptorSetLayout!.DescriptorSetLayout}
-            };
+        pipelineLayout = device!.CreatePipelineLayout(pipelineLayoutInfo);
 
-            pipelineLayout = device!.CreatePipelineLayout(pipelineLayoutInfo);
+        GraphicsPipelineCreateInformation pipelineInfo = new() {
+            Stages = shaderStages,
+            VertexInputState = vertexInputInfo,
+            InputAssemblyState = inputAssembly,
+            ViewportState = viewportState,
+            RasterizationState = rasterizer,
+            MultisampleState = multisampling,
+            DepthStencilState = depthStencil,
+            ColorBlendState = colorBlending,
+            Layout = pipelineLayout,
+            RenderPass = renderPass!,
+            Subpass = 0
+        };
 
-            GraphicsPipelineCreateInfo pipelineInfo = new()
-            {
-                SType = StructureType.GraphicsPipelineCreateInfo,
-                StageCount = 2,
-                PStages = shaderStages,
-                PVertexInputState = &vertexInputInfo,
-                PInputAssemblyState = &inputAssembly,
-                PViewportState = &viewportState,
-                PRasterizationState = &rasterizer,
-                PMultisampleState = &multisampling,
-                PDepthStencilState = &depthStencil,
-                PColorBlendState = &colorBlending,
-                Layout = pipelineLayout,
-                RenderPass = renderPass,
-                Subpass = 0,
-                BasePipelineHandle = default
-            };
+        graphicsPipeline = device.CreateGraphicsPipeline(pipelineInfo);
 
-            graphicsPipeline = device.CreateGraphicsPipeline(pipelineInfo);
-        }
 
-        
     }
 
     protected override void CreateFramebuffers()
     {
-        swapchainFramebuffers = new Framebuffer[swapchainImageViews!.Length];
+        swapchainFramebuffers = new VulkanFramebuffer[swapchainImageViews!.Length];
 
         for(int i = 0; i < swapchainImageViews.Length; i++)
         {
-            var attachments = new[] { colorImageView, depthImageView, swapchainImageViews[i] };
+            var attachments = new ImageView[] { colorImageView!, depthImageView!, swapchainImageViews[i] };
 
-            fixed(ImageView* attachmentsPtr = attachments)
-            {
-                FramebufferCreateInfo framebufferInfo = new()
-                {
-                    SType = StructureType.FramebufferCreateInfo,
-                    RenderPass = renderPass,
-                    AttachmentCount = (uint)attachments.Length,
-                    PAttachments = attachmentsPtr,
-                    Width = swapchainExtent.Width,
-                    Height = swapchainExtent.Height,
-                    Layers = 1,
-                };
+            FramebufferCreateInformation framebufferInfo = new() {
+                RenderPass = renderPass!,
+                Attachments = attachments,
+                Width = swapchainExtent.Width,
+                Height = swapchainExtent.Height,
+                Layers = 1,
+            };
 
-                if (vk!.CreateFramebuffer(device, framebufferInfo, null, out swapchainFramebuffers[i]) != Result.Success)
-                {
-                    throw new Exception("failed to create framebuffer!");
-                } 
-            }
+            swapchainFramebuffers[i] = device!.CreateFramebuffer(framebufferInfo);
         }
     }
     
@@ -418,7 +367,7 @@ public unsafe class HelloTriangleApplication_29 : HelloTriangleApplication_28
     {
         Format colorFormat = swapchainImageFormat;
 
-        CreateImage(swapchainExtent.Width, swapchainExtent.Height, 1, msaaSamples, colorFormat, ImageTiling.Optimal, ImageUsageFlags.TransientAttachmentBit | ImageUsageFlags.ColorAttachmentBit, MemoryPropertyFlags.DeviceLocalBit, ref colorImage, ref colorImageMemory);
+        (colorImage, colorImageMemory) = CreateImage(swapchainExtent.Width, swapchainExtent.Height, 1, msaaSamples, colorFormat, ImageTiling.Optimal, ImageUsageFlags.TransientAttachmentBit | ImageUsageFlags.ColorAttachmentBit, MemoryPropertyFlags.DeviceLocalBit);
         colorImageView = CreateImageView(colorImage, colorFormat, ImageAspectFlags.ColorBit, 1);
     }
 
@@ -426,7 +375,7 @@ public unsafe class HelloTriangleApplication_29 : HelloTriangleApplication_28
     {
         Format depthFormat = FindDepthFormat();
 
-        CreateImage(swapchainExtent.Width, swapchainExtent.Height, 1, msaaSamples, depthFormat, ImageTiling.Optimal, ImageUsageFlags.DepthStencilAttachmentBit, MemoryPropertyFlags.DeviceLocalBit, ref depthImage, ref depthImageMemory);
+        (depthImage, depthImageMemory) = CreateImage(swapchainExtent.Width, swapchainExtent.Height, 1, msaaSamples, depthFormat, ImageTiling.Optimal, ImageUsageFlags.DepthStencilAttachmentBit, MemoryPropertyFlags.DeviceLocalBit);
         depthImageView = CreateImageView(depthImage, depthFormat, ImageAspectFlags.DepthBit, 1);
     }
 
@@ -440,10 +389,10 @@ public unsafe class HelloTriangleApplication_29 : HelloTriangleApplication_28
         var (stagingBuffer, stagingBufferMemory) = CreateBuffer(imageSize, BufferUsageFlags.TransferSrcBit, MemoryPropertyFlags.HostVisibleBit | MemoryPropertyFlags.HostCoherentBit);
 
         var data = stagingBufferMemory.MapMemory();
-        img.CopyPixelDataTo(new Span<byte>(data, (int)imageSize));
+        img.CopyPixelDataTo(data);
         stagingBufferMemory.UnmapMemory();
 
-        CreateImage((uint)img.Width, (uint)img.Height, mipLevels, SampleCountFlags.Count1Bit, Format.R8G8B8A8Srgb, ImageTiling.Optimal, ImageUsageFlags.TransferSrcBit | ImageUsageFlags.TransferDstBit | ImageUsageFlags.SampledBit, MemoryPropertyFlags.DeviceLocalBit, ref textureImage, ref textureImageMemory);
+        (textureImage, textureImageMemory) = CreateImage((uint)img.Width, (uint)img.Height, mipLevels, SampleCountFlags.Count1Bit, Format.R8G8B8A8Srgb, ImageTiling.Optimal, ImageUsageFlags.TransferSrcBit | ImageUsageFlags.TransferDstBit | ImageUsageFlags.SampledBit, MemoryPropertyFlags.DeviceLocalBit);
 
         TransitionImageLayout(textureImage, Format.R8G8B8A8Srgb, ImageLayout.Undefined, ImageLayout.TransferDstOptimal, mipLevels);
         CopyBufferToImage(stagingBuffer, textureImage, (uint)img.Width, (uint)img.Height);
@@ -455,9 +404,8 @@ public unsafe class HelloTriangleApplication_29 : HelloTriangleApplication_28
         GenerateMipMaps(textureImage, Format.R8G8B8A8Srgb, (uint)img.Width, (uint)img.Height, mipLevels);
     }
     
-    protected SampleCountFlags GetMaxUsableSampleCount()
-    {
-        vk!.GetPhysicalDeviceProperties(physicalDevice, out var physicalDeviceProperties);
+    protected SampleCountFlags GetMaxUsableSampleCount() {
+        var physicalDeviceProperties = physicalDevice!.GetProperties();
 
         var counts = physicalDeviceProperties.Limits.FramebufferColorSampleCounts & physicalDeviceProperties.Limits.FramebufferDepthSampleCounts;
 
@@ -473,11 +421,12 @@ public unsafe class HelloTriangleApplication_29 : HelloTriangleApplication_28
         };
     }
 
-    protected void CreateImage(uint width, uint height, uint withMipLevels, SampleCountFlags numSamples, Format format, ImageTiling tiling, ImageUsageFlags usage, MemoryPropertyFlags properties, ref Image image, ref DeviceMemory imageMemory)
+    protected (VulkanImage, VulkanDeviceMemory) CreateImage(uint width, uint height, uint withMipLevels, 
+                                                            SampleCountFlags numSamples, Format format, ImageTiling tiling, 
+                                                            ImageUsageFlags usage, MemoryPropertyFlags properties)
     {
-        ImageCreateInfo imageInfo = new()
+        ImageCreateInformation imageInfo = new()
         {
-            SType = StructureType.ImageCreateInfo,
             ImageType = ImageType.Type2D,
             Extent =
             {
@@ -495,32 +444,9 @@ public unsafe class HelloTriangleApplication_29 : HelloTriangleApplication_28
             SharingMode = SharingMode.Exclusive,
         };
 
-        fixed (Image* imagePtr = &image)
-        {
-            if(vk!.CreateImage(device,imageInfo,null, imagePtr) != Result.Success)
-            {
-                throw new Exception("failed to create image!");
-            }
-        }
-
-        MemoryRequirements memRequirements;
-        vk!.GetImageMemoryRequirements(device, image, out memRequirements);
-
-        MemoryAllocateInfo allocInfo = new()
-        {
-            SType = StructureType.MemoryAllocateInfo,
-            AllocationSize = memRequirements.Size,
-            MemoryTypeIndex = FindMemoryType(memRequirements.MemoryTypeBits,properties),
-        };
-
-        fixed(DeviceMemory* imageMemoryPtr = &imageMemory) 
-        {
-            if (vk!.AllocateMemory(device, allocInfo, null, imageMemoryPtr) != Result.Success)
-            {
-                throw new Exception("failed to allocate image memory!");
-            }
-        }
-
+        var image = device!.CreateImage(imageInfo);
+        var imageMemory = device!.AllocateMemoryFor(image, properties);
         image.BindMemory(imageMemory);
+        return (image, imageMemory);
     }
 }

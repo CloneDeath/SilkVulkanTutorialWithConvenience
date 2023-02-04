@@ -19,7 +19,6 @@ public unsafe class HelloTriangleApplication_02 : HelloTriangleApplication_01
         "VK_LAYER_KHRONOS_validation"
     };
 
-    protected VulkanDebugUtils? debugUtils;
     protected VulkanDebugUtilsMessenger? debugMessenger;
     
     protected override void InitVulkan()
@@ -99,13 +98,10 @@ public unsafe class HelloTriangleApplication_02 : HelloTriangleApplication_01
     {
         if (!EnableValidationLayers) return;
 
-        //TryGetInstanceExtension equivalent to method CreateDebugUtilsMessengerEXT from original tutorial.
-        debugUtils = instance!.GetDebugUtilsExtension();
-
         DebugUtilsMessengerCreateInformation createInfo = new();
         PopulateDebugMessengerCreateInfo(ref createInfo);
 
-        debugMessenger = debugUtils.CreateDebugUtilsMessenger(createInfo);
+        debugMessenger = instance!.DebugUtils.CreateDebugUtilsMessenger(createInfo);
     }
 
     protected string[] GetRequiredExtensions()

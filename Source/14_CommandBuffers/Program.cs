@@ -77,7 +77,7 @@ public class HelloTriangleApplication_14 : HelloTriangleApplication_13
     {
         commandBuffers = new VulkanCommandBuffer[swapchainFramebuffers!.Length];
 
-        commandBuffers = commandPool!.AllocateCommandBuffers((uint)commandBuffers.Length, CommandBufferLevel.Primary);
+        commandBuffers = commandPool!.AllocateCommandBuffers((uint)commandBuffers.Length);
 
         for (int i = 0; i < commandBuffers.Length; i++)
         {

@@ -180,7 +180,7 @@ public class HelloTriangleApplication_15 : HelloTriangleApplication_14
             ImageIndices = new[]{imageIndex}
         };
         
-        khrSwapchain!.QueuePresent(presentQueue!, presentInfo);
+        device!.KhrSwapchain.QueuePresent(presentQueue!, presentInfo);
 
         currentFrame = (currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
 

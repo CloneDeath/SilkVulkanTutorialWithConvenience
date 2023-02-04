@@ -25,7 +25,7 @@ public class HelloTriangleApplication_03 : HelloTriangleApplication_02
     }
     
     protected virtual void PickPhysicalDevice() {
-        var devices = instance!.EnumeratePhysicalDevices();
+        var devices = instance!.PhysicalDevices;
 
         foreach (var physDevice in devices)
         {

@@ -1,11 +1,10 @@
-﻿using Silk.NET.Core.Native;
-using Silk.NET.Vulkan;
+﻿using Silk.NET.Vulkan;
 using SilkNetConvenience.Pipelines;
 
 var app = new HelloTriangleApplication_12();
 app.Run();
 
-public unsafe class HelloTriangleApplication_12 : HelloTriangleApplication_11
+public class HelloTriangleApplication_12 : HelloTriangleApplication_11
 {
     protected VulkanPipeline? graphicsPipeline;
 

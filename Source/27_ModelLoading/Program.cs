@@ -1,8 +1,9 @@
 ﻿using System.Runtime.CompilerServices;
 using Silk.NET.Maths;
 using Silk.NET.Vulkan;
-using Buffer = Silk.NET.Vulkan.Buffer;
 using Silk.NET.Assimp;
+using SilkNetConvenience.RenderPasses;
+using SixLabors.ImageSharp.PixelFormats;
 
 var app = new HelloTriangleApplication_27();
 app.Run();
@@ -47,19 +48,17 @@ public unsafe class HelloTriangleApplication_27 : HelloTriangleApplication_26
 
     protected override void CreateTextureImage()
     {
-        using var img = SixLabors.ImageSharp.Image.Load<SixLabors.ImageSharp.PixelFormats.Rgba32>(TEXTURE_PATH);
+        using var img = SixLabors.ImageSharp.Image.Load<Rgba32>(TEXTURE_PATH);
 
         ulong imageSize = (ulong)(img.Width * img.Height * img.PixelType.BitsPerPixel / 8);
 
-        Buffer stagingBuffer = default;
-        DeviceMemory stagingBufferMemory = default;
-        CreateBuffer(imageSize, BufferUsageFlags.TransferSrcBit, MemoryPropertyFlags.HostVisibleBit | MemoryPropertyFlags.HostCoherentBit,ref stagingBuffer, ref stagingBufferMemory );
+        var (stagingBuffer, stagingBufferMemory ) = CreateBuffer(imageSize, BufferUsageFlags.TransferSrcBit, MemoryPropertyFlags.HostVisibleBit | MemoryPropertyFlags.HostCoherentBit);
 
-        var data = stagingBufferMemory.MapMemory();
-        img.CopyPixelDataTo(new Span<byte>(data, (int)imageSize));
+        var data = stagingBufferMemory.MapMemory<Rgba32>();
+        img.CopyPixelDataTo(data);
         stagingBufferMemory.UnmapMemory();
 
-        CreateImage((uint)img.Width, (uint)img.Height, Format.R8G8B8A8Srgb, ImageTiling.Optimal, ImageUsageFlags.TransferDstBit | ImageUsageFlags.SampledBit, MemoryPropertyFlags.DeviceLocalBit, ref textureImage, ref textureImageMemory);
+        (textureImage, textureImageMemory) = CreateImage((uint)img.Width, (uint)img.Height, Format.R8G8B8A8Srgb, ImageTiling.Optimal, ImageUsageFlags.TransferDstBit | ImageUsageFlags.SampledBit, MemoryPropertyFlags.DeviceLocalBit);
 
         TransitionImageLayout(textureImage, Format.R8G8B8A8Srgb, ImageLayout.Undefined, ImageLayout.TransferDstOptimal);
         CopyBufferToImage(stagingBuffer, textureImage, (uint)img.Width, (uint)img.Height);
@@ -137,8 +136,8 @@ public unsafe class HelloTriangleApplication_27 : HelloTriangleApplication_26
 
         var (stagingBuffer, stagingBufferMemory) = CreateBuffer(bufferSize, BufferUsageFlags.TransferSrcBit, MemoryPropertyFlags.HostVisibleBit | MemoryPropertyFlags.HostCoherentBit);
 
-        var data = stagingBufferMemory.MapMemory<Vertex_17>();
-            indices_27.AsSpan().CopyTo(new Span<uint>(data, indices_27.Length));
+        var data = stagingBufferMemory.MapMemory<uint>();
+            indices_27.AsSpan().CopyTo(data);
         stagingBufferMemory.UnmapMemory();
 
         (indexBuffer, indexBufferMemory) = CreateBuffer(bufferSize, BufferUsageFlags.TransferDstBit | BufferUsageFlags.IndexBufferBit, MemoryPropertyFlags.DeviceLocalBit);
@@ -157,10 +156,9 @@ public unsafe class HelloTriangleApplication_27 : HelloTriangleApplication_26
         {
             commandBuffers[i].Begin();
 
-            RenderPassBeginInfo renderPassInfo = new()
+            RenderPassBeginInformation renderPassInfo = new()
             {
-                SType= StructureType.RenderPassBeginInfo,
-                RenderPass = renderPass,
+                RenderPass = renderPass!,
                 Framebuffer = swapchainFramebuffers[i],
                 RenderArea =
                 {
@@ -181,31 +179,23 @@ public unsafe class HelloTriangleApplication_27 : HelloTriangleApplication_26
                 }
             };
 
+            renderPassInfo.ClearValues = clearValues;
 
-            fixed(ClearValue* clearValuesPtr = clearValues)
-            {
-                renderPassInfo.ClearValueCount = (uint)clearValues.Length;
-                renderPassInfo.PClearValues = clearValuesPtr;
-
-                commandBuffers[i].BeginRenderPass(renderPassInfo, SubpassContents.Inline);
-            }
+            commandBuffers[i].BeginRenderPass(renderPassInfo, SubpassContents.Inline);
 
             commandBuffers[i].BindPipeline(PipelineBindPoint.Graphics, graphicsPipeline!);
 
                 commandBuffers[i].BindVertexBuffer(0, vertexBuffer!);
 
-                vk!.CmdBindIndexBuffer(commandBuffers[i], indexBuffer, 0, IndexType.Uint32);
+                commandBuffers[i].BindIndexBuffer(indexBuffer!, 0, IndexType.Uint32);
 
-                vk!.CmdBindDescriptorSets(commandBuffers[i], PipelineBindPoint.Graphics, pipelineLayout, 0, 1, descriptorSets![i], 0, null);
+                commandBuffers[i].BindDescriptorSet(PipelineBindPoint.Graphics, pipelineLayout!, 0, descriptorSets![i]);
 
-                vk!.CmdDrawIndexed(commandBuffers[i], (uint)indices_27!.Length, 1, 0, 0, 0);
+                commandBuffers[i].DrawIndexed((uint)indices_27!.Length);
 
             commandBuffers[i].EndRenderPass();
             
-            if (vk!.EndCommandBuffer(commandBuffers[i]) != Result.Success)
-            {
-                throw new Exception("failed to record command buffer!");
-            }
+            commandBuffers[i].End();
 
         }
     }

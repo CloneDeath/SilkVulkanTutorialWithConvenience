@@ -1,6 +1,5 @@
 ﻿using Silk.NET.Vulkan;
 using Silk.NET.Vulkan.Extensions.KHR;
-using SilkNetConvenience;
 using SilkNetConvenience.Devices;
 using SilkNetConvenience.KHR;
 
@@ -21,7 +20,6 @@ public class HelloTriangleApplication_06 : HelloTriangleApplication_05
         KhrSwapchain.ExtensionName
     };
 
-    protected VulkanKhrSwapchain? khrSwapchain;
     protected VulkanSwapchain? swapchain;
     protected VulkanSwapchainImage[]? swapchainImages;
     protected Format swapchainImageFormat;
@@ -136,10 +134,8 @@ public class HelloTriangleApplication_06 : HelloTriangleApplication_05
         creatInfo.PresentMode = presentMode;
         creatInfo.Clipped = true;
         creatInfo.OldSwapchain = default;
-
-        khrSwapchain = device!.GetKhrSwapchainExtension();
-
-        swapchain = khrSwapchain!.CreateSwapchain(creatInfo);
+        
+        swapchain = device!.KhrSwapchain.CreateSwapchain(creatInfo);
 
         swapchainImages = swapchain.GetImages();
 
@@ -198,9 +194,9 @@ public class HelloTriangleApplication_06 : HelloTriangleApplication_05
     protected SwapchainSupportDetails QuerySwapchainSupport(VulkanPhysicalDevice physDevice)
     {
         return new SwapchainSupportDetails {
-            Capabilities = khrSurface!.GetPhysicalDeviceSurfaceCapabilities(physDevice, surface!),
-            Formats = khrSurface!.GetPhysicalDeviceSurfaceFormats(physDevice, surface!),
-            PresentModes = khrSurface.GetPhysicalDeviceSurfacePresentModes(physDevice, surface!)
+            Capabilities = instance!.KhrSurface.GetPhysicalDeviceSurfaceCapabilities(physDevice, surface!),
+            Formats = instance!.KhrSurface.GetPhysicalDeviceSurfaceFormats(physDevice, surface!),
+            PresentModes = instance!.KhrSurface.GetPhysicalDeviceSurfacePresentModes(physDevice, surface!)
         };
     }
 
