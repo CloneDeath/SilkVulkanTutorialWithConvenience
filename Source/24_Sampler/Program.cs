@@ -1,14 +1,14 @@
-﻿using System.Runtime.CompilerServices;
-using Silk.NET.Core.Native;
-using Silk.NET.Vulkan;
+﻿using Silk.NET.Vulkan;
+using SilkNetConvenience.Devices;
+using SilkNetConvenience.Images;
 
 var app = new HelloTriangleApplication_24();
 app.Run();
 
-public unsafe class HelloTriangleApplication_24 : HelloTriangleApplication_23
+public class HelloTriangleApplication_24 : HelloTriangleApplication_23
 {
-    protected ImageView textureImageView;
-    protected Sampler textureSampler;
+    protected VulkanImageView? textureImageView;
+    protected VulkanSampler? textureSampler;
 
     protected override void InitVulkan()
     {
@@ -40,8 +40,8 @@ public unsafe class HelloTriangleApplication_24 : HelloTriangleApplication_23
     {
         CleanUpSwapchain();
 
-        vk!.DestroySampler(device, textureSampler, null);
-        vk!.DestroyImageView(device, textureImageView, null);
+        textureSampler!.Dispose();
+        textureImageView!.Dispose();
 
         textureImage!.Dispose();
         textureImageMemory!.Dispose();
@@ -80,26 +80,20 @@ public unsafe class HelloTriangleApplication_24 : HelloTriangleApplication_23
 
     protected override void CreateLogicalDevice()
     {
-        var qfIndices = FindQueueFamilies_05(physicalDevice);
+        var qfIndices = FindQueueFamilies_05(physicalDevice!);
 
         var uniqueQueueFamilies = new[] { qfIndices.GraphicsFamily!.Value, qfIndices.PresentFamily!.Value };
         uniqueQueueFamilies = uniqueQueueFamilies.Distinct().ToArray();
 
-        using var mem = GlobalMemory.Allocate(uniqueQueueFamilies.Length * sizeof(DeviceQueueCreateInfo));
-        var queueCreateInfos = (DeviceQueueCreateInfo*)Unsafe.AsPointer(ref mem.GetPinnableReference());
+        var queueCreateInfos = new DeviceQueueCreateInformation[uniqueQueueFamilies.Length];
 
-        float queuePriority = 1.0f;
         for (int i = 0; i < uniqueQueueFamilies.Length; i++)
         {
             queueCreateInfos[i] = new()
             {
-                SType = StructureType.DeviceQueueCreateInfo,
                 QueueFamilyIndex = uniqueQueueFamilies[i],
-                QueueCount = 1
+                QueuePriorities = new[]{1f}
             };
-
-
-            queueCreateInfos[i].PQueuePriorities = &queuePriority;
         }
 
         PhysicalDeviceFeatures deviceFeatures = new()
@@ -108,66 +102,45 @@ public unsafe class HelloTriangleApplication_24 : HelloTriangleApplication_23
         };
 
 
-        DeviceCreateInfo createInfo = new()
+        DeviceCreateInformation createInfo = new()
         {
-            SType = StructureType.DeviceCreateInfo,
-            QueueCreateInfoCount = (uint)uniqueQueueFamilies.Length,
-            PQueueCreateInfos = queueCreateInfos,
-
-            PEnabledFeatures = &deviceFeatures,
-
-            EnabledExtensionCount = (uint)deviceExtensions.Length,
-            PpEnabledExtensionNames = (byte**)SilkMarshal.StringArrayToPtr(deviceExtensions)
+            QueueCreateInfos = queueCreateInfos,
+            EnabledFeatures = deviceFeatures,
+            EnabledExtensions = deviceExtensions
         };
 
         if (EnableValidationLayers)
         {
-            createInfo.EnabledLayerCount = (uint)validationLayers.Length;
-            createInfo.PpEnabledLayerNames = (byte**)SilkMarshal.StringArrayToPtr(validationLayers);
-        }
-        else
-        {
-            createInfo.EnabledLayerCount = 0;
+            createInfo.EnabledLayers = validationLayers;
         }
 
         device = physicalDevice!.CreateDevice(createInfo);
 
-        vk!.GetDeviceQueue(device, qfIndices.GraphicsFamily!.Value, 0, out graphicsQueue);
-        vk!.GetDeviceQueue(device, qfIndices.PresentFamily!.Value, 0, out presentQueue);
-
-        if (EnableValidationLayers)
-        {
-            SilkMarshal.Free((nint)createInfo.PpEnabledLayerNames);
-        }
-
-        SilkMarshal.Free((nint)createInfo.PpEnabledExtensionNames);
-
+        graphicsQueue = device.GetDeviceQueue(qfIndices.GraphicsFamily!.Value, 0);
+        presentQueue = device.GetDeviceQueue(qfIndices.PresentFamily!.Value, 0);
     }
 
     protected override void CreateImageViews()
     {
-        swapchainImageViews = new ImageView[swapchainImages!.Length];
+        swapchainImageViews = new VulkanImageView[swapchainImages!.Length];
 
         for (int i = 0; i < swapchainImages.Length; i++)
         {
-
             swapchainImageViews[i] = CreateImageView(swapchainImages[i], swapchainImageFormat);
         }
     }
 
     protected virtual void CreateTextureImageView()
     {
-        textureImageView = CreateImageView(textureImage, Format.R8G8B8A8Srgb);
+        textureImageView = CreateImageView(textureImage!, Format.R8G8B8A8Srgb);
     }
 
     protected virtual void CreateTextureSampler()
     {
-        PhysicalDeviceProperties properties;
-        vk!.GetPhysicalDeviceProperties(physicalDevice, out properties);
+        var properties = physicalDevice!.GetProperties();
 
-        SamplerCreateInfo samplerInfo = new()
+        SamplerCreateInformation samplerInfo = new()
         {
-            SType = StructureType.SamplerCreateInfo,
             MagFilter = Filter.Linear,
             MinFilter = Filter.Linear,
             AddressModeU = SamplerAddressMode.Repeat,
@@ -182,20 +155,13 @@ public unsafe class HelloTriangleApplication_24 : HelloTriangleApplication_23
             MipmapMode = SamplerMipmapMode.Linear,
         };
 
-        fixed(Sampler* textureSamplerPtr = &textureSampler)
-        {
-            if(vk!.CreateSampler(device, samplerInfo, null, textureSamplerPtr) != Result.Success)
-            {
-                throw new Exception("failed to create texture sampler!");
-            }
-        }
+        textureSampler = device!.CreateSampler(samplerInfo);
     }
 
-    protected ImageView CreateImageView(Image image, Format format)
+    protected VulkanImageView CreateImageView(Image image, Format format)
     {
-        ImageViewCreateInfo createInfo = new()
+        ImageViewCreateInformation createInfo = new()
         {
-            SType = StructureType.ImageViewCreateInfo,
             Image = image,
             ViewType = ImageViewType.Type2D,
             Format = format,
@@ -217,32 +183,23 @@ public unsafe class HelloTriangleApplication_24 : HelloTriangleApplication_23
 
         };
 
-        ImageView imageView;
-
-        if (vk!.CreateImageView(device, createInfo, null, out imageView) != Result.Success)
-        {
-            throw new Exception("failed to create image views!");
-        }
-
-        return imageView;
+        return device!.CreateImageView(createInfo);
     }
     
-    protected override bool IsDeviceSuitable(PhysicalDevice candidateDevice)
+    protected override bool IsDeviceSuitable(VulkanPhysicalDevice physDevice)
     {
-        var qfIndices = FindQueueFamilies_05(candidateDevice);
+        var qfIndices = FindQueueFamilies_05(physDevice);
 
-        bool extensionsSupported = CheckDeviceExtensionsSupport(candidateDevice);
+        bool extensionsSupported = CheckDeviceExtensionsSupport(physDevice);
 
         bool swapchainAdequate = false;
         if (extensionsSupported)
         {
-            var swapchainSupport = QuerySwapchainSupport(candidateDevice);
+            var swapchainSupport = QuerySwapchainSupport(physDevice);
             swapchainAdequate =  swapchainSupport.Formats.Any() && swapchainSupport.PresentModes.Any();
         }
 
-        PhysicalDeviceFeatures supportedFeatures;
-        vk!.GetPhysicalDeviceFeatures(candidateDevice, out supportedFeatures);
-
+        var supportedFeatures = physDevice.GetFeatures();
         return qfIndices.IsComplete() && extensionsSupported && swapchainAdequate && supportedFeatures.SamplerAnisotropy;
     }
 }

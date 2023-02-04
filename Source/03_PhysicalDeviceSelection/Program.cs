@@ -42,9 +42,9 @@ public class HelloTriangleApplication_03 : HelloTriangleApplication_02
         }
     }
 
-    protected virtual bool IsDeviceSuitable(VulkanPhysicalDevice candidateDevice)
+    protected virtual bool IsDeviceSuitable(VulkanPhysicalDevice physDevice)
     {
-        var indices = FindQueueFamilies_03(candidateDevice);
+        var indices = FindQueueFamilies_03(physDevice);
 
         return indices.IsComplete();
     }

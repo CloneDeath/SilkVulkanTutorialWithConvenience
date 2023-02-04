@@ -204,16 +204,16 @@ public class HelloTriangleApplication_06 : HelloTriangleApplication_05
         };
     }
 
-    protected override bool IsDeviceSuitable(VulkanPhysicalDevice candidateDevice)
+    protected override bool IsDeviceSuitable(VulkanPhysicalDevice physDevice)
     {
-        var indices = FindQueueFamilies_05(candidateDevice);
+        var indices = FindQueueFamilies_05(physDevice);
 
-        bool extensionsSupported = CheckDeviceExtensionsSupport(candidateDevice);
+        bool extensionsSupported = CheckDeviceExtensionsSupport(physDevice);
 
         bool swapchainAdequate = false;
         if (extensionsSupported)
         {
-            var swapchainSupport = QuerySwapchainSupport(candidateDevice);
+            var swapchainSupport = QuerySwapchainSupport(physDevice);
             swapchainAdequate =  swapchainSupport.Formats.Any() && swapchainSupport.PresentModes.Any();
         }
 

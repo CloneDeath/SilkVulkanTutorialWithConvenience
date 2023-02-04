@@ -1,9 +1,8 @@
 ﻿using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using Silk.NET.Core.Native;
 using Silk.NET.Maths;
 using Silk.NET.Vulkan;
-using Buffer = Silk.NET.Vulkan.Buffer;
+using SilkNetConvenience.Descriptors;
 
 var app = new HelloTriangleApplication_25();
 app.Run();
@@ -69,40 +68,30 @@ public unsafe class HelloTriangleApplication_25 : HelloTriangleApplication_24
 
     protected override void CreateDescriptorSetLayout()
     {
-        DescriptorSetLayoutBinding uboLayoutBinding = new()
+        DescriptorSetLayoutBindingInformation uboLayoutBinding = new()
         {
             Binding = 0,
             DescriptorCount = 1,
             DescriptorType = DescriptorType.UniformBuffer,
-            PImmutableSamplers = null,
             StageFlags = ShaderStageFlags.VertexBit,
         };
 
-        DescriptorSetLayoutBinding samplerLayoutBinding = new()
+        DescriptorSetLayoutBindingInformation samplerLayoutBinding = new()
         {
             Binding = 1,
             DescriptorCount = 1,
             DescriptorType = DescriptorType.CombinedImageSampler,
-            PImmutableSamplers = null,
             StageFlags = ShaderStageFlags.FragmentBit,
         };
 
         var bindings = new[] { uboLayoutBinding, samplerLayoutBinding };
-        
-        fixed(DescriptorSetLayoutBinding* bindingsPtr = bindings)
-        fixed(DescriptorSetLayout* descriptorSetLayoutPtr = &descriptorSetLayout)
-        {
-            DescriptorSetLayoutCreateInfo layoutInfo = new()
-            {
-                SType = StructureType.DescriptorSetLayoutCreateInfo,
-                BindingCount = (uint)bindings.Length,
-                PBindings = bindingsPtr,
-            };
 
-            if (vk!.CreateDescriptorSetLayout(device, layoutInfo, null, descriptorSetLayoutPtr) != Result.Success)
-            {
-                throw new Exception("failed to create descriptor set layout!");
-            }
+        DescriptorSetLayoutCreateInformation layoutInfo = new() {
+            Bindings = bindings
+        };
+
+        if (vk!.CreateDescriptorSetLayout(device, layoutInfo, null, descriptorSetLayoutPtr) != Result.Success) {
+            throw new Exception("failed to create descriptor set layout!");
         }
     }
 
