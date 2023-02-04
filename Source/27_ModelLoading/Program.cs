@@ -55,8 +55,7 @@ public unsafe class HelloTriangleApplication_27 : HelloTriangleApplication_26
         DeviceMemory stagingBufferMemory = default;
         CreateBuffer(imageSize, BufferUsageFlags.TransferSrcBit, MemoryPropertyFlags.HostVisibleBit | MemoryPropertyFlags.HostCoherentBit,ref stagingBuffer, ref stagingBufferMemory );
 
-        void* data;
-        vk!.MapMemory(device, stagingBufferMemory, 0, imageSize, 0, &data);
+        var data = stagingBufferMemory.MapMemory();
         img.CopyPixelDataTo(new Span<byte>(data, (int)imageSize));
         stagingBufferMemory.UnmapMemory();
 

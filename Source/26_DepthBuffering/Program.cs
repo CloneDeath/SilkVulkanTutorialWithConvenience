@@ -137,11 +137,11 @@ public unsafe class HelloTriangleApplication_26 : HelloTriangleApplication_25
 
         for (int i = 0; i < swapchainImages!.Length; i++)
         {
-            vk!.DestroyBuffer(device, uniformBuffers![i], null);
-            vk!.FreeMemory(device, uniformBuffersMemory![i], null);
+            uniformBuffers![i].Dispose();
+            uniformBuffersMemory![i].Dispose();
         }
 
-        vk!.DestroyDescriptorPool(device, descriptorPool, null);
+        descriptorPool!.Dispose();
     }
 
     protected override void RecreateSwapchain()
@@ -295,18 +295,14 @@ public unsafe class HelloTriangleApplication_26 : HelloTriangleApplication_25
         fixed (DescriptorSetLayout* descriptorSetLayoutPtr = &descriptorSetLayout)
         {
 
-            PipelineVertexInputStateCreateInfo vertexInputInfo = new()
+            PipelineVertexInputStateCreateInformation vertexInputInfo = new()
             {
-                SType = StructureType.PipelineVertexInputStateCreateInfo,
-                VertexBindingDescriptionCount = 1,
-                VertexAttributeDescriptionCount = (uint)attributeDescriptions.Length,
-                PVertexBindingDescriptions = &bindingDescription,
-                PVertexAttributeDescriptions = attributeDescriptionsPtr,
+                VertexBindingDescriptions = new[]{bindingDescription},
+                VertexAttributeDescriptions = attributeDescriptions,
             };
 
-            PipelineInputAssemblyStateCreateInfo inputAssembly = new()
+            PipelineInputAssemblyStateCreateInformation inputAssembly = new()
             {
-                SType = StructureType.PipelineInputAssemblyStateCreateInfo,
                 Topology = PrimitiveTopology.TriangleList,
                 PrimitiveRestartEnable = false,
             };
@@ -327,18 +323,14 @@ public unsafe class HelloTriangleApplication_26 : HelloTriangleApplication_25
                 Extent = swapchainExtent,
             };
 
-            PipelineViewportStateCreateInfo viewportState = new()
+            PipelineViewportStateCreateInformation viewportState = new()
             {
-                SType = StructureType.PipelineViewportStateCreateInfo,
-                ViewportCount = 1,
-                PViewports = &viewport,
-                ScissorCount = 1,
-                PScissors = &scissor,
+                Viewports = new[]{viewport},
+                Scissors = new[]{scissor}
             };
 
-            PipelineRasterizationStateCreateInfo rasterizer = new()
+            PipelineRasterizationStateCreateInformation rasterizer = new()
             {
-                SType = StructureType.PipelineRasterizationStateCreateInfo,
                 DepthClampEnable = false,
                 RasterizerDiscardEnable = false,
                 PolygonMode = PolygonMode.Fill,
@@ -348,9 +340,8 @@ public unsafe class HelloTriangleApplication_26 : HelloTriangleApplication_25
                 DepthBiasEnable = false,
             };
 
-            PipelineMultisampleStateCreateInfo multisampling = new()
+            PipelineMultisampleStateCreateInformation multisampling = new()
             {
-                SType = StructureType.PipelineMultisampleStateCreateInfo,
                 SampleShadingEnable = false,
                 RasterizationSamples = SampleCountFlags.Count1Bit,
             };
@@ -371,13 +362,11 @@ public unsafe class HelloTriangleApplication_26 : HelloTriangleApplication_25
                 BlendEnable = false,
             };
 
-            PipelineColorBlendStateCreateInfo colorBlending = new()
+            PipelineColorBlendStateCreateInformation colorBlending = new()
             {
-                SType = StructureType.PipelineColorBlendStateCreateInfo,
                 LogicOpEnable = false,
                 LogicOp = LogicOp.Copy,
-                AttachmentCount = 1,
-                PAttachments = &colorBlendAttachment,
+                Attachments = new[]{colorBlendAttachment}
             };
 
             colorBlending.BlendConstants.X = 0;
@@ -385,18 +374,12 @@ public unsafe class HelloTriangleApplication_26 : HelloTriangleApplication_25
             colorBlending.BlendConstants.Z = 0;
             colorBlending.BlendConstants.W = 0;
 
-            PipelineLayoutCreateInfo pipelineLayoutInfo = new()
+            PipelineLayoutCreateInformation pipelineLayoutInfo = new()
             {
-                SType = StructureType.PipelineLayoutCreateInfo,
-                PushConstantRangeCount = 0,                
-                SetLayoutCount = 1,
-                PSetLayouts = descriptorSetLayoutPtr
+                SetLayouts = new[]{descriptorSetLayout!.DescriptorSetLayout}
             };
 
-            if (vk!.CreatePipelineLayout(device, pipelineLayoutInfo, null, out pipelineLayout) != Result.Success)
-            {
-                throw new Exception("failed to create pipeline layout!");
-            }
+            pipelineLayout = device!.CreatePipelineLayout(pipelineLayoutInfo);
 
             GraphicsPipelineCreateInfo pipelineInfo = new()
             {
@@ -416,10 +399,7 @@ public unsafe class HelloTriangleApplication_26 : HelloTriangleApplication_25
                 BasePipelineHandle = default
             };
 
-            if (vk!.CreateGraphicsPipelines(device, default, 1, pipelineInfo, null, out graphicsPipeline) != Result.Success)
-            {
-                throw new Exception("failed to create graphics pipeline!");
-            }
+            graphicsPipeline = device.CreateGraphicsPipeline(pipelineInfo);
         }
 
         

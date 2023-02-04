@@ -1,8 +1,14 @@
 ﻿using System.Runtime.CompilerServices;
-using Silk.NET.Core.Native;
 using Silk.NET.Maths;
 using Silk.NET.Vulkan;
-using Buffer = Silk.NET.Vulkan.Buffer;
+using SilkNetConvenience.Barriers;
+using SilkNetConvenience.Buffers;
+using SilkNetConvenience.Descriptors;
+using SilkNetConvenience.Exceptions.ResultExceptions;
+using SilkNetConvenience.KHR;
+using SilkNetConvenience.Memory;
+using SilkNetConvenience.Pipelines;
+using SilkNetConvenience.Queues;
 
 var app = new HelloTriangleApplication_21();
 app.Run();
@@ -14,12 +20,12 @@ public struct UniformBufferObject
     public Matrix4X4<float> proj;
 }
 
-public unsafe class HelloTriangleApplication_21 : HelloTriangleApplication_20
+public class HelloTriangleApplication_21 : HelloTriangleApplication_20
 {
-    protected DescriptorSetLayout descriptorSetLayout;
+    protected VulkanDescriptorSetLayout? descriptorSetLayout;
 
-    protected Buffer[]? uniformBuffers;
-    protected DeviceMemory[]? uniformBuffersMemory;
+    protected VulkanBuffer[]? uniformBuffers;
+    protected VulkanDeviceMemory[]? uniformBuffersMemory;
 
     protected override void InitVulkan()
     {
@@ -66,8 +72,8 @@ public unsafe class HelloTriangleApplication_21 : HelloTriangleApplication_20
 
         for (int i = 0; i < swapchainImages!.Length; i++)
         {
-            vk!.DestroyBuffer(device, uniformBuffers![i], null);
-            vk!.FreeMemory(device, uniformBuffersMemory![i], null);
+            uniformBuffers![i].Dispose();
+            uniformBuffersMemory![i].Dispose();
         }
     }
 
@@ -75,7 +81,7 @@ public unsafe class HelloTriangleApplication_21 : HelloTriangleApplication_20
     {
         CleanUpSwapchain();
 
-        vk!.DestroyDescriptorSetLayout(device, descriptorSetLayout, null);
+        descriptorSetLayout!.Dispose();
 
         indexBuffer?.Dispose();
         indexBufferMemory?.Dispose();
@@ -134,29 +140,20 @@ public unsafe class HelloTriangleApplication_21 : HelloTriangleApplication_20
 
     protected virtual void CreateDescriptorSetLayout()
     {
-        DescriptorSetLayoutBinding uboLayoutBinding = new()
+        DescriptorSetLayoutBindingInformation uboLayoutBinding = new()
         {
             Binding = 0,
             DescriptorCount = 1,
             DescriptorType = DescriptorType.UniformBuffer,
-            PImmutableSamplers = null,
             StageFlags = ShaderStageFlags.VertexBit,
         };
 
-        DescriptorSetLayoutCreateInfo layoutInfo = new()
+        DescriptorSetLayoutCreateInformation layoutInfo = new()
         {
-            SType = StructureType.DescriptorSetLayoutCreateInfo,
-            BindingCount = 1,
-            PBindings = &uboLayoutBinding,
+            Bindings = new []{uboLayoutBinding}
         };
 
-        fixed(DescriptorSetLayout* descriptorSetLayoutPtr = &descriptorSetLayout)
-        {
-            if(vk!.CreateDescriptorSetLayout(device, layoutInfo, null, descriptorSetLayoutPtr) != Result.Success)
-            {
-                throw new Exception("failed to create descriptor set layout!");
-            }
-        }
+        descriptorSetLayout = device!.CreateDescriptorSetLayout(layoutInfo);
     }
 
     protected override void CreateGraphicsPipeline()
@@ -190,135 +187,105 @@ public unsafe class HelloTriangleApplication_21 : HelloTriangleApplication_20
         var bindingDescription = Vertex_17.GetBindingDescription();
         var attributeDescriptions = Vertex_17.GetAttributeDescriptions();
 
-        fixed (VertexInputAttributeDescription* attributeDescriptionsPtr = attributeDescriptions)
-        fixed (DescriptorSetLayout* descriptorSetLayoutPtr = &descriptorSetLayout)
+        PipelineVertexInputStateCreateInformation vertexInputInfo = new()
         {
+            VertexBindingDescriptions = new[]{bindingDescription},
+            VertexAttributeDescriptions = attributeDescriptions
+        };
 
-            PipelineVertexInputStateCreateInfo vertexInputInfo = new()
-            {
-                SType = StructureType.PipelineVertexInputStateCreateInfo,
-                VertexBindingDescriptionCount = 1,
-                VertexAttributeDescriptionCount = (uint)attributeDescriptions.Length,
-                PVertexBindingDescriptions = &bindingDescription,
-                PVertexAttributeDescriptions = attributeDescriptionsPtr,
-            };
+        PipelineInputAssemblyStateCreateInformation inputAssembly = new()
+        {
+            Topology = PrimitiveTopology.TriangleList,
+            PrimitiveRestartEnable = false,
+        };
 
-            PipelineInputAssemblyStateCreateInfo inputAssembly = new()
-            {
-                SType = StructureType.PipelineInputAssemblyStateCreateInfo,
-                Topology = PrimitiveTopology.TriangleList,
-                PrimitiveRestartEnable = false,
-            };
+        Viewport viewport = new()
+        {
+            X = 0,
+            Y = 0,
+            Width = swapchainExtent.Width,
+            Height = swapchainExtent.Height,
+            MinDepth = 0,
+            MaxDepth = 1,
+        };
 
-            Viewport viewport = new()
-            {
-                X = 0,
-                Y = 0,
-                Width = swapchainExtent.Width,
-                Height = swapchainExtent.Height,
-                MinDepth = 0,
-                MaxDepth = 1,
-            };
+        Rect2D scissor = new()
+        {
+            Offset = { X = 0, Y = 0 },
+            Extent = swapchainExtent,
+        };
 
-            Rect2D scissor = new()
-            {
-                Offset = { X = 0, Y = 0 },
-                Extent = swapchainExtent,
-            };
+        PipelineViewportStateCreateInformation viewportState = new()
+        {
+            Viewports = new[]{viewport},
+            Scissors = new[]{scissor}
+        };
 
-            PipelineViewportStateCreateInfo viewportState = new()
-            {
-                SType = StructureType.PipelineViewportStateCreateInfo,
-                ViewportCount = 1,
-                PViewports = &viewport,
-                ScissorCount = 1,
-                PScissors = &scissor,
-            };
+        PipelineRasterizationStateCreateInformation rasterizer = new()
+        {
+            DepthClampEnable = false,
+            RasterizerDiscardEnable = false,
+            PolygonMode = PolygonMode.Fill,
+            LineWidth = 1,
+            CullMode = CullModeFlags.BackBit,
+            FrontFace = FrontFace.Clockwise,
+            DepthBiasEnable = false,
+        };
 
-            PipelineRasterizationStateCreateInfo rasterizer = new()
-            {
-                SType = StructureType.PipelineRasterizationStateCreateInfo,
-                DepthClampEnable = false,
-                RasterizerDiscardEnable = false,
-                PolygonMode = PolygonMode.Fill,
-                LineWidth = 1,
-                CullMode = CullModeFlags.BackBit,
-                FrontFace = FrontFace.Clockwise,
-                DepthBiasEnable = false,
-            };
+        PipelineMultisampleStateCreateInformation multisampling = new()
+        {
+            SampleShadingEnable = false,
+            RasterizationSamples = SampleCountFlags.Count1Bit,
+        };
 
-            PipelineMultisampleStateCreateInfo multisampling = new()
-            {
-                SType = StructureType.PipelineMultisampleStateCreateInfo,
-                SampleShadingEnable = false,
-                RasterizationSamples = SampleCountFlags.Count1Bit,
-            };
+        PipelineColorBlendAttachmentState colorBlendAttachment = new()
+        {
+            ColorWriteMask = ColorComponentFlags.RBit | ColorComponentFlags.GBit | ColorComponentFlags.BBit | ColorComponentFlags.ABit,
+            BlendEnable = false,
+        };
 
-            PipelineColorBlendAttachmentState colorBlendAttachment = new()
-            {
-                ColorWriteMask = ColorComponentFlags.RBit | ColorComponentFlags.GBit | ColorComponentFlags.BBit | ColorComponentFlags.ABit,
-                BlendEnable = false,
-            };
+        PipelineColorBlendStateCreateInformation colorBlending = new()
+        {
+            LogicOpEnable = false,
+            LogicOp = LogicOp.Copy,
+            Attachments = new[]{colorBlendAttachment},
+        };
 
-            PipelineColorBlendStateCreateInfo colorBlending = new()
-            {
-                SType = StructureType.PipelineColorBlendStateCreateInfo,
-                LogicOpEnable = false,
-                LogicOp = LogicOp.Copy,
-                AttachmentCount = 1,
-                PAttachments = &colorBlendAttachment,
-            };
+        colorBlending.BlendConstants.X = 0;
+        colorBlending.BlendConstants.Y = 0;
+        colorBlending.BlendConstants.Z = 0;
+        colorBlending.BlendConstants.W = 0;
 
-            colorBlending.BlendConstants.X = 0;
-            colorBlending.BlendConstants.Y = 0;
-            colorBlending.BlendConstants.Z = 0;
-            colorBlending.BlendConstants.W = 0;
+        PipelineLayoutCreateInformation pipelineLayoutInfo = new()
+        {
+            SetLayouts = new []{descriptorSetLayout!.DescriptorSetLayout}
+        };
 
-            PipelineLayoutCreateInfo pipelineLayoutInfo = new()
-            {
-                SType = StructureType.PipelineLayoutCreateInfo,
-                PushConstantRangeCount = 0,                
-                SetLayoutCount = 1,
-                PSetLayouts = descriptorSetLayoutPtr
-            };
+        pipelineLayout = device!.CreatePipelineLayout(pipelineLayoutInfo);
 
-            if (vk!.CreatePipelineLayout(device, pipelineLayoutInfo, null, out pipelineLayout) != Result.Success)
-            {
-                throw new Exception("failed to create pipeline layout!");
-            }
+        GraphicsPipelineCreateInformation pipelineInfo = new()
+        {
+            Stages = shaderStages,
+            VertexInputState = vertexInputInfo,
+            InputAssemblyState = inputAssembly,
+            ViewportState = viewportState,
+            RasterizationState = rasterizer,
+            MultisampleState = multisampling,
+            ColorBlendState = colorBlending,
+            Layout = pipelineLayout!,
+            RenderPass = renderPass!,
+            Subpass = 0
+        };
 
-            GraphicsPipelineCreateInfo pipelineInfo = new()
-            {
-                SType = StructureType.GraphicsPipelineCreateInfo,
-                StageCount = 2,
-                PStages = shaderStages,
-                PVertexInputState = &vertexInputInfo,
-                PInputAssemblyState = &inputAssembly,
-                PViewportState = &viewportState,
-                PRasterizationState = &rasterizer,
-                PMultisampleState = &multisampling,
-                PColorBlendState = &colorBlending,
-                Layout = pipelineLayout,
-                RenderPass = renderPass,
-                Subpass = 0,
-                BasePipelineHandle = default
-            };
-
-            if (vk!.CreateGraphicsPipelines(device, default, 1, pipelineInfo, null, out graphicsPipeline) != Result.Success)
-            {
-                throw new Exception("failed to create graphics pipeline!");
-            }
-        }
-
-        
+        graphicsPipeline = device!.CreateGraphicsPipeline(pipelineInfo);
     }
 
     protected void CreateUniformBuffers()
     {
         ulong bufferSize = (ulong)Unsafe.SizeOf<UniformBufferObject>();
 
-        uniformBuffers = new Buffer[swapchainImages!.Length];
-        uniformBuffersMemory = new DeviceMemory[swapchainImages!.Length];
+        uniformBuffers = new VulkanBuffer[swapchainImages!.Length];
+        uniformBuffersMemory = new VulkanDeviceMemory[swapchainImages!.Length];
 
         for (int i = 0; i < swapchainImages.Length; i++)
         {
@@ -340,96 +307,70 @@ public unsafe class HelloTriangleApplication_21 : HelloTriangleApplication_20
         };
         ubo.proj.M22 *= -1;
 
-
-        void* data;
-        vk!.MapMemory(device, uniformBuffersMemory![currentImage], 0, (ulong)Unsafe.SizeOf<UniformBufferObject>(), 0, &data);
-            new Span<UniformBufferObject>(data, 1)[0] = ubo;
-        vk!.UnmapMemory(device, uniformBuffersMemory![currentImage]);
+        var data = uniformBuffersMemory![currentImage].MapMemory<UniformBufferObject>();
+        data[0] = ubo;
+        uniformBuffersMemory![currentImage].UnmapMemory();
     }
 
     protected override void DrawFrame(double delta)
     {
         inFlightFences![currentFrame].Wait();
 
-        uint imageIndex = 0;
-        var result = khrSwapchain!.AcquireNextImage(device, swapchain, ulong.MaxValue, imageAvailableSemaphores![currentFrame], default, ref imageIndex);
-
-        if(result == Result.ErrorOutOfDateKhr)
-        {
+        uint imageIndex;
+        try {
+            imageIndex = swapchain!.AcquireNextImage(imageAvailableSemaphores![currentFrame]);
+        }
+        catch (ErrorOutOfDateKhrException) {
             RecreateSwapchain();
             return;
-        }
-        else if(result != Result.Success && result != Result.SuboptimalKhr)
-        {
-            throw new Exception("failed to acquire swap chain image!");
         }
 
         UpdateUniformBuffer(imageIndex);
 
-        if(imagesInFlight![imageIndex].Handle != default)
+        if(imagesInFlight![imageIndex] != null)
         {
-            vk!.WaitForFences(device, 1, imagesInFlight[imageIndex], true, ulong.MaxValue);
+            imagesInFlight![imageIndex]!.Wait();
         }
         imagesInFlight[imageIndex] = inFlightFences[currentFrame];
 
-        SubmitInfo submitInfo = new()
-        {
-            SType = StructureType.SubmitInfo,
-        };
+        SubmitInformation submitInfo = new();
 
-        var waitSemaphores = new [] {imageAvailableSemaphores[currentFrame]};
+        var waitSemaphores = new [] {imageAvailableSemaphores[currentFrame].Semaphore};
         var waitStages = new [] { PipelineStageFlags.ColorAttachmentOutputBit };
 
         var buffer = commandBuffers![imageIndex];
 
-        submitInfo = submitInfo with 
-        { 
-            WaitSemaphoreCount = 1,
-            PWaitSemaphores = waitSemaphores,
-            PWaitDstStageMask = waitStages,
-            
-            CommandBufferCount = 1,
-            PCommandBuffers = &buffer
+        submitInfo.WaitSemaphores = waitSemaphores;
+        submitInfo.WaitDstStageMask = waitStages;
+        submitInfo.CommandBuffers = new[]{buffer.CommandBuffer};
+
+        var signalSemaphores = new[] { renderFinishedSemaphores![currentFrame].Semaphore };
+        submitInfo.SignalSemaphores = signalSemaphores;
+
+        inFlightFences[currentFrame].Reset();
+
+        graphicsQueue!.Submit(submitInfo, inFlightFences[currentFrame]);
+
+        var swapchains = new[] { swapchain.Swapchain };
+        PresentInformation presentInfo = new()
+        {
+            WaitSemaphores = signalSemaphores,
+            Swapchains = swapchains,
+            ImageIndices = new[]{imageIndex}
         };
 
-        var signalSemaphores = new[] { renderFinishedSemaphores![currentFrame] };
-        submitInfo = submitInfo with
-        {
-            SignalSemaphoreCount = 1,
-            PSignalSemaphores = signalSemaphores,
-        };
-
-        vk!.ResetFences(device, 1,inFlightFences[currentFrame]);
-
-        if(vk!.QueueSubmit(graphicsQueue, 1, submitInfo, inFlightFences[currentFrame]) != Result.Success)
-        {
-            throw new Exception("failed to submit draw command buffer!");
+        try {
+            khrSwapchain!.QueuePresent(presentQueue!, presentInfo);
         }
-
-        var swapchains = new[] { swapchain };
-        PresentInfoKHR presentInfo = new()
-        {
-            SType = StructureType.PresentInfoKhr,
-
-            WaitSemaphoreCount = 1,
-            PWaitSemaphores = signalSemaphores,
-
-            SwapchainCount = 1,
-            PSwapchains = swapchains,
-
-            PImageIndices = &imageIndex
-        };
-
-        result = khrSwapchain.QueuePresent(presentQueue, presentInfo);
-
-        if(result == Result.ErrorOutOfDateKhr || result == Result.SuboptimalKhr || frameBufferResized)
-        {
+        catch (ErrorOutOfDateKhrException) {
+            frameBufferResized = true;
+        }
+        catch (SuboptimalKhrException) {
+            frameBufferResized = true;
+        }
+        if (frameBufferResized){
             frameBufferResized = false;
             RecreateSwapchain();
-        }
-        else if(result != Result.Success)
-        {
-            throw new Exception("failed to present swap chain image!");
         }
 
         currentFrame = (currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;

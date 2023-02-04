@@ -141,18 +141,14 @@ public unsafe class HelloTriangleApplication_25 : HelloTriangleApplication_24
         fixed (DescriptorSetLayout* descriptorSetLayoutPtr = &descriptorSetLayout)
         {
 
-            PipelineVertexInputStateCreateInfo vertexInputInfo = new()
+            PipelineVertexInputStateCreateInformation vertexInputInfo = new()
             {
-                SType = StructureType.PipelineVertexInputStateCreateInfo,
-                VertexBindingDescriptionCount = 1,
-                VertexAttributeDescriptionCount = (uint)attributeDescriptions.Length,
-                PVertexBindingDescriptions = &bindingDescription,
-                PVertexAttributeDescriptions = attributeDescriptionsPtr,
+                VertexBindingDescriptions = new[]{bindingDescription},
+                VertexAttributeDescriptions = attributeDescriptions,
             };
 
-            PipelineInputAssemblyStateCreateInfo inputAssembly = new()
+            PipelineInputAssemblyStateCreateInformation inputAssembly = new()
             {
-                SType = StructureType.PipelineInputAssemblyStateCreateInfo,
                 Topology = PrimitiveTopology.TriangleList,
                 PrimitiveRestartEnable = false,
             };
@@ -173,18 +169,14 @@ public unsafe class HelloTriangleApplication_25 : HelloTriangleApplication_24
                 Extent = swapchainExtent,
             };
 
-            PipelineViewportStateCreateInfo viewportState = new()
+            PipelineViewportStateCreateInformation viewportState = new()
             {
-                SType = StructureType.PipelineViewportStateCreateInfo,
-                ViewportCount = 1,
-                PViewports = &viewport,
-                ScissorCount = 1,
-                PScissors = &scissor,
+                Viewports = new[]{viewport},
+                Scissors = new[]{scissor}
             };
 
-            PipelineRasterizationStateCreateInfo rasterizer = new()
+            PipelineRasterizationStateCreateInformation rasterizer = new()
             {
-                SType = StructureType.PipelineRasterizationStateCreateInfo,
                 DepthClampEnable = false,
                 RasterizerDiscardEnable = false,
                 PolygonMode = PolygonMode.Fill,
@@ -194,9 +186,8 @@ public unsafe class HelloTriangleApplication_25 : HelloTriangleApplication_24
                 DepthBiasEnable = false,
             };
 
-            PipelineMultisampleStateCreateInfo multisampling = new()
+            PipelineMultisampleStateCreateInformation multisampling = new()
             {
-                SType = StructureType.PipelineMultisampleStateCreateInfo,
                 SampleShadingEnable = false,
                 RasterizationSamples = SampleCountFlags.Count1Bit,
             };
@@ -207,13 +198,11 @@ public unsafe class HelloTriangleApplication_25 : HelloTriangleApplication_24
                 BlendEnable = false,
             };
 
-            PipelineColorBlendStateCreateInfo colorBlending = new()
+            PipelineColorBlendStateCreateInformation colorBlending = new()
             {
-                SType = StructureType.PipelineColorBlendStateCreateInfo,
                 LogicOpEnable = false,
                 LogicOp = LogicOp.Copy,
-                AttachmentCount = 1,
-                PAttachments = &colorBlendAttachment,
+                Attachments = new[]{colorBlendAttachment}
             };
 
             colorBlending.BlendConstants.X = 0;
@@ -221,40 +210,28 @@ public unsafe class HelloTriangleApplication_25 : HelloTriangleApplication_24
             colorBlending.BlendConstants.Z = 0;
             colorBlending.BlendConstants.W = 0;
 
-            PipelineLayoutCreateInfo pipelineLayoutInfo = new()
+            PipelineLayoutCreateInformation pipelineLayoutInfo = new()
             {
-                SType = StructureType.PipelineLayoutCreateInfo,
-                PushConstantRangeCount = 0,                
-                SetLayoutCount = 1,
-                PSetLayouts = descriptorSetLayoutPtr
+                SetLayouts = new[]{descriptorSetLayout!.DescriptorSetLayout}
             };
 
-            if (vk!.CreatePipelineLayout(device, pipelineLayoutInfo, null, out pipelineLayout) != Result.Success)
-            {
-                throw new Exception("failed to create pipeline layout!");
-            }
+            pipelineLayout = device!.CreatePipelineLayout(pipelineLayoutInfo);
 
-            GraphicsPipelineCreateInfo pipelineInfo = new()
+            GraphicsPipelineCreateInformation pipelineInfo = new()
             {
-                SType = StructureType.GraphicsPipelineCreateInfo,
-                StageCount = 2,
-                PStages = shaderStages,
-                PVertexInputState = &vertexInputInfo,
-                PInputAssemblyState = &inputAssembly,
-                PViewportState = &viewportState,
-                PRasterizationState = &rasterizer,
-                PMultisampleState = &multisampling,
-                PColorBlendState = &colorBlending,
+                Stages = shaderStages,
+                VertexInputState = vertexInputInfo,
+                InputAssemblyState = inputAssembly,
+                ViewportState = viewportState,
+                RasterizationState = rasterizer,
+                MultisampleState = multisampling,
+                ColorBlendState = colorBlending,
                 Layout = pipelineLayout,
-                RenderPass = renderPass,
+                RenderPass = renderPass!,
                 Subpass = 0,
-                BasePipelineHandle = default
             };
 
-            if (vk!.CreateGraphicsPipelines(device, default, 1, pipelineInfo, null, out graphicsPipeline) != Result.Success)
-            {
-                throw new Exception("failed to create graphics pipeline!");
-            }
+            graphicsPipeline = device.CreateGraphicsPipeline(pipelineInfo);
         }
 
         

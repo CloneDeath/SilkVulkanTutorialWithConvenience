@@ -43,10 +43,10 @@ public unsafe class HelloTriangleApplication_24 : HelloTriangleApplication_23
         vk!.DestroySampler(device, textureSampler, null);
         vk!.DestroyImageView(device, textureImageView, null);
 
-        vk!.DestroyImage(device, textureImage, null);
-        vk!.FreeMemory(device, textureImageMemory, null);
+        textureImage!.Dispose();
+        textureImageMemory!.Dispose();
 
-        vk!.DestroyDescriptorSetLayout(device, descriptorSetLayout, null);
+        descriptorSetLayout!.Dispose();
 
         indexBuffer?.Dispose();
         indexBufferMemory?.Dispose();

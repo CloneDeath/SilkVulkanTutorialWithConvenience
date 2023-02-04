@@ -38,8 +38,7 @@ public unsafe class HelloTriangleApplication_28 : HelloTriangleApplication_27
         DeviceMemory stagingBufferMemory = default;
         CreateBuffer(imageSize, BufferUsageFlags.TransferSrcBit, MemoryPropertyFlags.HostVisibleBit | MemoryPropertyFlags.HostCoherentBit,ref stagingBuffer, ref stagingBufferMemory );
 
-        void* data;
-        vk!.MapMemory(device, stagingBufferMemory, 0, imageSize, 0, &data);
+        var data = stagingBufferMemory.MapMemory();
         img.CopyPixelDataTo(new Span<byte>(data, (int)imageSize));
         stagingBufferMemory.UnmapMemory();
 
@@ -283,7 +282,7 @@ public unsafe class HelloTriangleApplication_28 : HelloTriangleApplication_27
             }
         }
 
-        vk!.BindImageMemory(device, image, imageMemory, 0);
+        image.BindMemory(imageMemory);
     }
 
     // ReSharper disable once UnusedParameter.Local

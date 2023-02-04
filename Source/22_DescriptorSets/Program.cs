@@ -1,16 +1,18 @@
 ﻿using System.Runtime.CompilerServices;
-using Silk.NET.Core.Native;
 using Silk.NET.Maths;
 using Silk.NET.Vulkan;
-using Buffer = Silk.NET.Vulkan.Buffer;
+using SilkNetConvenience.Barriers;
+using SilkNetConvenience.Descriptors;
+using SilkNetConvenience.Pipelines;
+using SilkNetConvenience.RenderPasses;
 
 var app = new HelloTriangleApplication_22();
 app.Run();
 
-public unsafe class HelloTriangleApplication_22 : HelloTriangleApplication_21
+public class HelloTriangleApplication_22 : HelloTriangleApplication_21
 {
-    protected DescriptorPool descriptorPool;
-    protected DescriptorSet[]? descriptorSets;
+    protected VulkanDescriptorPool? descriptorPool;
+    protected VulkanDescriptorSet[]? descriptorSets;
 
     protected override void InitVulkan()
     {
@@ -59,11 +61,11 @@ public unsafe class HelloTriangleApplication_22 : HelloTriangleApplication_21
 
         for (int i = 0; i < swapchainImages!.Length; i++)
         {
-            vk!.DestroyBuffer(device, uniformBuffers![i], null);
-            vk!.FreeMemory(device, uniformBuffersMemory![i], null);
+            uniformBuffers![i].Dispose();
+            uniformBuffersMemory![i].Dispose();
         }
 
-        vk!.DestroyDescriptorPool(device, descriptorPool, null);
+        descriptorPool!.Dispose();
     }
 
     protected override void RecreateSwapchain()
@@ -124,127 +126,89 @@ public unsafe class HelloTriangleApplication_22 : HelloTriangleApplication_21
         var bindingDescription = Vertex_17.GetBindingDescription();
         var attributeDescriptions = Vertex_17.GetAttributeDescriptions();
 
-        fixed (VertexInputAttributeDescription* attributeDescriptionsPtr = attributeDescriptions)
-        fixed (DescriptorSetLayout* descriptorSetLayoutPtr = &descriptorSetLayout)
-        {
+        PipelineVertexInputStateCreateInformation vertexInputInfo = new() {
+            VertexBindingDescriptions = new[] { bindingDescription },
+            VertexAttributeDescriptions = attributeDescriptions,
+        };
 
-            PipelineVertexInputStateCreateInfo vertexInputInfo = new()
-            {
-                SType = StructureType.PipelineVertexInputStateCreateInfo,
-                VertexBindingDescriptionCount = 1,
-                VertexAttributeDescriptionCount = (uint)attributeDescriptions.Length,
-                PVertexBindingDescriptions = &bindingDescription,
-                PVertexAttributeDescriptions = attributeDescriptionsPtr,
-            };
+        PipelineInputAssemblyStateCreateInformation inputAssembly = new() {
+            Topology = PrimitiveTopology.TriangleList,
+            PrimitiveRestartEnable = false,
+        };
 
-            PipelineInputAssemblyStateCreateInfo inputAssembly = new()
-            {
-                SType = StructureType.PipelineInputAssemblyStateCreateInfo,
-                Topology = PrimitiveTopology.TriangleList,
-                PrimitiveRestartEnable = false,
-            };
+        Viewport viewport = new() {
+            X = 0,
+            Y = 0,
+            Width = swapchainExtent.Width,
+            Height = swapchainExtent.Height,
+            MinDepth = 0,
+            MaxDepth = 1,
+        };
 
-            Viewport viewport = new()
-            {
-                X = 0,
-                Y = 0,
-                Width = swapchainExtent.Width,
-                Height = swapchainExtent.Height,
-                MinDepth = 0,
-                MaxDepth = 1,
-            };
+        Rect2D scissor = new() {
+            Offset = { X = 0, Y = 0 },
+            Extent = swapchainExtent,
+        };
 
-            Rect2D scissor = new()
-            {
-                Offset = { X = 0, Y = 0 },
-                Extent = swapchainExtent,
-            };
+        PipelineViewportStateCreateInformation viewportState = new() {
+            Viewports = new[] { viewport },
+            Scissors = new[] { scissor }
+        };
 
-            PipelineViewportStateCreateInfo viewportState = new()
-            {
-                SType = StructureType.PipelineViewportStateCreateInfo,
-                ViewportCount = 1,
-                PViewports = &viewport,
-                ScissorCount = 1,
-                PScissors = &scissor,
-            };
+        PipelineRasterizationStateCreateInformation rasterizer = new() {
+            DepthClampEnable = false,
+            RasterizerDiscardEnable = false,
+            PolygonMode = PolygonMode.Fill,
+            LineWidth = 1,
+            CullMode = CullModeFlags.BackBit,
+            FrontFace = FrontFace.CounterClockwise,
+            DepthBiasEnable = false,
+        };
 
-            PipelineRasterizationStateCreateInfo rasterizer = new()
-            {
-                SType = StructureType.PipelineRasterizationStateCreateInfo,
-                DepthClampEnable = false,
-                RasterizerDiscardEnable = false,
-                PolygonMode = PolygonMode.Fill,
-                LineWidth = 1,
-                CullMode = CullModeFlags.BackBit,
-                FrontFace = FrontFace.CounterClockwise,
-                DepthBiasEnable = false,
-            };
+        PipelineMultisampleStateCreateInformation multisampling = new() {
+            SampleShadingEnable = false,
+            RasterizationSamples = SampleCountFlags.Count1Bit,
+        };
 
-            PipelineMultisampleStateCreateInfo multisampling = new()
-            {
-                SType = StructureType.PipelineMultisampleStateCreateInfo,
-                SampleShadingEnable = false,
-                RasterizationSamples = SampleCountFlags.Count1Bit,
-            };
+        PipelineColorBlendAttachmentState colorBlendAttachment = new() {
+            ColorWriteMask = ColorComponentFlags.RBit | ColorComponentFlags.GBit | ColorComponentFlags.BBit |
+                             ColorComponentFlags.ABit,
+            BlendEnable = false,
+        };
 
-            PipelineColorBlendAttachmentState colorBlendAttachment = new()
-            {
-                ColorWriteMask = ColorComponentFlags.RBit | ColorComponentFlags.GBit | ColorComponentFlags.BBit | ColorComponentFlags.ABit,
-                BlendEnable = false,
-            };
+        PipelineColorBlendStateCreateInformation colorBlending = new() {
+            LogicOpEnable = false,
+            LogicOp = LogicOp.Copy,
+            Attachments = new[] { colorBlendAttachment }
+        };
 
-            PipelineColorBlendStateCreateInfo colorBlending = new()
-            {
-                SType = StructureType.PipelineColorBlendStateCreateInfo,
-                LogicOpEnable = false,
-                LogicOp = LogicOp.Copy,
-                AttachmentCount = 1,
-                PAttachments = &colorBlendAttachment,
-            };
+        colorBlending.BlendConstants.X = 0;
+        colorBlending.BlendConstants.Y = 0;
+        colorBlending.BlendConstants.Z = 0;
+        colorBlending.BlendConstants.W = 0;
 
-            colorBlending.BlendConstants.X = 0;
-            colorBlending.BlendConstants.Y = 0;
-            colorBlending.BlendConstants.Z = 0;
-            colorBlending.BlendConstants.W = 0;
+        PipelineLayoutCreateInformation pipelineLayoutInfo = new() {
+            SetLayouts = new[] { descriptorSetLayout!.DescriptorSetLayout }
+        };
 
-            PipelineLayoutCreateInfo pipelineLayoutInfo = new()
-            {
-                SType = StructureType.PipelineLayoutCreateInfo,
-                PushConstantRangeCount = 0,                
-                SetLayoutCount = 1,
-                PSetLayouts = descriptorSetLayoutPtr
-            };
+        pipelineLayout = device!.CreatePipelineLayout(pipelineLayoutInfo);
 
-            if (vk!.CreatePipelineLayout(device, pipelineLayoutInfo, null, out pipelineLayout) != Result.Success)
-            {
-                throw new Exception("failed to create pipeline layout!");
-            }
+        GraphicsPipelineCreateInformation pipelineInfo = new() {
+            Stages = shaderStages,
+            VertexInputState = vertexInputInfo,
+            InputAssemblyState = inputAssembly,
+            ViewportState = viewportState,
+            RasterizationState = rasterizer,
+            MultisampleState = multisampling,
+            ColorBlendState = colorBlending,
+            Layout = pipelineLayout,
+            RenderPass = renderPass!,
+            Subpass = 0,
+        };
 
-            GraphicsPipelineCreateInfo pipelineInfo = new()
-            {
-                SType = StructureType.GraphicsPipelineCreateInfo,
-                StageCount = 2,
-                PStages = shaderStages,
-                PVertexInputState = &vertexInputInfo,
-                PInputAssemblyState = &inputAssembly,
-                PViewportState = &viewportState,
-                PRasterizationState = &rasterizer,
-                PMultisampleState = &multisampling,
-                PColorBlendState = &colorBlending,
-                Layout = pipelineLayout,
-                RenderPass = renderPass,
-                Subpass = 0,
-                BasePipelineHandle = default
-            };
+        graphicsPipeline = device.CreateGraphicsPipeline(pipelineInfo);
 
-            if (vk!.CreateGraphicsPipelines(device, default, 1, pipelineInfo, null, out graphicsPipeline) != Result.Success)
-            {
-                throw new Exception("failed to create graphics pipeline!");
-            }
-        }
 
-        
     }
 
     protected virtual void CreateDescriptorPool()
@@ -256,49 +220,18 @@ public unsafe class HelloTriangleApplication_22 : HelloTriangleApplication_21
         };
 
 
-        DescriptorPoolCreateInfo poolInfo = new()
+        DescriptorPoolCreateInformation poolInfo = new()
         {
-            SType = StructureType.DescriptorPoolCreateInfo,
-            PoolSizeCount = 1,
-            PPoolSizes = &poolSize,
+            PoolSizes = new[]{poolSize},
             MaxSets = (uint)swapchainImages!.Length,
         };
 
-        fixed (DescriptorPool* descriptorPoolPtr = &descriptorPool)
-        {
-            if(vk!.CreateDescriptorPool(device, poolInfo, null, descriptorPoolPtr) != Result.Success)
-            {
-                throw new Exception("failed to create descriptor pool!");
-            }
-
-        }
+        descriptorPool = device!.CreateDescriptorPool(poolInfo);
     }
 
     protected virtual void CreateDescriptorSets()
     {
-        var layouts = new DescriptorSetLayout[swapchainImages!.Length];
-        Array.Fill(layouts, descriptorSetLayout); 
-
-        fixed (DescriptorSetLayout* layoutsPtr = layouts)
-        {
-            DescriptorSetAllocateInfo allocateInfo = new()
-            {
-                SType = StructureType.DescriptorSetAllocateInfo,
-                DescriptorPool = descriptorPool,
-                DescriptorSetCount = (uint)swapchainImages!.Length,
-                PSetLayouts = layoutsPtr,
-            };
-
-            descriptorSets = new DescriptorSet[swapchainImages.Length];
-            fixed (DescriptorSet* descriptorSetsPtr = descriptorSets)
-            {
-                if (vk!.AllocateDescriptorSets(device, allocateInfo, descriptorSetsPtr) != Result.Success)
-                {
-                    throw new Exception("failed to allocate descriptor sets!");
-                }
-            }
-        }
-        
+        descriptorSets = descriptorPool!.AllocateDescriptorSets(swapchainImages!.Length, descriptorSetLayout!);
 
         for (int i = 0; i < swapchainImages.Length; i++)
         {
@@ -310,18 +243,17 @@ public unsafe class HelloTriangleApplication_22 : HelloTriangleApplication_21
 
             };
 
-            WriteDescriptorSet descriptorWrite = new()
+            WriteDescriptorSetInformation descriptorWrite = new()
             {
-                SType = StructureType.WriteDescriptorSet,
                 DstSet = descriptorSets[i],
                 DstBinding = 0,
                 DstArrayElement = 0,
                 DescriptorType = DescriptorType.UniformBuffer,
                 DescriptorCount = 1,
-                PBufferInfo = &bufferInfo,
+                BufferInfo = new[]{bufferInfo}
             };
 
-            vk!.UpdateDescriptorSets(device, 1, descriptorWrite, 0, null);
+            device!.UpdateDescriptorSets(descriptorWrite);
         }
 
     }
@@ -334,10 +266,9 @@ public unsafe class HelloTriangleApplication_22 : HelloTriangleApplication_21
         {
             commandBuffers[i].Begin();
 
-            RenderPassBeginInfo renderPassInfo = new()
+            RenderPassBeginInformation renderPassInfo = new()
             {
-                SType= StructureType.RenderPassBeginInfo,
-                RenderPass = renderPass,
+                RenderPass = renderPass!,
                 Framebuffer = swapchainFramebuffers[i],
                 RenderArea =
                 {
@@ -351,23 +282,15 @@ public unsafe class HelloTriangleApplication_22 : HelloTriangleApplication_21
                 Color = new (){ Float32_0 = 0, Float32_1 = 0, Float32_2 = 0, Float32_3 = 1 },                
             };
 
-            renderPassInfo.ClearValueCount = 1;
-            renderPassInfo.PClearValues = &clearColor;
+            renderPassInfo.ClearValues = new[]{clearColor};
 
             commandBuffers[i].BeginRenderPass(renderPassInfo, SubpassContents.Inline);
-
                 commandBuffers[i].BindPipeline(PipelineBindPoint.Graphics, graphicsPipeline!);
-
                 commandBuffers[i].BindVertexBuffer(0, vertexBuffer!);
-
                 commandBuffers[i].BindIndexBuffer(indexBuffer!, 0, IndexType.Uint16);
-
-                vk!.CmdBindDescriptorSets(commandBuffers[i], PipelineBindPoint.Graphics, pipelineLayout, 0, 1, descriptorSets![i], 0, null);
-
+                commandBuffers[i].BindDescriptorSet(PipelineBindPoint.Graphics, pipelineLayout!, 0, descriptorSets![i]);
                 commandBuffers[i].DrawIndexed((uint)indices.Length);
-
             commandBuffers[i].EndRenderPass();
-
             commandBuffers[i].End();
 
         }
